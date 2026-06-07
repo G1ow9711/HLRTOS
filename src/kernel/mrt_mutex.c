@@ -1,4 +1,6 @@
 #include "myrtos/mrt_mutex.h"
+#include "myrtos/mrt_config.h"
+#include "myrtos/mrt_heap.h"
 #include "mrt_task_internal.h"
 
 /**
@@ -91,6 +93,158 @@ MRT_Result MRT_MutexCreateRecursiveStatic(MRT_Mutex *storage, MRT_MutexHandle *o
 
     /* 静态递归互斥锁创建成功。 */
     return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 从 MyRTOS 全局堆动态创建普通互斥锁。
+ * @param out_mutex 输出互斥锁句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         堆不可用或空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_MutexHandle mutex;
+ * MRT_MutexCreate(&mutex);
+ */
+MRT_Result MRT_MutexCreate(MRT_MutexHandle *out_mutex)
+{
+    /* 输出句柄不能为空。 */
+    if (out_mutex == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 失败路径默认清空输出句柄。 */
+    *out_mutex = 0;
+
+    /* 动态分配关闭时不能创建堆对象。 */
+    if (MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 申请一个互斥锁控制块。 */
+    MRT_Mutex *mutex = (MRT_Mutex *)MRT_Malloc(sizeof(MRT_Mutex));
+
+    /* 堆空间不足时创建失败。 */
+    if (mutex == 0) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 复用静态创建逻辑初始化控制块。 */
+    MRT_Result result = MRT_MutexCreateStatic(mutex, out_mutex);
+
+    /* 初始化失败时释放堆块。 */
+    if (result != MRT_RESULT_OK) {
+        /* 释放控制块。 */
+        (void)MRT_Free(mutex);
+
+        /* 清空输出句柄。 */
+        *out_mutex = 0;
+
+        /* 返回实际错误。 */
+        return result;
+    }
+
+    /* 标记互斥锁归动态堆所有。 */
+    mutex->static_storage = false;
+
+    /* 动态普通互斥锁创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 从 MyRTOS 全局堆动态创建递归互斥锁。
+ * @param out_mutex 输出互斥锁句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         堆不可用或空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_MutexHandle mutex;
+ * MRT_MutexCreateRecursive(&mutex);
+ */
+MRT_Result MRT_MutexCreateRecursive(MRT_MutexHandle *out_mutex)
+{
+    /* 输出句柄不能为空。 */
+    if (out_mutex == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 失败路径默认清空输出句柄。 */
+    *out_mutex = 0;
+
+    /* 动态分配关闭时不能创建堆对象。 */
+    if (MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 申请一个互斥锁控制块。 */
+    MRT_Mutex *mutex = (MRT_Mutex *)MRT_Malloc(sizeof(MRT_Mutex));
+
+    /* 堆空间不足时创建失败。 */
+    if (mutex == 0) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 复用静态递归创建逻辑初始化控制块。 */
+    MRT_Result result = MRT_MutexCreateRecursiveStatic(mutex, out_mutex);
+
+    /* 初始化失败时释放堆块。 */
+    if (result != MRT_RESULT_OK) {
+        /* 释放控制块。 */
+        (void)MRT_Free(mutex);
+
+        /* 清空输出句柄。 */
+        *out_mutex = 0;
+
+        /* 返回实际错误。 */
+        return result;
+    }
+
+    /* 标记互斥锁归动态堆所有。 */
+    mutex->static_storage = false;
+
+    /* 动态递归互斥锁创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 删除动态创建的互斥锁并归还堆内存。
+ * @param mutex 待删除互斥锁句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态互斥锁、已上锁互斥锁或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_MutexDelete(mutex);
+ */
+MRT_Result MRT_MutexDelete(MRT_MutexHandle mutex)
+{
+    /* 互斥锁句柄不能为空。 */
+    if (mutex == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 静态互斥锁内存不归堆释放路径所有。 */
+    if (mutex->static_storage) {
+        /* 返回对象忙。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 已有拥有者或锁深度非零时不能删除。 */
+    if ((mutex->owner != 0) || (mutex->lock_count != 0u)) {
+        /* 返回对象忙，调用方必须先解锁。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 仍有任务等待锁时不能删除。 */
+    if (!MRT_ListIsEmpty(&mutex->waiting_lockers)) {
+        /* 返回对象忙。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 动态互斥锁控制块就是堆块起始地址。 */
+    return MRT_Free(mutex);
 }
 
 /**

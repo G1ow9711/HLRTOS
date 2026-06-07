@@ -41,6 +41,27 @@ typedef struct MRT_EventGroup {
 MRT_Result MRT_EventGroupCreateStatic(MRT_EventGroup *storage, MRT_EventGroupHandle *out_group);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建事件组。
+ * @param out_group 输出事件组句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_EventGroupHandle group;
+ * MRT_EventGroupCreate(&group);
+ */
+MRT_Result MRT_EventGroupCreate(MRT_EventGroupHandle *out_group);
+
+/**
+ * @brief 删除动态创建的事件组并归还堆内存。
+ * @param group 待删除事件组句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态事件组或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_EventGroupDelete(group);
+ */
+MRT_Result MRT_EventGroupDelete(MRT_EventGroupHandle group);
+
+/**
  * @brief 设置事件组中的一个或多个 bit。
  * @param group 事件组句柄，不能为空。
  * @param bits_to_set 需要置位的 bit 掩码，不能为 0。

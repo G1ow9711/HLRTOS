@@ -469,19 +469,19 @@ int main(void)
 - 常见错误：重置仍有等待任务的队列。
 
 ### MRT_SemaphoreCreateBinaryStatic
-- 函数原型：`MRT_Result MRT_SemaphoreCreateBinaryStatic(MRT_Semaphore *storage, bool initially_available, MRT_SemaphoreHandle *out_semaphore);`
-- 功能说明：创建静态二值信号量。
-- 参数：控制块、初始可用标志和输出句柄。
+- 函数原型：`MRT_Result MRT_SemaphoreCreateBinaryStatic(bool initially_available, MRT_Semaphore *storage, MRT_SemaphoreHandle *out_semaphore);`
+- 功能说明：使用调用方提供的控制块创建静态二值信号量。
+- 参数：初始可用标志、控制块和输出句柄。
 - 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：调度启动前或任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
 - 配置宏：静态分配支持。
-- 调用示例：`MRT_SemaphoreCreateBinaryStatic(&sem_storage, false, &sem);`
+- 调用示例：`MRT_SemaphoreCreateBinaryStatic(false, &sem_storage, &sem);`
 - 常见错误：把二值信号量当互斥锁使用。
 
 ### MRT_SemaphoreCreateCountingStatic
-- 函数原型：`MRT_Result MRT_SemaphoreCreateCountingStatic(MRT_Semaphore *storage, uint32_t max_count, uint32_t initial_count, MRT_SemaphoreHandle *out_semaphore);`
+- 函数原型：`MRT_Result MRT_SemaphoreCreateCountingStatic(size_t max_count, size_t initial_count, MRT_Semaphore *storage, MRT_SemaphoreHandle *out_semaphore);`
 - 功能说明：创建静态计数信号量。
 - 参数：控制块、最大计数、初始计数和输出句柄。
 - 返回值：成功返回 `MRT_RESULT_OK`；计数非法返回 `MRT_RESULT_INVALID_ARGUMENT`。
@@ -489,26 +489,26 @@ int main(void)
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
 - 配置宏：静态分配支持。
-- 调用示例：`MRT_SemaphoreCreateCountingStatic(&sem_storage, 4u, 0u, &sem);`
+- 调用示例：`MRT_SemaphoreCreateCountingStatic(4u, 0u, &sem_storage, &sem);`
 - 常见错误：初始计数大于最大计数。
 
 ### MRT_SemaphoreCreateBinary
 - 函数原型：`MRT_Result MRT_SemaphoreCreateBinary(bool initially_available, MRT_SemaphoreHandle *out_semaphore);`
-- 功能说明：动态创建二值信号量。
-- 参数：初始可用标志和输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`。
+- 功能说明：从 MyRTOS heap 动态分配一个信号量控制块，并初始化为二值信号量。
+- 参数：初始可用标志和输出句柄；创建失败时输出句柄会被清空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
 - 配置宏：动态分配支持和 heap。
 - 调用示例：`MRT_SemaphoreCreateBinary(false, &sem);`
-- 常见错误：未处理 heap 分配失败。
+- 常见错误：未初始化 heap 就创建动态对象；失败后继续使用旧句柄。
 
 ### MRT_SemaphoreCreateCounting
-- 函数原型：`MRT_Result MRT_SemaphoreCreateCounting(uint32_t max_count, uint32_t initial_count, MRT_SemaphoreHandle *out_semaphore);`
-- 功能说明：动态创建计数信号量。
-- 参数：最大计数、初始计数和输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足或参数非法返回相应错误。
+- 函数原型：`MRT_Result MRT_SemaphoreCreateCounting(size_t max_count, size_t initial_count, MRT_SemaphoreHandle *out_semaphore);`
+- 功能说明：从 MyRTOS heap 动态分配一个信号量控制块，并初始化为计数信号量。
+- 参数：最大计数、初始计数和输出句柄；`max_count` 必须大于 0，`initial_count` 不得大于 `max_count`。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
@@ -520,7 +520,7 @@ int main(void)
 - 函数原型：`MRT_Result MRT_SemaphoreDelete(MRT_SemaphoreHandle semaphore);`
 - 功能说明：删除动态信号量或拒绝删除静态信号量。
 - 参数：信号量句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；对象忙或参数错误返回相应错误。
+- 返回值：动态信号量释放成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；静态信号量或仍有等待任务时返回 `MRT_RESULT_OBJECT_BUSY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -590,9 +590,9 @@ int main(void)
 
 ### MRT_MutexCreate
 - 函数原型：`MRT_Result MRT_MutexCreate(MRT_MutexHandle *out_mutex);`
-- 功能说明：动态创建普通互斥锁。
-- 参数：输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`。
+- 功能说明：从 MyRTOS heap 动态分配一个互斥锁控制块，并初始化为普通互斥锁。
+- 参数：输出句柄；创建失败时输出句柄会被清空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -614,9 +614,9 @@ int main(void)
 
 ### MRT_MutexCreateRecursive
 - 函数原型：`MRT_Result MRT_MutexCreateRecursive(MRT_MutexHandle *out_mutex);`
-- 功能说明：动态创建递归互斥锁。
-- 参数：输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`。
+- 功能说明：从 MyRTOS heap 动态分配一个互斥锁控制块，并初始化为递归互斥锁。
+- 参数：输出句柄；创建失败时输出句柄会被清空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -628,7 +628,7 @@ int main(void)
 - 函数原型：`MRT_Result MRT_MutexDelete(MRT_MutexHandle mutex);`
 - 功能说明：删除动态互斥锁或拒绝删除静态互斥锁。
 - 参数：互斥锁句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；对象忙或参数错误返回相应错误。
+- 返回值：动态互斥锁释放成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；静态互斥锁、已被持有的互斥锁或仍有等待任务时返回 `MRT_RESULT_OBJECT_BUSY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -686,9 +686,9 @@ int main(void)
 
 ### MRT_EventGroupCreate
 - 函数原型：`MRT_Result MRT_EventGroupCreate(MRT_EventGroupHandle *out_group);`
-- 功能说明：动态创建事件组。
-- 参数：输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`。
+- 功能说明：从 MyRTOS heap 动态分配一个事件组控制块，并初始化 bit 集合为 0。
+- 参数：输出句柄；创建失败时输出句柄会被清空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -698,9 +698,9 @@ int main(void)
 
 ### MRT_EventGroupDelete
 - 函数原型：`MRT_Result MRT_EventGroupDelete(MRT_EventGroupHandle group);`
-- 功能说明：删除事件组并处理等待者策略。
+- 功能说明：删除动态事件组并归还控制块；静态事件组不由该 API 释放。
 - 参数：事件组句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；对象忙或参数错误返回相应错误。
+- 返回值：动态事件组释放成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；静态事件组或仍有等待任务时返回 `MRT_RESULT_OBJECT_BUSY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -709,27 +709,27 @@ int main(void)
 - 常见错误：删除仍有任务等待的事件组。
 
 ### MRT_EventGroupSetBits
-- 函数原型：`MRT_Result MRT_EventGroupSetBits(MRT_EventGroupHandle group, MRT_EventBits bits);`
+- 函数原型：`MRT_Result MRT_EventGroupSetBits(MRT_EventGroupHandle group, MRT_EventBits bits_to_set, MRT_EventBits *out_bits);`
 - 功能说明：置位事件 bit，并唤醒满足条件的等待任务。
-- 参数：事件组句柄和要置位的 bit。
+- 参数：事件组句柄、要置位的 bit 和可选的置位后 bit 快照输出。
 - 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞，但可能触发调度。
 - ISR 限制：ISR 中使用 `MRT_EventGroupSetBitsFromISR`。
 - 配置宏：抢占配置影响唤醒后切换。
-- 调用示例：`MRT_EventGroupSetBits(group, READY_BIT);`
+- 调用示例：`MRT_EventBits bits; MRT_EventGroupSetBits(group, READY_BIT, &bits);`
 - 常见错误：用同一个 bit 表示多个独立事件。
 
 ### MRT_EventGroupClearBits
-- 函数原型：`MRT_Result MRT_EventGroupClearBits(MRT_EventGroupHandle group, MRT_EventBits bits);`
+- 函数原型：`MRT_Result MRT_EventGroupClearBits(MRT_EventGroupHandle group, MRT_EventBits bits_to_clear, MRT_EventBits *out_bits);`
 - 功能说明：清除事件组中的指定 bit。
-- 参数：事件组句柄和要清除的 bit。
+- 参数：事件组句柄、要清除的 bit 和可选的清除后 bit 快照输出。
 - 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：不建议在 ISR 中清位。
 - 配置宏：无特殊依赖。
-- 调用示例：`MRT_EventGroupClearBits(group, READY_BIT);`
+- 调用示例：`MRT_EventBits bits; MRT_EventGroupClearBits(group, READY_BIT, &bits);`
 - 常见错误：清除其他任务仍需要观察的 bit。
 
 ### MRT_EventGroupWaitBits
@@ -841,34 +841,34 @@ int main(void)
 - 常见错误：把清位 mask 写成保留 bit。
 
 ### MRT_TimerCreateStatic
-- 函数原型：`MRT_Result MRT_TimerCreateStatic(const char *name, MRT_Tick period_ticks, bool auto_reload, MRT_TimerCallback callback, void *argument, MRT_Timer *storage, MRT_TimerHandle *out_timer);`
+- 函数原型：`MRT_Result MRT_TimerCreateStatic(const char *name, MRT_Tick period_ticks, bool auto_reload, void *arg, MRT_TimerCallback callback, MRT_Timer *storage, MRT_TimerHandle *out_timer);`
 - 功能说明：创建静态软件定时器。
-- 参数：名称、周期、自动重载标志、回调、参数、控制块和输出句柄。
+- 参数：名称、周期、自动重载标志、用户参数、回调、控制块和输出句柄。
 - 返回值：成功返回 `MRT_RESULT_OK`；周期为 0 或回调为空返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文或调度启动前。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
 - 配置宏：静态分配支持。
-- 调用示例：`MRT_TimerCreateStatic("blink", 100u, true, cb, 0, &storage, &timer);`
+- 调用示例：`MRT_TimerCreateStatic("blink", 100u, true, 0, cb, &storage, &timer);`
 - 常见错误：在回调中执行长时间阻塞操作。
 
 ### MRT_TimerCreate
-- 函数原型：`MRT_Result MRT_TimerCreate(...);`
-- 功能说明：动态创建软件定时器。
-- 参数：名称、周期、自动重载标志、回调、参数和输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`。
+- 函数原型：`MRT_Result MRT_TimerCreate(const char *name, MRT_Tick period_ticks, bool auto_reload, void *arg, MRT_TimerCallback callback, MRT_TimerHandle *out_timer);`
+- 功能说明：从 MyRTOS heap 动态分配一个软件定时器控制块，并初始化定时器参数。
+- 参数：名称、周期、自动重载标志、用户参数、回调和输出句柄；周期必须大于 0，回调和输出句柄不能为空，创建失败时输出句柄会被清空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
 - 配置宏：动态分配支持和 heap。
-- 调用示例：`MRT_TimerCreate("periodic", 10u, true, cb, 0, &timer);`
-- 常见错误：未处理动态分配失败。
+- 调用示例：`MRT_TimerCreate("periodic", 10u, true, 0, cb, &timer);`
+- 常见错误：把 `arg` 和 `callback` 参数顺序写反；未处理动态分配失败。
 
 ### MRT_TimerDelete
 - 函数原型：`MRT_Result MRT_TimerDelete(MRT_TimerHandle timer);`
-- 功能说明：删除动态定时器或停止后释放资源。
+- 功能说明：删除动态定时器；如果定时器仍处于活动列表，会先停止再释放控制块。
 - 参数：定时器句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；对象忙或参数错误返回相应错误。
+- 返回值：动态定时器释放成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；静态定时器返回 `MRT_RESULT_OBJECT_BUSY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -877,51 +877,51 @@ int main(void)
 - 常见错误：在定时器回调内部删除自身却未理解服务路径。
 
 ### MRT_TimerStart
-- 函数原型：`MRT_Result MRT_TimerStart(MRT_TimerHandle timer);`
+- 函数原型：`MRT_Result MRT_TimerStart(MRT_TimerHandle timer, MRT_Timeout timeout);`
 - 功能说明：启动软件定时器，从当前 tick 计算到期时间。
-- 参数：定时器句柄。
+- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
 - 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：不建议在 ISR 中调用。
 - 配置宏：tick 频率影响周期。
-- 调用示例：`MRT_TimerStart(timer);`
+- 调用示例：`MRT_TimerStart(timer, 0u);`
 - 常见错误：修改周期后忘记 reset。
 
 ### MRT_TimerStop
-- 函数原型：`MRT_Result MRT_TimerStop(MRT_TimerHandle timer);`
+- 函数原型：`MRT_Result MRT_TimerStop(MRT_TimerHandle timer, MRT_Timeout timeout);`
 - 功能说明：停止活动软件定时器。
-- 参数：定时器句柄。
+- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
 - 返回值：成功返回 `MRT_RESULT_OK`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：不建议在 ISR 中调用。
 - 配置宏：无特殊依赖。
-- 调用示例：`MRT_TimerStop(timer);`
+- 调用示例：`MRT_TimerStop(timer, 0u);`
 - 常见错误：以为停止会清除用户参数或回调。
 
 ### MRT_TimerReset
-- 函数原型：`MRT_Result MRT_TimerReset(MRT_TimerHandle timer);`
+- 函数原型：`MRT_Result MRT_TimerReset(MRT_TimerHandle timer, MRT_Timeout timeout);`
 - 功能说明：从当前 tick 重新计算定时器到期时间。
-- 参数：定时器句柄。
+- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
 - 返回值：成功返回 `MRT_RESULT_OK`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：不建议在 ISR 中调用。
 - 配置宏：tick 频率影响周期。
-- 调用示例：`MRT_TimerReset(timer);`
+- 调用示例：`MRT_TimerReset(timer, 0u);`
 - 常见错误：对未启动定时器 reset 后误判活动状态。
 
 ### MRT_TimerChangePeriod
-- 函数原型：`MRT_Result MRT_TimerChangePeriod(MRT_TimerHandle timer, MRT_Tick new_period_ticks);`
+- 函数原型：`MRT_Result MRT_TimerChangePeriod(MRT_TimerHandle timer, MRT_Tick new_period_ticks, MRT_Timeout timeout);`
 - 功能说明：修改定时器周期，活动定时器按当前 tick 重装。
-- 参数：定时器句柄和新周期。
+- 参数：定时器句柄、新周期和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
 - 返回值：成功返回 `MRT_RESULT_OK`；周期为 0 返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：不建议在 ISR 中调用。
 - 配置宏：tick 频率影响周期。
-- 调用示例：`MRT_TimerChangePeriod(timer, 250u);`
+- 调用示例：`MRT_TimerChangePeriod(timer, 250u, 0u);`
 - 常见错误：传入 0 tick 周期。
 
 ### MRT_TimerIsActive
@@ -949,75 +949,75 @@ int main(void)
 - 常见错误：pending function 中执行阻塞等待。
 
 ### MRT_StreamBufferCreateStatic
-- 函数原型：`MRT_Result MRT_StreamBufferCreateStatic(MRT_StreamBuffer *storage, uint8_t *buffer, size_t capacity, size_t trigger_level, MRT_StreamBufferHandle *out_stream);`
+- 函数原型：`MRT_Result MRT_StreamBufferCreateStatic(size_t capacity, size_t trigger_level, void *buffer, MRT_StreamBuffer *storage, MRT_StreamBufferHandle *out_stream);`
 - 功能说明：创建静态字节流缓冲。
-- 参数：控制块、字节缓冲、容量、触发水位和输出句柄。
+- 参数：容量、触发水位、字节缓冲、控制块和输出句柄。
 - 返回值：成功返回 `MRT_RESULT_OK`；容量或水位非法返回参数错误。
 - 调用上下文：任务上下文或调度启动前。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
 - 配置宏：静态分配支持。
-- 调用示例：`MRT_StreamBufferCreateStatic(&storage, buf, sizeof(buf), 8u, &stream);`
+- 调用示例：`MRT_StreamBufferCreateStatic(sizeof(buf), 8u, buf, &storage, &stream);`
 - 常见错误：触发水位大于容量。
 
 ### MRT_StreamBufferCreate
 - 函数原型：`MRT_Result MRT_StreamBufferCreate(size_t capacity, size_t trigger_level, MRT_StreamBufferHandle *out_stream);`
-- 功能说明：动态创建字节流缓冲。
-- 参数：容量、触发水位和输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`。
+- 功能说明：从 MyRTOS heap 动态创建字节流缓冲；内部使用一个堆块保存对齐后的控制块和字节存储区。
+- 参数：容量、触发水位和输出句柄；`capacity` 必须大于 0，`trigger_level` 必须在 1 到 `capacity` 之间，创建失败时输出句柄会被清空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
 - 配置宏：动态分配支持和 heap。
 - 调用示例：`MRT_StreamBufferCreate(128u, 16u, &stream);`
-- 常见错误：未处理内存不足。
+- 常见错误：忽略当前版本尚未提供流缓冲删除 API，短生命周期反复动态创建会消耗 heap。
 
 ### MRT_StreamBufferSend
-- 函数原型：`size_t MRT_StreamBufferSend(MRT_StreamBufferHandle stream, const void *data, size_t length, MRT_Timeout timeout);`
+- 函数原型：`MRT_Result MRT_StreamBufferSend(MRT_StreamBufferHandle stream, const void *data, size_t length, MRT_Timeout timeout, size_t *out_sent);`
 - 功能说明：向流缓冲写入字节序列。
-- 参数：缓冲句柄、数据地址、长度和等待 tick。
-- 返回值：返回实际写入字节数。
+- 参数：缓冲句柄、数据地址、长度、等待 tick 和可选实际写入字节数输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；空间不足返回 `MRT_RESULT_OBJECT_FULL`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：空间不足且 timeout 非 0 时可阻塞。
 - ISR 限制：ISR 中使用 `MRT_StreamBufferSendFromISR`。
 - 配置宏：tick 频率影响 timeout。
-- 调用示例：`MRT_StreamBufferSend(stream, data, len, 10u);`
+- 调用示例：`size_t sent; MRT_StreamBufferSend(stream, data, len, 10u, &sent);`
 - 常见错误：期望一次写入一定完整。
 
 ### MRT_StreamBufferReceive
-- 函数原型：`size_t MRT_StreamBufferReceive(MRT_StreamBufferHandle stream, void *out_data, size_t length, MRT_Timeout timeout);`
+- 函数原型：`MRT_Result MRT_StreamBufferReceive(MRT_StreamBufferHandle stream, void *out_data, size_t length, MRT_Timeout timeout, size_t *out_received);`
 - 功能说明：从流缓冲读取字节序列。
-- 参数：缓冲句柄、输出地址、最大长度和等待 tick。
-- 返回值：返回实际读取字节数。
+- 参数：缓冲句柄、输出地址、最大长度、等待 tick 和可选实际读取字节数输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；无数据返回 `MRT_RESULT_OBJECT_EMPTY`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：无数据且 timeout 非 0 时可阻塞。
 - ISR 限制：ISR 中使用 `MRT_StreamBufferReceiveFromISR`。
 - 配置宏：tick 频率影响 timeout。
-- 调用示例：`size_t n = MRT_StreamBufferReceive(stream, buf, sizeof(buf), 20u);`
+- 调用示例：`size_t received; MRT_StreamBufferReceive(stream, buf, sizeof(buf), 20u, &received);`
 - 常见错误：把流缓冲当作保留消息边界的消息队列。
 
 ### MRT_StreamBufferSendFromISR
-- 函数原型：`size_t MRT_StreamBufferSendFromISR(MRT_StreamBufferHandle stream, const void *data, size_t length, bool *should_yield);`
+- 函数原型：`MRT_Result MRT_StreamBufferSendFromISR(MRT_StreamBufferHandle stream, const void *data, size_t length, size_t *out_sent, bool *should_yield);`
 - 功能说明：在 ISR 中非阻塞写入流缓冲。
-- 参数：缓冲句柄、数据、长度和可选切换输出。
-- 返回值：返回实际写入字节数。
+- 参数：缓冲句柄、数据、长度、可选实际写入字节数输出和可选切换输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；空间不足返回 `MRT_RESULT_OBJECT_FULL`；参数错误或上下文错误返回相应错误。
 - 调用上下文：ISR 上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：这是 ISR 专用 API。
 - 配置宏：抢占配置影响 `should_yield`。
-- 调用示例：`MRT_StreamBufferSendFromISR(stream, rx, n, &yield);`
+- 调用示例：`size_t sent; MRT_StreamBufferSendFromISR(stream, rx, n, &sent, &yield);`
 - 常见错误：忽略部分写入。
 
 ### MRT_StreamBufferReceiveFromISR
-- 函数原型：`size_t MRT_StreamBufferReceiveFromISR(MRT_StreamBufferHandle stream, void *out_data, size_t length, bool *should_yield);`
+- 函数原型：`MRT_Result MRT_StreamBufferReceiveFromISR(MRT_StreamBufferHandle stream, void *out_data, size_t length, size_t *out_received);`
 - 功能说明：在 ISR 中非阻塞读取流缓冲。
-- 参数：缓冲句柄、输出地址、最大长度和可选切换输出。
-- 返回值：返回实际读取字节数。
+- 参数：缓冲句柄、输出地址、最大长度和可选实际读取字节数输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；无数据返回 `MRT_RESULT_OBJECT_EMPTY`；参数错误或上下文错误返回相应错误。
 - 调用上下文：ISR 上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：这是 ISR 专用 API。
 - 配置宏：无特殊依赖。
-- 调用示例：`MRT_StreamBufferReceiveFromISR(stream, buf, sizeof(buf), &yield);`
+- 调用示例：`size_t received; MRT_StreamBufferReceiveFromISR(stream, buf, sizeof(buf), &received);`
 - 常见错误：在 ISR 中等待数据。
 
 ### MRT_StreamBufferBytesAvailable
@@ -1045,75 +1045,75 @@ int main(void)
 - 常见错误：查询后假定后续写入一定完整。
 
 ### MRT_MessageBufferCreateStatic
-- 函数原型：`MRT_Result MRT_MessageBufferCreateStatic(MRT_MessageBuffer *storage, uint8_t *buffer, size_t capacity, MRT_MessageBufferHandle *out_message_buffer);`
+- 函数原型：`MRT_Result MRT_MessageBufferCreateStatic(size_t capacity, void *buffer, MRT_MessageBuffer *storage, MRT_MessageBufferHandle *out_message_buffer);`
 - 功能说明：创建静态消息缓冲，保留消息边界。
-- 参数：控制块、字节缓冲、容量和输出句柄。
+- 参数：容量、字节缓冲、控制块和输出句柄。
 - 返回值：成功返回 `MRT_RESULT_OK`；容量不足以容纳长度字段时返回参数错误。
 - 调用上下文：任务上下文或调度启动前。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中创建。
 - 配置宏：静态分配支持。
-- 调用示例：`MRT_MessageBufferCreateStatic(&storage, buf, sizeof(buf), &mb);`
+- 调用示例：`MRT_MessageBufferCreateStatic(sizeof(buf), buf, &storage, &mb);`
 - 常见错误：容量没有预留长度字段空间。
 
 ### MRT_MessageBufferCreate
 - 函数原型：`MRT_Result MRT_MessageBufferCreate(size_t capacity, MRT_MessageBufferHandle *out_message_buffer);`
-- 功能说明：动态创建消息缓冲。
-- 参数：容量和输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`。
+- 功能说明：从 MyRTOS heap 动态创建消息缓冲；内部使用一个堆块保存对齐后的控制块和字节存储区。
+- 参数：容量和输出句柄；容量必须至少能容纳长度字段和 1 字节消息，创建失败时输出句柄会被清空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
 - 配置宏：动态分配支持和 heap。
 - 调用示例：`MRT_MessageBufferCreate(256u, &mb);`
-- 常见错误：未处理动态分配失败。
+- 常见错误：忽略当前版本尚未提供消息缓冲删除 API，短生命周期反复动态创建会消耗 heap。
 
 ### MRT_MessageBufferSend
-- 函数原型：`size_t MRT_MessageBufferSend(MRT_MessageBufferHandle buffer, const void *message, size_t length, MRT_Timeout timeout);`
+- 函数原型：`MRT_Result MRT_MessageBufferSend(MRT_MessageBufferHandle message_buffer, const void *message, size_t length, MRT_Timeout timeout, size_t *out_sent);`
 - 功能说明：写入一条完整消息。
-- 参数：消息缓冲句柄、消息地址、长度和等待 tick。
-- 返回值：成功返回写入 payload 字节数；空间不足返回 0。
+- 参数：消息缓冲句柄、消息地址、长度、等待 tick 和可选实际写入字节数输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；空间不足返回 `MRT_RESULT_OBJECT_FULL`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：空间不足且 timeout 非 0 时可阻塞。
 - ISR 限制：ISR 中使用 `MRT_MessageBufferSendFromISR`。
 - 配置宏：tick 频率影响 timeout。
-- 调用示例：`MRT_MessageBufferSend(mb, msg, len, 20u);`
+- 调用示例：`size_t sent; MRT_MessageBufferSend(mb, msg, len, 20u, &sent);`
 - 常见错误：以为消息缓冲允许半包写入。
 
 ### MRT_MessageBufferReceive
-- 函数原型：`size_t MRT_MessageBufferReceive(MRT_MessageBufferHandle buffer, void *out_message, size_t out_capacity, MRT_Timeout timeout);`
+- 函数原型：`MRT_Result MRT_MessageBufferReceive(MRT_MessageBufferHandle message_buffer, void *out_message, size_t output_capacity, MRT_Timeout timeout, size_t *out_received);`
 - 功能说明：读取一条完整消息。
-- 参数：消息缓冲句柄、输出缓冲、输出容量和等待 tick。
-- 返回值：成功返回消息长度；输出容量不足或无消息返回 0。
+- 参数：消息缓冲句柄、输出缓冲、输出容量、等待 tick 和可选实际读取字节数输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；无消息返回 `MRT_RESULT_OBJECT_EMPTY`；输出容量不足返回 `MRT_RESULT_OBJECT_FULL` 且不移除消息；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：无消息且 timeout 非 0 时可阻塞。
 - ISR 限制：ISR 中使用 `MRT_MessageBufferReceiveFromISR`。
 - 配置宏：tick 频率影响 timeout。
-- 调用示例：`size_t n = MRT_MessageBufferReceive(mb, buf, sizeof(buf), 50u);`
+- 调用示例：`size_t received; MRT_MessageBufferReceive(mb, buf, sizeof(buf), 50u, &received);`
 - 常见错误：输出缓冲小于下一条消息导致消息保留。
 
 ### MRT_MessageBufferSendFromISR
-- 函数原型：`size_t MRT_MessageBufferSendFromISR(MRT_MessageBufferHandle buffer, const void *message, size_t length, bool *should_yield);`
+- 函数原型：`MRT_Result MRT_MessageBufferSendFromISR(MRT_MessageBufferHandle message_buffer, const void *message, size_t length, size_t *out_sent, bool *should_yield);`
 - 功能说明：在 ISR 中非阻塞写入完整消息。
-- 参数：消息缓冲、消息地址、长度和可选切换输出。
-- 返回值：成功返回消息长度；空间不足返回 0。
+- 参数：消息缓冲、消息地址、长度、可选实际写入字节数输出和可选切换输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；空间不足返回 `MRT_RESULT_OBJECT_FULL`；参数错误或上下文错误返回相应错误。
 - 调用上下文：ISR 上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：这是 ISR 专用 API。
 - 配置宏：抢占配置影响 `should_yield`。
-- 调用示例：`MRT_MessageBufferSendFromISR(mb, msg, len, &yield);`
+- 调用示例：`size_t sent; MRT_MessageBufferSendFromISR(mb, msg, len, &sent, &yield);`
 - 常见错误：忽略 0 返回值导致消息丢失未统计。
 
 ### MRT_MessageBufferReceiveFromISR
-- 函数原型：`size_t MRT_MessageBufferReceiveFromISR(MRT_MessageBufferHandle buffer, void *out_message, size_t out_capacity, bool *should_yield);`
+- 函数原型：`MRT_Result MRT_MessageBufferReceiveFromISR(MRT_MessageBufferHandle message_buffer, void *out_message, size_t output_capacity, size_t *out_received);`
 - 功能说明：在 ISR 中非阻塞读取完整消息。
-- 参数：消息缓冲、输出缓冲、输出容量和可选切换输出。
-- 返回值：成功返回消息长度；无完整消息返回 0。
+- 参数：消息缓冲、输出缓冲、输出容量和可选实际读取字节数输出。
+- 返回值：成功返回 `MRT_RESULT_OK`；无消息返回 `MRT_RESULT_OBJECT_EMPTY`；输出容量不足返回 `MRT_RESULT_OBJECT_FULL`；参数错误或上下文错误返回相应错误。
 - 调用上下文：ISR 上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：这是 ISR 专用 API。
 - 配置宏：无特殊依赖。
-- 调用示例：`MRT_MessageBufferReceiveFromISR(mb, buf, sizeof(buf), &yield);`
+- 调用示例：`size_t received; MRT_MessageBufferReceiveFromISR(mb, buf, sizeof(buf), &received);`
 - 常见错误：在 ISR 中等待消息。
 
 ### MRT_HeapInitialize

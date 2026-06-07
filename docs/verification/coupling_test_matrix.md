@@ -31,13 +31,13 @@
 | C-014 | 事件组 + 多等待者 | set bits 满足多个任务条件 | 所有满足条件任务被唤醒 | host 单测 | 已验证：`test_event_group_set_wakes_tasks` 覆盖同一事件组上 wait-any 与 wait-all 多等待者，`MRT_EventGroupSetBits` 基于置位后快照唤醒所有匹配任务，并让最高优先级等待者抢占 |
 | C-015 | 事件组 + 清位 | wait-any 且退出清位 | 返回原始事件值后清除指定 bit | host 单测 | 已验证：`test_event_group_wait_immediate` 覆盖 wait-any clear-on-exit 返回清位前快照并清除匹配 bit；`test_event_group_set_wakes_tasks` 覆盖多等待者匹配后统一清除匹配 bit 并保留无关 bit |
 | C-016 | 任务通知 + 覆盖策略 | no-overwrite 遇到未读通知 | 返回对象忙，不覆盖旧值 | host 单测 | 已验证：`test_task_notify_actions` 覆盖 pending 通知下 `MRT_NOTIFY_NO_OVERWRITE` 返回 `MRT_RESULT_OBJECT_BUSY` 且旧值不变；`test_task_notify_isr` 覆盖 ISR no-overwrite busy 同样不改旧值 |
-| C-017 | 软件定时器 + 命令队列 | 启动/停止/复位命令排队 | 服务任务按序处理命令 | host 单测 | 部分验证：`test_timer_control` 覆盖启动/停止/复位/改周期控制语义，`test_timer_pending_function` 覆盖 deterministic service-shim pending FIFO、参数传递、满队列和 drain；真正独立 timer service task 与异步命令队列将在后续 scheduler/service 增强计划补测 |
+| C-017 | 软件定时器 + 命令队列 | 启动/停止/复位命令排队 | 服务任务按序处理命令 | host 单测 | 部分验证：`test_timer_control` 覆盖启动/停止/复位/改周期控制语义，`test_timer_pending_function` 覆盖 deterministic service-shim pending FIFO、参数传递、满队列和 drain；`test_event_timer_dynamic_allocation` 覆盖动态定时器启动后删除会先停止再释放，删除后 tick 推进不再触发回调；真正独立 timer service task 与异步命令队列将在后续 scheduler/service 增强计划补测 |
 | C-018 | 软件定时器 + 调度 | 定时器到期 | 回调在服务任务上下文执行 | 调度仿真 | 已验证：`test_timer_tick_expiry` 覆盖 `MRT_KernelTick` 驱动单次定时器到期一次、自动重载定时器在 tick 2/tick 4 触发并保持活动、多个定时器按到期 tick 顺序执行；当前 host 模型使用 timer service shim，真实服务任务上下文待后续增强 |
 | C-019 | 软件定时器 + tickless | 睡眠期间定时器到期 | 唤醒后补偿 tick 并执行回调 | 端口 mock | 已验证：`test_tickless_expected_idle` 覆盖任务/定时器最近 deadline 估算；`test_tickless_timer_compensation` 覆盖 mock 端口睡眠后补偿 tick、执行软件定时器回调、唤醒延时任务、遵守最大睡眠 tick 限制和无 deadline 跳过睡眠 |
-| C-020 | 流缓冲 + 环绕 | 写指针环绕后读取 | 数据顺序保持正确 | host 单测 | 已验证：`test_stream_buffer_send_receive` 覆盖写入、读取、再写入触发环形回绕后仍按 FIFO 顺序读出 |
+| C-020 | 流缓冲 + 环绕 | 写指针环绕后读取 | 数据顺序保持正确 | host 单测 | 已验证：`test_stream_buffer_send_receive` 覆盖写入、读取、再写入触发环形回绕后仍按 FIFO 顺序读出；`test_buffer_dynamic_allocation` 覆盖动态流缓冲创建后可正常写入和读取字节流 |
 | C-021 | 流缓冲 + ISR | ISR 写入，任务阻塞读 | 任务被唤醒并读到数据 | host/mock ISR | 已验证：`test_stream_buffer_isr_wakes_reader` 覆盖高优先级读者阻塞、ISR 写入达到触发水位、读者回到 ready、`should_yield=true`；`test_stream_buffer_isr` 覆盖 ISR 非阻塞收发和非法上下文 |
-| C-022 | 消息缓冲 + 容量 | 剩余空间不足以放完整消息 | 写入失败，不产生半包 | host 单测 | 已验证：`test_message_buffer_send_receive` 覆盖整包边界、小输出不移除消息、剩余空间不足不写半包；`test_message_buffer_isr` 覆盖 ISR 容量拒绝、小输出保持消息和读者唤醒 |
-| C-023 | 内存堆 + 对象创建 | heap 分配失败 | API 返回资源不足，内部状态不变 | host 单测 | 已验证：`test_heap_linear` 覆盖堆耗尽分配返回 NULL；`test_queue_dynamic_allocation` 覆盖动态队列创建失败返回 `MRT_RESULT_NO_MEMORY` 且堆空闲水位不变；`test_task_dynamic_allocation` 覆盖动态任务创建成功释放、创建失败清空句柄且堆空闲水位不变 |
+| C-022 | 消息缓冲 + 容量 | 剩余空间不足以放完整消息 | 写入失败，不产生半包 | host 单测 | 已验证：`test_message_buffer_send_receive` 覆盖整包边界、小输出不移除消息、剩余空间不足不写半包；`test_message_buffer_isr` 覆盖 ISR 容量拒绝、小输出保持消息和读者唤醒；`test_buffer_dynamic_allocation` 覆盖动态消息缓冲创建后可正常收发完整消息 |
+| C-023 | 内存堆 + 对象创建 | heap 分配失败 | API 返回资源不足，内部状态不变 | host 单测 | 已验证：`test_heap_linear` 覆盖堆耗尽分配返回 NULL；`test_queue_dynamic_allocation` 覆盖动态队列创建失败返回 `MRT_RESULT_NO_MEMORY` 且堆空闲水位不变；`test_task_dynamic_allocation` 覆盖动态任务创建成功释放、创建失败清空句柄且堆空闲水位不变；`test_sync_dynamic_allocation` 覆盖动态信号量/互斥锁成功创建、失败清空句柄、静态删除拒绝、忙删除保护和释放后 heap 水位恢复；`test_event_timer_dynamic_allocation` 覆盖动态事件组/定时器成功创建、失败清空句柄、静态删除拒绝、事件等待者忙保护、活动定时器删除先停止且释放 heap；`test_buffer_dynamic_allocation` 覆盖动态流/消息缓冲创建成功和创建失败 heap 水位不变 |
 | C-024 | 内存堆 + 释放合并 | 释放相邻块 | 空闲块合并，碎片减少 | host 单测 | 已验证：`test_heap_coalescing` 覆盖释放两个相邻块后分配大于任一单块的请求成功，并验证普通 free-list 模式仍不合并 |
 | C-025 | trace + 任务切换 | trace 开启 | hook 收到切换事件，不改变调度结果 | host 单测 | 已验证：`test_trace_task_switch` 覆盖高优先级任务延时切到低优先级任务、tick 到期后低优先级切回高优先级，并验证 trace 事件中的旧任务、新任务和 tick |
 | C-026 | trace + 队列 | 队列 send/receive | hook 收到事件，不改变队列数据 | host 单测 | 已验证：`test_trace_queue` 覆盖队列 send/receive 后 trace sink 收到事件，队列数据 FIFO 语义保持不变，事件 value 记录操作后队列水位 |
@@ -46,7 +46,7 @@
 | C-029 | STM32 端口 + 临界区 | 嵌套进入临界区 | 中断屏蔽状态可恢复 | 端口 mock | 部分验证：`test_port_mock` 已验证 mock 临界区嵌套恢复；`test_port_stm32_tick_priority` 验证 BASEPRI 左对齐编码和非法 0 优先级拒绝；真实 PRIMASK/BASEPRI 读写待 STM32 手册和板级 smoke test 补证 |
 | C-030 | DSP 端口 + 栈初始化 | 创建任务栈帧 | 栈顶满足对齐和入口参数规则 | 端口 mock | 已验证：`test_port_dsp_stack` 覆盖 DSP C28x 风格向下增长栈、8 字节对齐、入口 PC、入口参数、退出处理函数、状态字和 XAR4-XAR7 保存槽占位 |
 | C-031 | DSP 端口 + 上下文切换 | 触发软件中断切换 | 保存/恢复接口调用顺序正确 | 端口 mock | 已验证：`test_port_dsp_context` 覆盖任务上下文请求/确认、ISR 嵌套期间延迟切换、最外层 ISR 退出提示切换、退出下溢和空输出参数拒绝；真实 DSP 汇编保存/恢复顺序待具体芯片端口补证 |
-| C-032 | 手册 + API | 每个 public API | 手册有原型、参数、返回值、示例、上下文限制 | 文档检查 | 已验证：`python tools\verify\check_api_manual_coverage.py` 覆盖 `docs/api/myrtos_api_catalog.md` 中 125 个 API 条目，并检查每个条目包含函数原型、功能说明、参数、返回值、调用上下文、阻塞行为、ISR 限制、配置宏、调用示例、常见错误；同脚本验证 STM32/DSP 移植章节包含工具链、启动文件、向量表、tick、上下文切换、栈布局、临界区、低功耗、示例、排错 |
+| C-032 | 手册 + API | 每个 public API | 手册有原型、参数、返回值、示例、上下文限制 | 文档检查 | 已验证：`python tools\verify\check_api_manual_coverage.py` 覆盖 `docs/api/myrtos_api_catalog.md` 中 125 个 API 条目，并检查每个条目包含函数原型、功能说明、参数、返回值、调用上下文、阻塞行为、ISR 限制、配置宏、调用示例、常见错误；同脚本验证 STM32/DSP 移植章节包含工具链、启动文件、向量表、tick、上下文切换、栈布局、临界区、低功耗、示例、排错；本阶段手册补充动态对象精确原型、静态删除拒绝、等待者/持锁忙删除、活动定时器删除先停止、动态缓冲单堆块布局和当前无缓冲删除 API 的限制 |
 | C-033 | 注释 + 源码 | 每个函数 | 有中文函数头说明和内部步骤注释 | 静态扫描 | 已验证：`python tools\verify\check_chinese_comments.py` 覆盖 `include/` 与 `src/` 函数头中文 Doxygen 字段和函数体附近中文步骤注释；`python tools\verify\check_original_symbols.py` 验证源码和手册未出现 banned FreeRTOS-style public symbols |
 
 ## 后续落地

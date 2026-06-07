@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 4 extension: Task lifecycle API gap closure
+Phase 4 extension: Dynamic object API gap closure
 
 ## Phases
 
@@ -39,7 +39,8 @@ Phase 4 extension: Task lifecycle API gap closure
 - [ ] Add detailed Chinese comments to every public and internal function
 - [ ] Close preview API implementation gaps
   - [x] Task lifecycle APIs: dynamic create/delete, suspend/resume, delay-until, priority set, stack water mark
-  - [ ] Dynamic synchronization/buffer APIs and runtime stats
+  - [x] Dynamic synchronization/buffer APIs
+  - [ ] Runtime stats API
 - **Status:** in_progress
 
 ### Phase 5: Documentation
@@ -79,6 +80,8 @@ Phase 4 extension: Task lifecycle API gap closure
 | Autonomous technical decisions | User instructed Codex to choose the best direction, consult FreeRTOS source when unclear, and redesign rather than copy. |
 | Host test fallback | Local environment has GCC but no CMake; keep CMake files for standard environments and use `tools/run_host_tests.py` for current host verification. |
 | Task lifecycle gap first | API catalog vs C source audit found 21 missing catalog APIs; start with 8 task lifecycle APIs because they unblock scheduler, heap, ISR, and manual consistency evidence. |
+| Dynamic object APIs second | After task lifecycle closure, 13 gaps remain. This branch targets 12 dynamic object APIs and leaves runtime statistics as the final source/catalog API gap. |
+| Heap exhaustion test helper | Free-list/coalescing heaps need block headers, so failure-path tests must exhaust heap by repeated smaller allocations instead of requesting the full reported free size at once. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -87,6 +90,7 @@ Phase 4 extension: Task lifecycle API gap closure
 | `git log` failed: not a git repository | 1 | Logged repository state; skip commit/worktree steps until repo exists. |
 | PowerShell rejected `&&` command separator | 1 | Re-run git add and git commit as separate PowerShell commands. |
 | `cmake` command not found | 1 | Verified GCC exists; added project-local Python host test runner as fallback while preserving CMake build files. |
+| Dynamic object GREEN first run failed: `filler != 0` | 1 | Replaced full-free-size allocation with a repeated heap exhaustion helper in dynamic allocation tests. |
 
 ## Notes
 - Re-read this file before major design decisions.

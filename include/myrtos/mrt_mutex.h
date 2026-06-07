@@ -57,6 +57,38 @@ MRT_Result MRT_MutexCreateStatic(MRT_Mutex *storage, MRT_MutexHandle *out_mutex)
 MRT_Result MRT_MutexCreateRecursiveStatic(MRT_Mutex *storage, MRT_MutexHandle *out_mutex);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建普通互斥锁。
+ * @param out_mutex 输出互斥锁句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_MutexHandle mutex;
+ * MRT_MutexCreate(&mutex);
+ */
+MRT_Result MRT_MutexCreate(MRT_MutexHandle *out_mutex);
+
+/**
+ * @brief 从 MyRTOS 全局堆动态创建递归互斥锁。
+ * @param out_mutex 输出互斥锁句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_MutexHandle mutex;
+ * MRT_MutexCreateRecursive(&mutex);
+ */
+MRT_Result MRT_MutexCreateRecursive(MRT_MutexHandle *out_mutex);
+
+/**
+ * @brief 删除动态创建的互斥锁并归还堆内存。
+ * @param mutex 待删除互斥锁句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态互斥锁、已上锁互斥锁或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_MutexDelete(mutex);
+ */
+MRT_Result MRT_MutexDelete(MRT_MutexHandle mutex);
+
+/**
  * @brief 获取互斥锁。
  * @param mutex 互斥锁句柄，不能为空。
  * @param timeout 等待锁可用的 tick 数；当前任务未运行时不能调用。

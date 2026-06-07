@@ -56,6 +56,18 @@ MRT_Result MRT_MessageBufferCreateStatic(size_t capacity,
                                          MRT_MessageBufferHandle *out_message_buffer);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建消息缓冲。
+ * @param capacity 字节存储容量，必须至少能容纳 4 字节长度头和 1 字节消息。
+ * @param out_message_buffer 输出消息缓冲句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_MessageBufferHandle messages;
+ * MRT_MessageBufferCreate(256, &messages);
+ */
+MRT_Result MRT_MessageBufferCreate(size_t capacity, MRT_MessageBufferHandle *out_message_buffer);
+
+/**
  * @brief 向消息缓冲写入一条完整消息。
  * @param message_buffer 目标消息缓冲句柄，不能为空。
  * @param message 待写入消息地址；length 大于 0 时不能为空。

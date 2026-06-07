@@ -482,6 +482,20 @@
 | Final verification | `python tools\run_host_tests.py` plus three static scripts | Host and static checks pass | `[summary] 61 test target(s) passed`; API 125 covered; comments covered; originality clean | Pass |
 | Whitespace check | `git diff --check` | No real whitespace errors | Exit 0; only expected LF-to-CRLF warnings | Pass |
 
+## Dynamic Object API Gap Closure Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree creation | `git worktree add .worktrees\dynamic-object-apis -b feature/dynamic-object-apis feature/task-lifecycle-apis` | New branch from task lifecycle baseline | Worktree created at `F:\My_RTOS\.worktrees\dynamic-object-apis` | Pass |
+| Baseline host verification | `python tools\run_host_tests.py` | 61 host test targets pass | `[summary] 61 test target(s) passed` | Pass |
+| Plan file | Create `docs/superpowers/plans/2026-06-08-myrtos-dynamic-object-apis.md` | Dynamic object API plan recorded | Plan covers 12 dynamic object APIs and leaves runtime stats for next branch | Pass |
+| Dynamic object RED | `python tools\run_host_tests.py` after adding three dynamic tests | Build fails because dynamic object APIs are missing | `test_sync_dynamic_allocation`, `test_event_timer_dynamic_allocation`, and `test_buffer_dynamic_allocation` fail with implicit declarations | Pass |
+| Dynamic object first GREEN attempt | `python tools\run_host_tests.py` after implementation | All tests pass or reveal implementation/test defect | 2 targets failed because tests tried `MRT_Malloc(free_before)` on a coalescing heap where block header overhead makes that request impossible | Logged |
+| Dynamic object failure-path test fix | Replace full-free-size allocation with repeated heap exhaustion helper | Failure-path tests reliably force `MRT_RESULT_NO_MEMORY` without relying on impossible full-size allocation | `test_sync_dynamic_allocation` and `test_event_timer_dynamic_allocation` updated | Pass |
+| Dynamic object GREEN | `python tools\run_host_tests.py` | Existing and new dynamic object tests pass | `[summary] 64 test target(s) passed` | Pass |
+| Documentation evidence | Update manual, requirement matrix, coupling matrix, final report | Dynamic object APIs documented as implemented; remaining gap stated accurately | Manual dynamic sections updated; R-002/R-003/R-004/R-008/R-009/R-010/C-017/C-020/C-022/C-023/C-032/final report updated | Pass |
+| Static checks | Run three `tools\verify` scripts | Manual/comments/originality pass | API 125 covered; comments covered; originality clean | Pass |
+| Final verification | `python tools\run_host_tests.py` plus three static scripts and `git diff --check` | Host/static checks pass; no real whitespace errors | `[summary] 64 test target(s) passed`; API 125 covered; comments covered; originality clean; `git diff --check` exit 0 with expected CRLF warnings only | Pass |
+
 ## Final Verification Report Results
 | Check | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|

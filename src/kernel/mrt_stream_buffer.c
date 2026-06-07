@@ -1,6 +1,10 @@
 #include "myrtos/mrt_port.h"
+#include "myrtos/mrt_config.h"
+#include "myrtos/mrt_heap.h"
 #include "myrtos/mrt_stream_buffer.h"
 #include "mrt_task_internal.h"
+
+#include <stdint.h>
 
 /**
  * @brief 返回两个 size_t 值中的较小值。
@@ -14,6 +18,28 @@ static size_t MRT_StreamMin(size_t left, size_t right)
 {
     /* 左值小于右值时返回左值，否则返回右值。 */
     return (left < right) ? left : right;
+}
+
+/**
+ * @brief 将字节数向上规整到堆对齐粒度。
+ * @param size 原始字节数。
+ * @return size_t 返回规整后的字节数；溢出时返回 0。
+ * @example
+ * size_t aligned = MRT_StreamAlignSizeUp(sizeof(MRT_StreamBuffer));
+ */
+static size_t MRT_StreamAlignSizeUp(size_t size)
+{
+    /* 计算对齐掩码。 */
+    const size_t mask = (size_t)MRT_CFG_HEAP_ALIGNMENT - 1u;
+
+    /* 检查向上取整加法是否溢出。 */
+    if (size > (SIZE_MAX - mask)) {
+        /* 返回 0 表示无法表示。 */
+        return 0u;
+    }
+
+    /* 使用掩码执行向上对齐。 */
+    return (size + mask) & ~mask;
 }
 
 /**
@@ -200,6 +226,97 @@ MRT_Result MRT_StreamBufferCreateStatic(size_t capacity,
     *out_stream = storage;
 
     /* 静态流缓冲创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 从 MyRTOS 全局堆动态创建流缓冲。
+ * @param capacity 字节存储容量，单位为字节，必须大于 0。
+ * @param trigger_level 读者唤醒触发水位，必须在 1 到 capacity 之间。
+ * @param out_stream 输出流缓冲句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         堆不可用或空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_StreamBufferHandle stream;
+ * MRT_StreamBufferCreate(128, 16, &stream);
+ */
+MRT_Result MRT_StreamBufferCreate(size_t capacity,
+                                  size_t trigger_level,
+                                  MRT_StreamBufferHandle *out_stream)
+{
+    /* 输出句柄不能为空。 */
+    if (out_stream == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 失败路径默认清空输出句柄。 */
+    *out_stream = 0;
+
+    /* 复用静态创建参数规则提前校验容量和触发水位。 */
+    if ((capacity == 0u) || (trigger_level == 0u) || (trigger_level > capacity)) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 动态分配关闭时不能创建堆对象。 */
+    if (MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 控制块之后紧跟字节存储，需要对控制块大小向上对齐。 */
+    size_t control_bytes = MRT_StreamAlignSizeUp(sizeof(MRT_StreamBuffer));
+
+    /* 对齐溢出时按内存不足处理。 */
+    if (control_bytes == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 检查总大小加法是否溢出。 */
+    if (capacity > (SIZE_MAX - control_bytes)) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 计算一个堆块所需总字节数。 */
+    size_t total_bytes = control_bytes + capacity;
+
+    /* 分配控制块和字节存储所在堆块。 */
+    void *memory = MRT_Malloc(total_bytes);
+
+    /* 堆空间不足时创建失败。 */
+    if (memory == 0) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 堆块起始处保存控制块。 */
+    MRT_StreamBuffer *stream = (MRT_StreamBuffer *)memory;
+
+    /* 字节存储紧跟对齐后的控制块。 */
+    uint8_t *buffer = ((uint8_t *)memory) + control_bytes;
+
+    /* 复用静态创建逻辑初始化控制块。 */
+    MRT_Result result = MRT_StreamBufferCreateStatic(capacity, trigger_level, buffer, stream, out_stream);
+
+    /* 初始化失败时释放堆块。 */
+    if (result != MRT_RESULT_OK) {
+        /* 释放控制块和字节存储。 */
+        (void)MRT_Free(memory);
+
+        /* 清空输出句柄。 */
+        *out_stream = 0;
+
+        /* 返回实际错误。 */
+        return result;
+    }
+
+    /* 标记流缓冲归动态堆所有。 */
+    stream->static_storage = false;
+
+    /* 动态流缓冲创建成功。 */
     return MRT_RESULT_OK;
 }
 

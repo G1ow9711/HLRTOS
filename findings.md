@@ -184,3 +184,14 @@
 - Task lifecycle implementation is now covered by 61 passing host targets. The original 21 catalog/source gaps are reduced by 8; remaining known gaps are the 13 non-task dynamic/statistics APIs: dynamic semaphore, mutex, event group, timer, stream/message buffer create/delete APIs and `MRT_StatsGetTaskRuntime`.
 - `MRT_TaskGetStackHighWaterMark` currently returns configured stack capacity in the host model because stack painting and real stack consumption belong to architecture-specific ports. The manual documents this limit explicitly.
 - `MRT_TaskDelete` now handles scheduler/list cleanup and dynamic task heap release, but deletion while holding a mutex remains a separate coupling policy gap under `C-012`.
+
+## Dynamic Object API Gap Closure
+- Branch `feature/dynamic-object-apis` starts from `feature/task-lifecycle-apis` at `ca7da08`.
+- Baseline verification in the new worktree passes: `python tools\run_host_tests.py` reports `[summary] 61 test target(s) passed`.
+- Remaining known source/catalog gaps after task lifecycle closure: 12 dynamic object APIs plus `MRT_StatsGetTaskRuntime`.
+- Dynamic object branch targets: `MRT_SemaphoreCreateBinary`, `MRT_SemaphoreCreateCounting`, `MRT_SemaphoreDelete`, `MRT_MutexCreate`, `MRT_MutexCreateRecursive`, `MRT_MutexDelete`, `MRT_EventGroupCreate`, `MRT_EventGroupDelete`, `MRT_TimerCreate`, `MRT_TimerDelete`, `MRT_StreamBufferCreate`, and `MRT_MessageBufferCreate`.
+- Preferred implementation pattern follows dynamic queue/task: validate arguments, allocate heap memory, call static create, mark `static_storage=false`, free on failure, and reject static objects in delete APIs with `MRT_RESULT_OBJECT_BUSY`.
+- Stream/message buffers need one heap block containing an aligned control block plus byte storage. Semaphore, mutex, event group, and timer need only control-block-sized heap allocations.
+- First GREEN run exposed a test assumption bug: `MRT_Malloc(free_before)` fails on coalescing heap because `free_before` includes the heap block header overhead. Failure-path tests now use a helper that repeatedly allocates smaller blocks until even the minimum payload cannot be allocated, then compares heap free size before/after the target dynamic API failure.
+- Dynamic object implementation is now covered by 64 passing host targets. The 12 dynamic object source/catalog gaps are closed; the remaining known source/catalog gap is `MRT_StatsGetTaskRuntime`.
+- Manual updates now document exact dynamic object prototypes, failed-create handle clearing, static-delete rejection, waiters/locked-object busy deletion, active timer delete-stop-free behavior, dynamic stream/message buffer single-block heap layout, and the current absence of stream/message buffer delete APIs.

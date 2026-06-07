@@ -62,6 +62,43 @@ MRT_Result MRT_SemaphoreCreateCountingStatic(size_t max_count,
                                              MRT_SemaphoreHandle *out_semaphore);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建二值信号量。
+ * @param initially_available true 表示初始计数为 1，false 表示初始计数为 0。
+ * @param out_semaphore 输出信号量句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_SemaphoreHandle sem;
+ * MRT_SemaphoreCreateBinary(false, &sem);
+ */
+MRT_Result MRT_SemaphoreCreateBinary(bool initially_available, MRT_SemaphoreHandle *out_semaphore);
+
+/**
+ * @brief 从 MyRTOS 全局堆动态创建计数信号量。
+ * @param max_count 最大计数，必须大于 0。
+ * @param initial_count 初始计数，必须小于或等于 max_count。
+ * @param out_semaphore 输出信号量句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_SemaphoreHandle sem;
+ * MRT_SemaphoreCreateCounting(8, 0, &sem);
+ */
+MRT_Result MRT_SemaphoreCreateCounting(size_t max_count,
+                                       size_t initial_count,
+                                       MRT_SemaphoreHandle *out_semaphore);
+
+/**
+ * @brief 删除动态创建的信号量并归还堆内存。
+ * @param semaphore 待删除信号量句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态信号量或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_SemaphoreDelete(sem);
+ */
+MRT_Result MRT_SemaphoreDelete(MRT_SemaphoreHandle semaphore);
+
+/**
  * @brief 查询信号量当前计数。
  * @param semaphore 待查询信号量句柄，不能为空。
  * @return size_t 返回当前计数；信号量句柄为空时返回 0。

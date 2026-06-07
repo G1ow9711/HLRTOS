@@ -1,6 +1,7 @@
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
 #include "myrtos/mrt_config.h"
+#include "myrtos/mrt_heap.h"
 #include "myrtos/mrt_timer.h"
 #include "mrt_timer_internal.h"
 
@@ -332,6 +333,108 @@ MRT_Result MRT_TimerCreateStatic(const char *name,
 
     /* 静态定时器创建成功。 */
     return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 从 MyRTOS 全局堆动态创建软件定时器。
+ * @param name 定时器名称，允许为空，仅用于调试显示。
+ * @param period_ticks 定时器周期，单位为 tick，必须大于 0。
+ * @param auto_reload true 表示周期定时器，false 表示单次定时器。
+ * @param arg 用户回调参数。
+ * @param callback 定时器到期回调函数，不能为空。
+ * @param out_timer 输出定时器句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         堆不可用或空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_TimerHandle timer;
+ * MRT_TimerCreate("blink", 100, true, NULL, BlinkCallback, &timer);
+ */
+MRT_Result MRT_TimerCreate(const char *name,
+                           MRT_Tick period_ticks,
+                           bool auto_reload,
+                           void *arg,
+                           MRT_TimerCallback callback,
+                           MRT_TimerHandle *out_timer)
+{
+    /* 输出句柄不能为空。 */
+    if (out_timer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 失败路径默认清空输出句柄。 */
+    *out_timer = 0;
+
+    /* 周期和回调先做静态创建同款校验，避免无效参数消耗堆。 */
+    if ((period_ticks == 0u) || (callback == 0)) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 动态分配关闭时不能创建堆对象。 */
+    if (MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 申请一个定时器控制块。 */
+    MRT_Timer *timer = (MRT_Timer *)MRT_Malloc(sizeof(MRT_Timer));
+
+    /* 堆空间不足时创建失败。 */
+    if (timer == 0) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 复用静态创建逻辑初始化控制块。 */
+    MRT_Result result = MRT_TimerCreateStatic(name, period_ticks, auto_reload, arg, callback, timer, out_timer);
+
+    /* 初始化失败时释放堆块。 */
+    if (result != MRT_RESULT_OK) {
+        /* 释放控制块。 */
+        (void)MRT_Free(timer);
+
+        /* 清空输出句柄。 */
+        *out_timer = 0;
+
+        /* 返回实际错误。 */
+        return result;
+    }
+
+    /* 标记定时器归动态堆所有。 */
+    timer->static_storage = false;
+
+    /* 动态定时器创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 删除动态创建的软件定时器并归还堆内存。
+ * @param timer 待删除定时器句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态定时器返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_TimerDelete(timer);
+ */
+MRT_Result MRT_TimerDelete(MRT_TimerHandle timer)
+{
+    /* 定时器句柄不能为空。 */
+    if (timer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 静态定时器内存不归堆释放路径所有。 */
+    if (timer->static_storage) {
+        /* 返回对象忙。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 删除活动定时器前先从活动链表移除。 */
+    (void)MRT_TimerStop(timer, 0u);
+
+    /* 动态定时器控制块就是堆块起始地址。 */
+    return MRT_Free(timer);
 }
 
 /**

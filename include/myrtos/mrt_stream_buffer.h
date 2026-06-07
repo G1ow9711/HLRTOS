@@ -61,6 +61,21 @@ MRT_Result MRT_StreamBufferCreateStatic(size_t capacity,
                                         MRT_StreamBufferHandle *out_stream);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建流缓冲。
+ * @param capacity 字节存储容量，单位为字节，必须大于 0。
+ * @param trigger_level 读者唤醒触发水位，必须在 1 到 capacity 之间。
+ * @param out_stream 输出流缓冲句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_StreamBufferHandle stream;
+ * MRT_StreamBufferCreate(128, 16, &stream);
+ */
+MRT_Result MRT_StreamBufferCreate(size_t capacity,
+                                  size_t trigger_level,
+                                  MRT_StreamBufferHandle *out_stream);
+
+/**
  * @brief 向流缓冲写入字节流。
  * @param stream 目标流缓冲句柄，不能为空。
  * @param data 待写入数据地址；length 大于 0 时不能为空。

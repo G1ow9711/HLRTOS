@@ -1,4 +1,6 @@
 #include "myrtos/mrt_message_buffer.h"
+#include "myrtos/mrt_config.h"
+#include "myrtos/mrt_heap.h"
 #include "myrtos/mrt_port.h"
 #include "mrt_task_internal.h"
 
@@ -7,6 +9,28 @@
 
 /** @brief 消息缓冲静态创建允许的最小容量。 */
 #define MRT_MESSAGE_BUFFER_MIN_CAPACITY (MRT_MESSAGE_BUFFER_LENGTH_FIELD_SIZE + 1u)
+
+/**
+ * @brief 将字节数向上规整到堆对齐粒度。
+ * @param size 原始字节数。
+ * @return size_t 返回规整后的字节数；溢出时返回 0。
+ * @example
+ * size_t aligned = MRT_MessageAlignSizeUp(sizeof(MRT_MessageBuffer));
+ */
+static size_t MRT_MessageAlignSizeUp(size_t size)
+{
+    /* 计算对齐掩码。 */
+    const size_t mask = (size_t)MRT_CFG_HEAP_ALIGNMENT - 1u;
+
+    /* 检查加掩码是否溢出。 */
+    if (size > (SIZE_MAX - mask)) {
+        /* 返回 0 表示无法表示。 */
+        return 0u;
+    }
+
+    /* 使用掩码向上对齐。 */
+    return (size + mask) & ~mask;
+}
 
 /**
  * @brief 推进消息缓冲环形索引。
@@ -274,6 +298,94 @@ MRT_Result MRT_MessageBufferCreateStatic(size_t capacity,
     *out_message_buffer = storage;
 
     /* 静态消息缓冲创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 从 MyRTOS 全局堆动态创建消息缓冲。
+ * @param capacity 字节存储容量，必须至少能容纳 4 字节长度头和 1 字节消息。
+ * @param out_message_buffer 输出消息缓冲句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         堆不可用或空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_MessageBufferHandle messages;
+ * MRT_MessageBufferCreate(256, &messages);
+ */
+MRT_Result MRT_MessageBufferCreate(size_t capacity, MRT_MessageBufferHandle *out_message_buffer)
+{
+    /* 输出句柄不能为空。 */
+    if (out_message_buffer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 失败路径默认清空输出句柄。 */
+    *out_message_buffer = 0;
+
+    /* 容量必须满足静态创建最小消息记录要求。 */
+    if (capacity < MRT_MESSAGE_BUFFER_MIN_CAPACITY) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 动态分配关闭时不能创建堆对象。 */
+    if (MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 控制块之后紧跟字节存储，需要对控制块大小向上对齐。 */
+    size_t control_bytes = MRT_MessageAlignSizeUp(sizeof(MRT_MessageBuffer));
+
+    /* 对齐溢出时按内存不足处理。 */
+    if (control_bytes == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 检查总大小加法是否溢出。 */
+    if (capacity > (SIZE_MAX - control_bytes)) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 计算总堆块大小。 */
+    size_t total_bytes = control_bytes + capacity;
+
+    /* 分配控制块和消息字节存储。 */
+    void *memory = MRT_Malloc(total_bytes);
+
+    /* 堆空间不足时创建失败。 */
+    if (memory == 0) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 堆块起始处保存控制块。 */
+    MRT_MessageBuffer *message_buffer = (MRT_MessageBuffer *)memory;
+
+    /* 字节存储紧跟对齐后的控制块。 */
+    uint8_t *buffer = ((uint8_t *)memory) + control_bytes;
+
+    /* 复用静态创建逻辑初始化控制块。 */
+    MRT_Result result = MRT_MessageBufferCreateStatic(capacity, buffer, message_buffer, out_message_buffer);
+
+    /* 初始化失败时释放堆块。 */
+    if (result != MRT_RESULT_OK) {
+        /* 释放控制块和字节存储。 */
+        (void)MRT_Free(memory);
+
+        /* 清空输出句柄。 */
+        *out_message_buffer = 0;
+
+        /* 返回实际错误。 */
+        return result;
+    }
+
+    /* 标记消息缓冲归动态堆所有。 */
+    message_buffer->static_storage = false;
+
+    /* 动态消息缓冲创建成功。 */
     return MRT_RESULT_OK;
 }
 

@@ -85,6 +85,37 @@ MRT_Result MRT_TimerCreateStatic(const char *name,
                                  MRT_TimerHandle *out_timer);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建软件定时器。
+ * @param name 定时器名称，允许为空，仅用于调试显示。
+ * @param period_ticks 定时器周期，单位为 tick，必须大于 0。
+ * @param auto_reload true 表示周期定时器，false 表示单次定时器。
+ * @param arg 用户回调参数。
+ * @param callback 定时器到期回调函数，不能为空。
+ * @param out_timer 输出定时器句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_TimerHandle timer;
+ * MRT_TimerCreate("blink", 100, true, NULL, BlinkCallback, &timer);
+ */
+MRT_Result MRT_TimerCreate(const char *name,
+                           MRT_Tick period_ticks,
+                           bool auto_reload,
+                           void *arg,
+                           MRT_TimerCallback callback,
+                           MRT_TimerHandle *out_timer);
+
+/**
+ * @brief 删除动态创建的软件定时器并归还堆内存。
+ * @param timer 待删除定时器句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态定时器返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_TimerDelete(timer);
+ */
+MRT_Result MRT_TimerDelete(MRT_TimerHandle timer);
+
+/**
  * @brief 启动软件定时器并按当前 tick 计算下一次到期时间。
  * @param timer 定时器句柄，不能为空。
  * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
