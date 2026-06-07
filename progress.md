@@ -49,6 +49,9 @@
   - Committed Task 3 as `62202ee`.
   - Task 4 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_priority.h` was missing.
   - Task 4 GREEN: added `include/myrtos/mrt_priority.h` and `src/kernel/mrt_priority.c`; same command passed 4 test targets.
+  - Committed Task 4 as `dbd0f92`.
+  - Task 5 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_port.h` was missing.
+  - Task 5 GREEN: added `include/myrtos/mrt_port.h` and `src/portable/mock/mrt_port_mock.c`; same command passed 5 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -75,6 +78,9 @@
   - `tests/unit/test_priority_bitmap.c` created.
   - `include/myrtos/mrt_priority.h` created.
   - `src/kernel/mrt_priority.c` created.
+  - `tests/port_mock/test_port_mock.c` created.
+  - `include/myrtos/mrt_port.h` created.
+  - `src/portable/mock/mrt_port_mock.c` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -101,6 +107,8 @@
 | Task 3 GREEN | `python tools\run_host_tests.py` after adding list module | 3 test targets pass | `[summary] 3 test target(s) passed` | Pass |
 | Task 4 RED | `python tools\run_host_tests.py` before `mrt_priority.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_priority.h: No such file or directory` | Pass |
 | Task 4 GREEN | `python tools\run_host_tests.py` after adding priority bitmap module | 4 test targets pass | `[summary] 4 test target(s) passed` | Pass |
+| Task 5 RED | `python tools\run_host_tests.py` before `mrt_port.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_port.h: No such file or directory` | Pass |
+| Task 5 GREEN | `python tools\run_host_tests.py` after adding host mock port | 5 test targets pass | `[summary] 5 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
