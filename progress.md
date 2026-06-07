@@ -470,6 +470,15 @@
 ---
 *Update after completing each phase or encountering errors.*
 
+## Final Verification Report Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree creation | `git worktree add F:\My_RTOS\.worktrees\final-verification-report -b feature/final-verification-report feature/manual-static-verification` | New branch from manual/static baseline | Worktree created at `F:\My_RTOS\.worktrees\final-verification-report` | Pass |
+| Baseline host verification | `python tools\run_host_tests.py` | 59 host test targets pass | `[summary] 59 test target(s) passed` | Pass |
+| Baseline static verification | Three `tools\verify` scripts | Manual/comments/originality pass | API 125 covered; comments covered; originality clean | Pass |
+| Report file | Create `docs/verification/final_verification_report.md` | Report with evidence and gaps | Report created with current verified scope and remaining work | Pass |
+| Final verification | `python tools\run_host_tests.py` plus three static scripts | Host and static checks pass | `[summary] 59 test target(s) passed`; API 125 covered; comments covered; originality clean | Pass |
+
 ## Manual/Static Verification Plan Results
 | Check | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|

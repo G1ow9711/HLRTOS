@@ -169,6 +169,8 @@
 - Chinese comment script initially found 13 gaps, mostly internal task scheduler prototypes plus two public function definitions. These were fixed in `src/kernel/mrt_task_internal.h`, `src/kernel/mrt_queue.c`, and `src/kernel/mrt_task.c`.
 - Manual file `docs/manual/MyRTOS_Reference_Manual_zh.md` now covers 125 API sections and includes detailed STM32 Cortex-M and DSP porting steps with toolchain, startup/vector table, tick, context switch, stack layout, critical section, low power, example, and troubleshooting content.
 - Static checks currently pass: manual coverage, Chinese comment coverage, and original-symbol scan.
+- Final verification report branch starts from `feature/manual-static-verification` at `cdb4b39`.
+- Final report records that the project is a verified preview rather than a fully complete final RTOS: host/static evidence is strong, but real STM32/DSP board smoke tests and several preview API implementations remain future work.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
