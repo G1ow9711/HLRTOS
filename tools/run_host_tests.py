@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "build" / "host-tests"
 TESTS = [
     ("test_types_contract", ROOT / "tests" / "unit" / "test_types_contract.c"),
+    ("test_config_defaults", ROOT / "tests" / "unit" / "test_config_defaults.c"),
 ]
 
 

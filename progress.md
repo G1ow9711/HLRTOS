@@ -40,6 +40,9 @@
   - Added fallback host test runner `tools/run_host_tests.py`.
   - Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_types.h` was missing.
   - Task 1 GREEN: added `include/myrtos/mrt_types.h`; same command passed 1 test target.
+  - Committed Task 1 as `4122e94`.
+  - Task 2 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_config.h` was missing.
+  - Task 2 GREEN: added `include/myrtos/mrt_config.h`; same command passed 2 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -58,6 +61,8 @@
   - `tests/unit/test_types_contract.c` created.
   - `tools/run_host_tests.py` created.
   - `include/myrtos/mrt_types.h` created.
+  - `tests/unit/test_config_defaults.c` created.
+  - `include/myrtos/mrt_config.h` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -78,6 +83,8 @@
 |------|-------|----------|--------|--------|
 | Task 1 RED | `python tools\run_host_tests.py` before `mrt_types.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_types.h: No such file or directory` | Pass |
 | Task 1 GREEN | `python tools\run_host_tests.py` after adding `mrt_types.h` | 1 test target passes | `[summary] 1 test target(s) passed` | Pass |
+| Task 2 RED | `python tools\run_host_tests.py` before `mrt_config.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_config.h: No such file or directory` | Pass |
+| Task 2 GREEN | `python tools\run_host_tests.py` after adding `mrt_config.h` | 2 test targets pass | `[summary] 2 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

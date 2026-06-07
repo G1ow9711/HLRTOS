@@ -8,3 +8,4 @@ function(mrt_add_test test_name test_source)
 endfunction()
 
 mrt_add_test(test_types_contract unit/test_types_contract.c)
+mrt_add_test(test_config_defaults unit/test_config_defaults.c)
