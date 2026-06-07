@@ -31,9 +31,9 @@
 | C-014 | 事件组 + 多等待者 | set bits 满足多个任务条件 | 所有满足条件任务被唤醒 | host 单测 | 已验证：`test_event_group_set_wakes_tasks` 覆盖同一事件组上 wait-any 与 wait-all 多等待者，`MRT_EventGroupSetBits` 基于置位后快照唤醒所有匹配任务，并让最高优先级等待者抢占 |
 | C-015 | 事件组 + 清位 | wait-any 且退出清位 | 返回原始事件值后清除指定 bit | host 单测 | 已验证：`test_event_group_wait_immediate` 覆盖 wait-any clear-on-exit 返回清位前快照并清除匹配 bit；`test_event_group_set_wakes_tasks` 覆盖多等待者匹配后统一清除匹配 bit 并保留无关 bit |
 | C-016 | 任务通知 + 覆盖策略 | no-overwrite 遇到未读通知 | 返回对象忙，不覆盖旧值 | host 单测 | 已验证：`test_task_notify_actions` 覆盖 pending 通知下 `MRT_NOTIFY_NO_OVERWRITE` 返回 `MRT_RESULT_OBJECT_BUSY` 且旧值不变；`test_task_notify_isr` 覆盖 ISR no-overwrite busy 同样不改旧值 |
-| C-017 | 软件定时器 + 命令队列 | 启动/停止/复位命令排队 | 服务任务按序处理命令 | host 单测 | 待实现 |
-| C-018 | 软件定时器 + 调度 | 定时器到期 | 回调在服务任务上下文执行 | 调度仿真 | 待实现 |
-| C-019 | 软件定时器 + tickless | 睡眠期间定时器到期 | 唤醒后补偿 tick 并执行回调 | 端口 mock | 待实现 |
+| C-017 | 软件定时器 + 命令队列 | 启动/停止/复位命令排队 | 服务任务按序处理命令 | host 单测 | 部分验证：`test_timer_control` 覆盖启动/停止/复位/改周期控制语义，`test_timer_pending_function` 覆盖 deterministic service-shim pending FIFO、参数传递、满队列和 drain；真正独立 timer service task 与异步命令队列将在后续 scheduler/service 增强计划补测 |
+| C-018 | 软件定时器 + 调度 | 定时器到期 | 回调在服务任务上下文执行 | 调度仿真 | 已验证：`test_timer_tick_expiry` 覆盖 `MRT_KernelTick` 驱动单次定时器到期一次、自动重载定时器在 tick 2/tick 4 触发并保持活动、多个定时器按到期 tick 顺序执行；当前 host 模型使用 timer service shim，真实服务任务上下文待后续增强 |
+| C-019 | 软件定时器 + tickless | 睡眠期间定时器到期 | 唤醒后补偿 tick 并执行回调 | 端口 mock | 待实现：tickless idle 属于后续低功耗端口计划，本 timer 计划仅验证常规 tick 到期 |
 | C-020 | 流缓冲 + 环绕 | 写指针环绕后读取 | 数据顺序保持正确 | host 单测 | 待实现 |
 | C-021 | 流缓冲 + ISR | ISR 写入，任务阻塞读 | 任务被唤醒并读到数据 | host/mock ISR | 待实现 |
 | C-022 | 消息缓冲 + 容量 | 剩余空间不足以放完整消息 | 写入失败，不产生半包 | host 单测 | 待实现 |

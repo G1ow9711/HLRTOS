@@ -337,6 +337,22 @@
 | Timer Task 3 GREEN | `python tools\run_host_tests.py` after kernel tick timer processing | 36 test targets pass | `[summary] 36 test target(s) passed` | Pass |
 | Timer Task 4 RED | `python tools\run_host_tests.py` before pending function API/default config | Build fails due to missing config macro and declarations | `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH undeclared`, `implicit declaration of function 'MRT_TimerPendFunctionCall'`, `MRT_TimerServiceRunPending` | Pass |
 | Timer Task 4 GREEN | `python tools\run_host_tests.py` after pending function FIFO | 37 test targets pass | `[summary] 37 test target(s) passed` | Pass |
+| Timer Task 5 final verification | `python tools\run_host_tests.py` after timer implementation and before matrix update | 37 test targets pass | `[summary] 37 test target(s) passed` | Pass |
+
+## Timer Commit Evidence
+| Commit | Scope |
+|--------|-------|
+| `960a882` | Timers implementation plan |
+| `e87352e` | Static timer creation |
+| `1074ce6` | Timer control APIs |
+| `9ef6071` | Kernel tick timer expiry processing |
+| `dd782a3` | Timer pending function FIFO |
+
+## Timer Verification Notes
+- `docs/verification/requirements_traceability_matrix.md` now records software timer implementation and tests for `R-002`, `R-008`, and `R-009`.
+- `docs/verification/coupling_test_matrix.md` now marks `C-018` verified for host tick expiry behavior and `C-017` partial for deterministic service-shim pending FIFO/control coverage.
+- `C-019` remains pending because tickless idle compensation belongs to the later low-power/tickless plan.
+- User requirement that the final manual include detailed STM32/DSP porting steps remains captured as `R-011`.
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

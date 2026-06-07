@@ -134,10 +134,10 @@ Steps:
 
 Steps:
 
-- [ ] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, task notifications, and timers pass.
-- [ ] Update `R-002`, `R-008`, and `R-009` evidence with timer source and tests.
-- [ ] Mark `C-018` verified for host tick expiry callbacks.
-- [ ] Mark `C-017` partial because this plan implements deterministic service-shim processing and pending function FIFO, while a dedicated timer service task with asynchronous command queue remains a later scheduler/service enhancement.
-- [ ] Keep `C-019` pending because tickless idle is Plan 9.
-- [ ] Record commit hashes and final test output in `progress.md`.
-- [ ] Commit `docs: record timer verification evidence`.
+- [x] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, task notifications, and timers pass.
+- [x] Update `R-002`, `R-008`, and `R-009` evidence with timer source and tests.
+- [x] Mark `C-018` verified for host tick expiry callbacks.
+- [x] Mark `C-017` partial because this plan implements deterministic service-shim processing and pending function FIFO, while a dedicated timer service task with asynchronous command queue remains a later scheduler/service enhancement.
+- [x] Keep `C-019` pending because tickless idle is Plan 9.
+- [x] Record commit hashes and final test output in `progress.md`.
+- [x] Commit `docs: record timer verification evidence`.
