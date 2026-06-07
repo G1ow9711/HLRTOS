@@ -141,6 +141,10 @@
 - Dynamic Queue Task 6 RED adds heap/queue coupling coverage and currently fails because `MRT_QueueCreate` and `MRT_QueueDelete` are not declared. The test requires successful dynamic creation/FIFO/delete, allocation failure returning `MRT_RESULT_NO_MEMORY`, unchanged heap free size on failed creation, static queue deletion rejection, and null-argument protection.
 - Dynamic Queue Task 6 implements heap-backed queue creation as one allocation containing an aligned `MRT_Queue` control block followed by item storage. Failed allocation returns `MRT_RESULT_NO_MEMORY` and leaves heap free size unchanged; `MRT_QueueDelete` returns dynamic queues through `MRT_Free` and rejects static queues with `MRT_RESULT_OBJECT_BUSY`.
 - Memory Task 7 updates requirement evidence for `R-002`, `R-008`, `R-009`, and `R-010`, and marks coupling rows `C-007`, `C-023`, and `C-024` verified with 50 passing host test targets.
+- Tickless/Trace/Assert branch starts from `feature/memory-management` with 50 passing host test targets.
+- Tickless design will query the task delayed list and software timer active list for nearest deadlines, then compensate kernel time after port sleep instead of directly jumping observable module state.
+- Trace design uses a sink callback and compact event records so scheduler/queue paths remain backend-agnostic.
+- Assert design uses one hook dispatcher and `MRT_ASSERT(expr)` macro; existing API parameter validation is not bulk-rewritten in this branch.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

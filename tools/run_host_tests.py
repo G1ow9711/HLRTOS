@@ -57,6 +57,7 @@ TESTS = [
     ("test_heap_coalescing", ROOT / "tests" / "unit" / "test_heap_coalescing.c"),
     ("test_memory_pool", ROOT / "tests" / "unit" / "test_memory_pool.c"),
     ("test_queue_dynamic_allocation", ROOT / "tests" / "coupling" / "test_queue_dynamic_allocation.c"),
+    ("test_tickless_expected_idle", ROOT / "tests" / "unit" / "test_tickless_expected_idle.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -72,6 +73,7 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_semaphore.c",
     ROOT / "src" / "kernel" / "mrt_stream_buffer.c",
     ROOT / "src" / "kernel" / "mrt_task.c",
+    ROOT / "src" / "kernel" / "mrt_tickless.c",
     ROOT / "src" / "kernel" / "mrt_timer.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
 ]

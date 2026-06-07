@@ -2,6 +2,15 @@
 
 ## Session: 2026-06-07
 
+### Tickless/Trace/Assert Branch
+- Created design document `docs/superpowers/specs/2026-06-07-myrtos-tickless-trace-assert-design.md`.
+- Created implementation plan `docs/superpowers/plans/2026-06-07-myrtos-tickless-trace-hooks.md`.
+- Re-read kernel, task, timer, port, queue, config, and host test runner boundaries.
+- Key discovery: task and timer modules already keep ordered deadline lists, so tickless can be implemented by exporting minimal internal next-deadline queries.
+- Tickless Task 1 RED: `python tools\run_host_tests.py` failed on `test_tickless_expected_idle` because `myrtos/mrt_tickless.h` was missing.
+- Tickless Task 1 GREEN: added `MRT_TicklessGetExpectedIdleTicks`, task next-wake query, timer next-expiry query, CMake/runner entries, and `tests/unit/test_tickless_expected_idle.c`.
+- Tickless Task 1 verification: `python tools\run_host_tests.py` passed 51 test targets.
+
 ### Phase 1: Requirements & Discovery
 - **Status:** in_progress
 - **Started:** 2026-06-07

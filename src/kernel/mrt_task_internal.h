@@ -17,6 +17,7 @@ void MRT_TaskKernelInitialize(void);
 bool MRT_TaskKernelStartScheduler(void);
 void MRT_TaskKernelYield(void);
 void MRT_TaskKernelTick(MRT_Tick now);
+bool MRT_TaskKernelGetNextWakeTick(MRT_Tick *out_tick);
 MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
                                               MRT_Tick ticks,
                                               MRT_TaskWaitReason wait_reason,

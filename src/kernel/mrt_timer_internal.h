@@ -29,4 +29,15 @@ void MRT_TimerKernelInitialize(void);
  */
 void MRT_TimerKernelTick(MRT_Tick now);
 
+/**
+ * @brief 查询活动软件定时器链表中最近的到期 tick。
+ * @param out_tick 输出最近定时器到期 tick，不能为空。
+ * @return bool 返回 true 表示存在活动定时器；返回 false 表示没有活动定时器或参数为空。
+ * @example
+ * MRT_Tick expiry_tick;
+ * bool exists = MRT_TimerKernelGetNextExpiryTick(&expiry_tick);
+ * (void)exists;
+ */
+bool MRT_TimerKernelGetNextExpiryTick(MRT_Tick *out_tick);
+
 #endif

@@ -1228,3 +1228,45 @@ MRT_Result MRT_TaskNotifyValueClear(MRT_TaskHandle task, MRT_NotifyValue bits_to
     /* 通知值清位成功。 */
     return MRT_RESULT_OK;
 }
+
+/**
+ * @brief 查询延时链表中最近的任务唤醒 tick。
+ * @param out_tick 输出最近任务唤醒 tick，不能为空。
+ * @return bool 返回 true 表示存在阻塞等待 tick 的任务；返回 false 表示无延时任务或参数为空。
+ * @example
+ * MRT_Tick wake_tick;
+ * bool exists = MRT_TaskKernelGetNextWakeTick(&wake_tick);
+ * (void)exists;
+ */
+bool MRT_TaskKernelGetNextWakeTick(MRT_Tick *out_tick)
+{
+    /* 输出指针不能为空，否则调用方无法获得最近唤醒点。 */
+    if (out_tick == 0) {
+        /* 参数无效时直接报告没有可用 deadline。 */
+        return false;
+    }
+
+    /* 延时链表为空表示当前没有任务因 tick 等待而阻塞。 */
+    if (MRT_ListIsEmpty(&g_delayed_list)) {
+        /* 没有任务 deadline 可供 tickless 参考。 */
+        return false;
+    }
+
+    /* 延时链表按 wake_tick 排序，头节点就是最近唤醒任务。 */
+    MRT_ListNode *head = MRT_ListGetHead(&g_delayed_list);
+
+    /* 从链表节点恢复任务控制块指针。 */
+    MRT_Task *task = (MRT_Task *)head->item;
+
+    /* 防御性检查任务指针，避免损坏链表导致空指针解引用。 */
+    if (task == 0) {
+        /* 链表内容异常时不向 tickless 提供 deadline。 */
+        return false;
+    }
+
+    /* 写出最近任务唤醒 tick。 */
+    *out_tick = task->wake_tick;
+
+    /* 通知调用方已经找到任务 deadline。 */
+    return true;
+}
