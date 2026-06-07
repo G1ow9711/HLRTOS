@@ -32,6 +32,7 @@ Phase 3: Implementation Plan
 ### Phase 4: TDD Implementation
 - [x] Write failing tests before production code
 - [x] Implement foundation kernel core incrementally
+- [x] Implement task scheduler core incrementally
 - [ ] Implement portable layers and demos
 - [ ] Add detailed Chinese comments to every public and internal function
 - **Status:** pending

@@ -75,6 +75,10 @@
   - Committed scheduler Task 4 as `6f347c6`.
   - Task scheduler Task 5 RED: `python tools\run_host_tests.py` failed because `MRT_KernelTestSetTick` was not declared.
   - Task scheduler Task 5 GREEN: added `MRT_KernelTestSetTick` under `MRT_TESTING`; tick overflow delay test passed; full command passed 11 test targets.
+  - Committed scheduler Task 5 as `8d06412`.
+  - Task scheduler full verification: `python tools\run_host_tests.py` passed 11 test targets.
+  - Updated requirement matrix rows `R-002`, `R-008`, `R-009`.
+  - Updated coupling matrix rows `C-001`, `C-002`, `C-003`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -157,6 +161,7 @@
 | Scheduler Task 4 GREEN | `python tools\run_host_tests.py` after delay list and tick wakeup | 10 test targets pass | `[summary] 10 test target(s) passed` | Pass |
 | Scheduler Task 5 RED | `python tools\run_host_tests.py` before tick test hook | Build fails due to missing function declaration | `implicit declaration of function 'MRT_KernelTestSetTick'` | Pass |
 | Scheduler Task 5 GREEN | `python tools\run_host_tests.py` after tick overflow test hook | 11 test targets pass | `[summary] 11 test target(s) passed` | Pass |
+| Scheduler full verification | `python tools\run_host_tests.py` | 11 test targets pass | `[summary] 11 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
