@@ -98,6 +98,15 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
                                 MRT_TaskHandle *out_task);
 
 /**
+ * @brief 让当前任务阻塞指定 tick 数。
+ * @param ticks 需要延时的 tick 数；为 0 时等价于主动让出 CPU。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示延时成功；调度器未运行或无当前任务时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_TaskDelay(10);
+ */
+MRT_Result MRT_TaskDelay(MRT_Tick ticks);
+
+/**
  * @brief 获取当前正在运行的任务句柄。
  * @param void 无输入参数。
  * @return MRT_TaskHandle 返回当前任务句柄；调度器尚未启动时返回空指针。

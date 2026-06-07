@@ -107,6 +107,9 @@ void MRT_KernelTick(void)
 {
     /* 将系统 tick 递增 1，溢出按无符号整数自然回绕。 */
     g_kernel_tick++;
+
+    /* 通知任务模块处理延时到期任务。 */
+    MRT_TaskKernelTick(g_kernel_tick);
 }
 
 /**

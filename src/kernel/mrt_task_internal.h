@@ -13,5 +13,6 @@
 void MRT_TaskKernelInitialize(void);
 bool MRT_TaskKernelStartScheduler(void);
 void MRT_TaskKernelYield(void);
+void MRT_TaskKernelTick(MRT_Tick now);
 
 #endif

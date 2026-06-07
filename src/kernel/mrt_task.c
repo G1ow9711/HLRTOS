@@ -1,4 +1,5 @@
 #include "myrtos/mrt_task.h"
+#include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_priority.h"
 #include "mrt_task_internal.h"
 
@@ -8,11 +9,28 @@ static MRT_List g_ready_lists[MRT_CFG_MAX_PRIORITIES];
 /** @brief 记录哪些优先级存在 ready 任务。 */
 static MRT_PriorityBitmap g_ready_bitmap;
 
+/** @brief 按唤醒 tick 排序的延时任务链表。 */
+static MRT_List g_delayed_list;
+
 /** @brief 当前正在运行的任务；调度器未启动时为空。 */
 static MRT_Task *g_current_task;
 
 /** @brief 任务调度器内部结构是否已经初始化。 */
 static bool g_task_kernel_initialized;
+
+/**
+ * @brief 判断 now 是否已经到达 wake_tick。
+ * @param now 当前系统 tick。
+ * @param wake_tick 任务计划唤醒 tick。
+ * @return bool 返回 true 表示已经到期，返回 false 表示尚未到期。
+ * @example
+ * if (MRT_TaskTickReached(now, task->wake_tick)) { MRT_TaskAddReady(task); }
+ */
+static bool MRT_TaskTickReached(MRT_Tick now, MRT_Tick wake_tick)
+{
+    /* 使用有符号差值处理无符号 tick 回绕。 */
+    return (int32_t)(now - wake_tick) >= 0;
+}
 
 /**
  * @brief 选择当前最高优先级 ready 任务。
@@ -65,6 +83,68 @@ static void MRT_TaskAddReady(MRT_Task *task)
 }
 
 /**
+ * @brief 从 ready list 移除任务。
+ * @param task 待移除任务指针，不能为空。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskRemoveReady(task);
+ */
+static void MRT_TaskRemoveReady(MRT_Task *task)
+{
+    /* 如果任务节点未入链，则无需移除。 */
+    if (!MRT_ListNodeIsLinked(&task->state_node)) {
+        /* 直接返回调用方。 */
+        return;
+    }
+
+    /* 保存任务所在优先级，移除后要用它检查 ready list 是否为空。 */
+    MRT_Priority priority = task->priority;
+
+    /* 从当前 ready list 中移除任务节点。 */
+    MRT_ListRemove(&task->state_node);
+
+    /* 如果该优先级 ready list 已空，则清除位图对应 bit。 */
+    if (MRT_ListIsEmpty(&g_ready_lists[priority])) {
+        /* 清除该优先级 ready 标记。 */
+        MRT_PriorityBitmapClear(&g_ready_bitmap, priority);
+    }
+}
+
+/**
+ * @brief 重新选择最高优先级 ready 任务作为当前任务。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskSwitchToHighestReady();
+ */
+static void MRT_TaskSwitchToHighestReady(void)
+{
+    /* 如果当前任务仍处于 running，切换前先恢复为 ready。 */
+    if ((g_current_task != 0) && (g_current_task->state == MRT_TASK_STATE_RUNNING)) {
+        /* 当前任务仍在 ready list 中，只是失去运行权。 */
+        g_current_task->state = MRT_TASK_STATE_READY;
+    }
+
+    /* 选择当前最高优先级 ready 任务。 */
+    MRT_Task *next_task = MRT_TaskSelectHighestReady();
+
+    /* 如果没有 ready 任务，则清空当前任务。 */
+    if (next_task == 0) {
+        /* 当前无任务可运行。 */
+        g_current_task = 0;
+
+        /* 返回调用方。 */
+        return;
+    }
+
+    /* 保存新的当前任务。 */
+    g_current_task = next_task;
+
+    /* 将新当前任务标记为 running。 */
+    g_current_task->state = MRT_TASK_STATE_RUNNING;
+}
+
+/**
  * @brief 初始化任务调度器内部状态。
  * @param void 无输入参数。
  * @return void 无返回值。
@@ -81,6 +161,9 @@ void MRT_TaskKernelInitialize(void)
 
     /* 清空 ready priority bitmap。 */
     MRT_PriorityBitmapInitialize(&g_ready_bitmap);
+
+    /* 初始化延时任务链表。 */
+    MRT_ListInitialize(&g_delayed_list);
 
     /* 当前任务清空，表示调度器尚未选择任何任务。 */
     g_current_task = 0;
@@ -144,23 +227,51 @@ void MRT_TaskKernelYield(void)
         MRT_ListInsertTail(&g_ready_lists[g_current_task->priority], &g_current_task->state_node);
     }
 
-    /* 重新选择当前最高优先级 ready 任务。 */
-    MRT_Task *next_task = MRT_TaskSelectHighestReady();
+    /* 重新选择最高优先级 ready 任务。 */
+    MRT_TaskSwitchToHighestReady();
+}
 
-    /* 如果没有可运行任务，则保持当前任务为空。 */
-    if (next_task == 0) {
-        /* 清空当前任务指针。 */
-        g_current_task = 0;
+/**
+ * @brief 处理一个系统 tick 上的延时任务到期。
+ * @param now 当前系统 tick。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskKernelTick(MRT_KernelGetTick());
+ */
+void MRT_TaskKernelTick(MRT_Tick now)
+{
+    /* 记录本 tick 是否唤醒过任务。 */
+    bool woke_task = false;
 
-        /* 返回调用方。 */
-        return;
+    /* 只要延时链表非空，就检查头部最早到期任务。 */
+    while (!MRT_ListIsEmpty(&g_delayed_list)) {
+        /* 获取延时链表头部节点。 */
+        MRT_ListNode *head = MRT_ListGetHead(&g_delayed_list);
+
+        /* 从节点恢复任务控制块。 */
+        MRT_Task *task = (MRT_Task *)head->item;
+
+        /* 如果头部任务尚未到期，后续任务也不需要处理。 */
+        if (!MRT_TaskTickReached(now, task->wake_tick)) {
+            /* 退出循环等待后续 tick。 */
+            break;
+        }
+
+        /* 从延时链表移除到期任务。 */
+        MRT_ListRemove(&task->state_node);
+
+        /* 将到期任务重新加入 ready list。 */
+        MRT_TaskAddReady(task);
+
+        /* 标记本 tick 唤醒了任务。 */
+        woke_task = true;
     }
 
-    /* 保存新选中的当前任务。 */
-    g_current_task = next_task;
-
-    /* 标记新当前任务为 running。 */
-    g_current_task->state = MRT_TASK_STATE_RUNNING;
+    /* 如果唤醒了任务，则可能需要抢占当前任务。 */
+    if (woke_task) {
+        /* 重新选择最高优先级 ready 任务。 */
+        MRT_TaskSwitchToHighestReady();
+    }
 }
 
 /**
@@ -265,6 +376,58 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
     }
 
     /* 静态任务创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 让当前任务阻塞指定 tick 数。
+ * @param ticks 需要延时的 tick 数；为 0 时等价于主动让出 CPU。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示延时成功；调度器未运行或无当前任务时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_TaskDelay(10);
+ */
+MRT_Result MRT_TaskDelay(MRT_Tick ticks)
+{
+    /* 当前任务为空时，说明调度器未启动或无可运行任务。 */
+    if (g_current_task == 0) {
+        /* 延时只能由当前运行任务调用。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 延时 0 tick 等价于主动让出 CPU。 */
+    if (ticks == 0u) {
+        /* 复用 yield 调度路径。 */
+        MRT_TaskKernelYield();
+
+        /* 0 tick yield 完成。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 保存需要阻塞的当前任务。 */
+    MRT_Task *task = g_current_task;
+
+    /* 将当前任务从 ready list 移除。 */
+    MRT_TaskRemoveReady(task);
+
+    /* 计算任务唤醒 tick，允许无符号自然回绕。 */
+    task->wake_tick = MRT_KernelGetTick() + ticks;
+
+    /* 将任务状态设置为 blocked。 */
+    task->state = MRT_TASK_STATE_BLOCKED;
+
+    /* 使用唤醒 tick 作为延时链表排序值。 */
+    task->state_node.value = task->wake_tick;
+
+    /* 将任务插入延时链表。 */
+    MRT_ListInsertOrdered(&g_delayed_list, &task->state_node);
+
+    /* 当前任务已经阻塞，先清空当前任务指针。 */
+    g_current_task = 0;
+
+    /* 选择下一个最高优先级 ready 任务运行。 */
+    MRT_TaskSwitchToHighestReady();
+
+    /* 延时操作完成。 */
     return MRT_RESULT_OK;
 }
 

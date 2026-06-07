@@ -69,6 +69,9 @@
   - Committed scheduler Task 2 as `68120e7`.
   - Task scheduler Task 3 RED: `python tools\run_host_tests.py` failed in `test_scheduler_round_robin` because yield did not rotate to the second same-priority task.
   - Task scheduler Task 3 GREEN: implemented ready list tail rotation on yield; same command passed 9 test targets.
+  - Committed scheduler Task 3 as `ac3eda3`.
+  - Task scheduler Task 4 RED: `python tools\run_host_tests.py` failed because `MRT_TaskDelay` was not declared.
+  - Task scheduler Task 4 GREEN: implemented delayed list, `MRT_TaskDelay`, tick wakeup, and wake preemption; same command passed 10 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -108,6 +111,7 @@
   - `src/kernel/mrt_task_internal.h` created.
   - `tests/sim/test_scheduler_start.c` created.
   - `tests/sim/test_scheduler_round_robin.c` created.
+  - `tests/sim/test_task_delay.c` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -145,6 +149,8 @@
 | Scheduler Task 2 GREEN | `python tools\run_host_tests.py` after highest ready selection | 8 test targets pass | `[summary] 8 test target(s) passed` | Pass |
 | Scheduler Task 3 RED | `python tools\run_host_tests.py` before round-robin yield | Round-robin test fails | `assertion failed: MRT_TaskGetCurrent() == second_task` | Pass |
 | Scheduler Task 3 GREEN | `python tools\run_host_tests.py` after ready list tail rotation | 9 test targets pass | `[summary] 9 test target(s) passed` | Pass |
+| Scheduler Task 4 RED | `python tools\run_host_tests.py` before `MRT_TaskDelay` | Build fails due to missing function declaration | `implicit declaration of function 'MRT_TaskDelay'` | Pass |
+| Scheduler Task 4 GREEN | `python tools\run_host_tests.py` after delay list and tick wakeup | 10 test targets pass | `[summary] 10 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

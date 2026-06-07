@@ -16,6 +16,7 @@ TESTS = [
     ("test_task_create_static", ROOT / "tests" / "sim" / "test_task_create_static.c"),
     ("test_scheduler_start", ROOT / "tests" / "sim" / "test_scheduler_start.c"),
     ("test_scheduler_round_robin", ROOT / "tests" / "sim" / "test_scheduler_round_robin.c"),
+    ("test_task_delay", ROOT / "tests" / "sim" / "test_task_delay.c"),
 ]
 
 KERNEL_SOURCES = [
