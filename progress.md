@@ -55,6 +55,9 @@
   - Committed Task 5 as `3be37e7`.
   - Task 6 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_kernel.h` was missing.
   - Task 6 GREEN: added `include/myrtos/mrt_kernel.h` and `src/kernel/mrt_kernel.c`; same command passed 6 test targets.
+  - Committed Task 6 as `034deb6`.
+  - Foundation full verification: `python tools\run_host_tests.py` passed 6 test targets.
+  - Updated requirement and coupling matrices with foundation evidence.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -117,6 +120,7 @@
 | Task 5 GREEN | `python tools\run_host_tests.py` after adding host mock port | 5 test targets pass | `[summary] 5 test target(s) passed` | Pass |
 | Task 6 RED | `python tools\run_host_tests.py` before `mrt_kernel.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_kernel.h: No such file or directory` | Pass |
 | Task 6 GREEN | `python tools\run_host_tests.py` after adding kernel tick shell | 6 test targets pass | `[summary] 6 test target(s) passed` | Pass |
+| Foundation full verification | `python tools\run_host_tests.py` | 6 test targets pass | `[summary] 6 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
