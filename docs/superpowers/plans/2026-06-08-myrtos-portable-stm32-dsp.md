@@ -77,4 +77,4 @@
 - [x] **Step 1: Add new sources/tests to build systems**
 - [x] **Step 2: Update API catalog and matrices**
 - [x] **Step 3: Run `python tools\run_host_tests.py`**
-- [ ] **Step 4: Commit and push `feature/portable-stm32-dsp`**
+- [x] **Step 4: Commit and push `feature/portable-stm32-dsp`**
