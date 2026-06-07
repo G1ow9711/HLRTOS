@@ -18,12 +18,14 @@ TESTS = [
     ("test_scheduler_round_robin", ROOT / "tests" / "sim" / "test_scheduler_round_robin.c"),
     ("test_task_delay", ROOT / "tests" / "sim" / "test_task_delay.c"),
     ("test_task_delay_overflow", ROOT / "tests" / "sim" / "test_task_delay_overflow.c"),
+    ("test_queue_create_static", ROOT / "tests" / "unit" / "test_queue_create_static.c"),
 ]
 
 KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_list.c",
     ROOT / "src" / "kernel" / "mrt_kernel.c",
     ROOT / "src" / "kernel" / "mrt_priority.c",
+    ROOT / "src" / "kernel" / "mrt_queue.c",
     ROOT / "src" / "kernel" / "mrt_task.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
 ]

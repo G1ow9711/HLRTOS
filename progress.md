@@ -79,6 +79,11 @@
   - Task scheduler full verification: `python tools\run_host_tests.py` passed 11 test targets.
   - Updated requirement matrix rows `R-002`, `R-008`, `R-009`.
   - Updated coupling matrix rows `C-001`, `C-002`, `C-003`.
+  - Created queues worktree `feature/queues`.
+  - Added queue implementation plan.
+  - Consulted FreeRTOS `queue.c` for concepts: fixed-size copy queue, circular storage, separate sender/receiver wait lists; MyRTOS keeps original APIs and implementation.
+  - Queue Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_queue.h` was missing.
+  - Queue Task 1 GREEN: added `include/myrtos/mrt_queue.h` and `src/kernel/mrt_queue.c`; same command passed 12 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -120,6 +125,10 @@
   - `tests/sim/test_scheduler_round_robin.c` created.
   - `tests/sim/test_task_delay.c` created.
   - `tests/sim/test_task_delay_overflow.c` created.
+  - `docs/superpowers/plans/2026-06-07-myrtos-queues.md` created.
+  - `tests/unit/test_queue_create_static.c` created.
+  - `include/myrtos/mrt_queue.h` created.
+  - `src/kernel/mrt_queue.c` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -162,6 +171,8 @@
 | Scheduler Task 5 RED | `python tools\run_host_tests.py` before tick test hook | Build fails due to missing function declaration | `implicit declaration of function 'MRT_KernelTestSetTick'` | Pass |
 | Scheduler Task 5 GREEN | `python tools\run_host_tests.py` after tick overflow test hook | 11 test targets pass | `[summary] 11 test target(s) passed` | Pass |
 | Scheduler full verification | `python tools\run_host_tests.py` | 11 test targets pass | `[summary] 11 test target(s) passed` | Pass |
+| Queue Task 1 RED | `python tools\run_host_tests.py` before `mrt_queue.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_queue.h: No such file or directory` | Pass |
+| Queue Task 1 GREEN | `python tools\run_host_tests.py` after static queue creation | 12 test targets pass | `[summary] 12 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

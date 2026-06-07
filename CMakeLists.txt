@@ -11,6 +11,7 @@ add_library(myrtos_kernel STATIC
     src/kernel/mrt_list.c
     src/kernel/mrt_kernel.c
     src/kernel/mrt_priority.c
+    src/kernel/mrt_queue.c
     src/kernel/mrt_task.c
     src/portable/mock/mrt_port_mock.c
 )

@@ -30,6 +30,7 @@
 - FreeRTOS may be used as architectural inspiration, but direct copying of source code or manual text is not acceptable.
 - FreeRTOS `tasks.c` uses per-priority ready lists, a current TCB pointer, delayed task lists, pending-ready handling while scheduling is suspended, and delayed-list overflow handling. MyRTOS scheduler will borrow the concepts of priority-indexed ready queues and explicit blocked/ready transitions, but will use original `MRT_` APIs, original structures, and a signed tick-difference wake check rather than copying FreeRTOS implementation text or macros.
 - FreeRTOS source repository confirms common kernel files include task, queue, and list modules. MyRTOS keeps the same broad separation of concerns but uses original file names and interfaces.
+- FreeRTOS `queue.c` uses queue objects that hold storage pointers, item size/count metadata, send/receive positions, message counters, and separate task wait lists for senders/receivers. MyRTOS queue will borrow the high-level concepts of fixed-size copy queues, circular storage, and separate blocked sender/receiver lists, but will use original `MRT_Queue` fields, result codes, and API behavior.
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -70,6 +71,7 @@
 - FreeRTOS-Kernel GitHub repository: https://github.com/FreeRTOS/FreeRTOS-Kernel
 - FreeRTOS-Kernel `tasks.c`: https://raw.githubusercontent.com/FreeRTOS/FreeRTOS-Kernel/main/tasks.c
 - FreeRTOS-Kernel `list.c`: https://raw.githubusercontent.com/FreeRTOS/FreeRTOS-Kernel/main/list.c
+- FreeRTOS-Kernel `queue.c`: https://raw.githubusercontent.com/FreeRTOS/FreeRTOS-Kernel/main/queue.c
 - FreeRTOS Reference Manual V10.0.0 PDF: https://www.freertos.org/media/2018/FreeRTOS_Reference_Manual_V10.0.0.pdf
 
 ## Visual/Browser Findings
