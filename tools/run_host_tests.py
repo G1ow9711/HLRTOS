@@ -40,6 +40,7 @@ TESTS = [
     ("test_task_notify_actions", ROOT / "tests" / "unit" / "test_task_notify_actions.c"),
     ("test_task_notify_wait_take", ROOT / "tests" / "coupling" / "test_task_notify_wait_take.c"),
     ("test_task_notify_isr", ROOT / "tests" / "unit" / "test_task_notify_isr.c"),
+    ("test_timer_create_static", ROOT / "tests" / "unit" / "test_timer_create_static.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -51,6 +52,7 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_queue.c",
     ROOT / "src" / "kernel" / "mrt_semaphore.c",
     ROOT / "src" / "kernel" / "mrt_task.c",
+    ROOT / "src" / "kernel" / "mrt_timer.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
 ]
 

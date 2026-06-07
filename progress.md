@@ -328,6 +328,9 @@
 | Baseline | `python tools\run_host_tests.py` in `.worktrees\timers` | 33 test targets pass | `[summary] 33 test target(s) passed` | Pass |
 | Plan placeholder scan | `rg -n "TBD|TODO|implement later|fill in details|appropriate error handling|add validation|Similar to Task" docs\superpowers\plans\2026-06-07-myrtos-timers.md` | No matches | No matches, exit code 1 | Pass |
 | Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-timers.md` | Plan 6 tasks defined | 5 tasks defined for static timers, control APIs, tick expiry, pending function calls, and matrix update | Pass |
+| Timer Task 1 RED | `python tools\run_host_tests.py` before timer header | Build fails due to missing header | `fatal error: myrtos/mrt_timer.h: No such file or directory` | Pass |
+| Timer Task 1 GREEN | `python tools\run_host_tests.py` after static timer creation | 34 test targets pass | `[summary] 34 test target(s) passed` | Pass |
+| Timer Task 1 pre-commit verification | `python tools\run_host_tests.py` | 34 test targets pass | `[summary] 34 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

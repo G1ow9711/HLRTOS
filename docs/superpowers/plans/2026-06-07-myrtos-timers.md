@@ -59,13 +59,13 @@ void MRT_TimerServiceRunPending(void);
 
 Steps:
 
-- [ ] Write failing tests for `MRT_TimerCreateStatic`, `MRT_TimerIsActive`, `MRT_TimerGetName`, null callback, null storage, null output handle, and zero period.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_timer.h`.
-- [ ] Implement `MRT_Timer` with name, period, auto-reload flag, callback, callback arg, active flag, expiry tick, list node, and static-storage flag.
-- [ ] Implement static create, active query, and name query.
-- [ ] Add timer source to CMake and host runner.
-- [ ] Run `python tools\run_host_tests.py`; expect 34 test targets pass.
-- [ ] Commit `feat: add static timer creation`.
+- [x] Write failing tests for `MRT_TimerCreateStatic`, `MRT_TimerIsActive`, `MRT_TimerGetName`, null callback, null storage, null output handle, and zero period.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_timer.h`.
+- [x] Implement `MRT_Timer` with name, period, auto-reload flag, callback, callback arg, active flag, expiry tick, list node, and static-storage flag.
+- [x] Implement static create, active query, and name query.
+- [x] Add timer source to CMake and host runner.
+- [x] Run `python tools\run_host_tests.py`; expect 34 test targets pass.
+- [x] Commit `feat: add static timer creation`.
 
 ## Task 2: Timer Control APIs
 
