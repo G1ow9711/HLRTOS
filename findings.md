@@ -28,6 +28,8 @@
 - FreeRTOS-Kernel GitHub page showed latest release `V11.3.0` dated 2026-03-30 during this session.
 - FreeRTOS reference manual structure includes an "About this manual" section, API usage restrictions, chapterized API groups, prototypes, summaries, parameters, return values, notes, examples, and appendices for types/macros.
 - FreeRTOS may be used as architectural inspiration, but direct copying of source code or manual text is not acceptable.
+- FreeRTOS `tasks.c` uses per-priority ready lists, a current TCB pointer, delayed task lists, pending-ready handling while scheduling is suspended, and delayed-list overflow handling. MyRTOS scheduler will borrow the concepts of priority-indexed ready queues and explicit blocked/ready transitions, but will use original `MRT_` APIs, original structures, and a signed tick-difference wake check rather than copying FreeRTOS implementation text or macros.
+- FreeRTOS source repository confirms common kernel files include task, queue, and list modules. MyRTOS keeps the same broad separation of concerns but uses original file names and interfaces.
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -66,6 +68,8 @@
 - FreeRTOS official documentation overview: https://www.freertos.org/Documentation/00-Overview
 - FreeRTOS source organization: https://www.freertos.org/Documentation/02-Kernel/06-Coding-guidelines/01-Source-code-organization
 - FreeRTOS-Kernel GitHub repository: https://github.com/FreeRTOS/FreeRTOS-Kernel
+- FreeRTOS-Kernel `tasks.c`: https://raw.githubusercontent.com/FreeRTOS/FreeRTOS-Kernel/main/tasks.c
+- FreeRTOS-Kernel `list.c`: https://raw.githubusercontent.com/FreeRTOS/FreeRTOS-Kernel/main/list.c
 - FreeRTOS Reference Manual V10.0.0 PDF: https://www.freertos.org/media/2018/FreeRTOS_Reference_Manual_V10.0.0.pdf
 
 ## Visual/Browser Findings
