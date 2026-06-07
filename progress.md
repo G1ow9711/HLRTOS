@@ -296,6 +296,8 @@
 | Event Group Task 4 GREEN | `python tools\run_host_tests.py` after set-wake coupling | 29 test targets pass | `[summary] 29 test target(s) passed` | Pass |
 | Event Group Task 5 RED | `python tools\run_host_tests.py` before ISR set declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_EventGroupSetBitsFromISR'` | Pass |
 | Event Group Task 5 GREEN | `python tools\run_host_tests.py` after ISR set implementation | 30 test targets pass | `[summary] 30 test target(s) passed` | Pass |
+| Task Notify Task 6 RED | `python tools\run_host_tests.py` before notify declarations | Build fails due to missing declarations and task fields | `implicit declaration of function 'MRT_TaskNotify'`, missing `notify_value`/`notify_pending` | Pass |
+| Task Notify Task 6 GREEN | `python tools\run_host_tests.py` after notify actions | 31 test targets pass | `[summary] 31 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

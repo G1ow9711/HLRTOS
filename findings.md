@@ -111,6 +111,7 @@
 - Event Group Task 3 adds `MRT_TASK_WAIT_REASON_EVENT_BITS` and stores event wait metadata inside `MRT_Task`. Timeout waits now use the existing object wait helper, so tick expiry removes the task from both the delay list and the event group's `waiting_tasks` list.
 - Event Group Task 4 adds `MRT_TaskKernelWakeTask` so event groups can wake multiple specific waiters in one set operation. Matching uses the post-set, pre-clear snapshot; clear-on-exit is applied once after all eligible waiters have been selected.
 - Event Group Task 5 adds `MRT_EventGroupSetBitsFromISR`. It validates ISR context through the port mock, never switches immediately, and reports `should_yield=true` when a waiting task is moved to ready.
+- Task Notify Task 6 adds one notification slot per task with `notify_value` and `notify_pending`. `MRT_TaskNotify` supports set-bits, increment, overwrite, and no-overwrite; no-overwrite rejects pending notifications without changing the old value.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

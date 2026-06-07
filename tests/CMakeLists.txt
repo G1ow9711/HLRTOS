@@ -38,3 +38,4 @@ mrt_add_test(test_event_group_wait_immediate unit/test_event_group_wait_immediat
 mrt_add_test(test_event_group_task_timeout coupling/test_event_group_task_timeout.c)
 mrt_add_test(test_event_group_set_wakes_tasks coupling/test_event_group_set_wakes_tasks.c)
 mrt_add_test(test_event_group_isr unit/test_event_group_isr.c)
+mrt_add_test(test_task_notify_actions unit/test_task_notify_actions.c)

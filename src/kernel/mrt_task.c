@@ -553,6 +553,73 @@ void MRT_TaskKernelRestoreBasePriority(MRT_TaskHandle task)
     MRT_TaskKernelSetEffectivePriority(task, task->base_priority);
 }
 
+/**
+ * @brief 判断通知动作枚举值是否有效。
+ * @param action 待检查通知动作。
+ * @return bool 返回 true 表示动作有效，返回 false 表示动作非法。
+ * @example
+ * if (!MRT_TaskNotifyActionIsValid(action)) { return MRT_RESULT_INVALID_ARGUMENT; }
+ */
+static bool MRT_TaskNotifyActionIsValid(MRT_NotifyAction action)
+{
+    /* 检查 action 是否是公开枚举中的一个值。 */
+    return (action == MRT_NOTIFY_SET_BITS) ||
+           (action == MRT_NOTIFY_INCREMENT) ||
+           (action == MRT_NOTIFY_OVERWRITE) ||
+           (action == MRT_NOTIFY_NO_OVERWRITE);
+}
+
+/**
+ * @brief 对任务通知值应用指定写入动作。
+ * @param task 目标任务句柄，不能为空。
+ * @param value 通知输入值。
+ * @param action 通知写入动作，必须有效。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示写入成功；no-overwrite 遇到 pending 通知时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_TaskApplyNotification(task, 0x01u, MRT_NOTIFY_SET_BITS);
+ */
+static MRT_Result MRT_TaskApplyNotification(MRT_TaskHandle task, MRT_NotifyValue value, MRT_NotifyAction action)
+{
+    /* no-overwrite 在已有 pending 通知时不能改变旧值。 */
+    if ((action == MRT_NOTIFY_NO_OVERWRITE) && task->notify_pending) {
+        /* 返回对象忙，提醒发送方旧通知尚未被读取。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 根据动作合并或覆盖通知值。 */
+    switch (action) {
+    case MRT_NOTIFY_SET_BITS:
+        /* set-bits 使用按位或累积事件标志。 */
+        task->notify_value |= value;
+        break;
+
+    case MRT_NOTIFY_INCREMENT:
+        /* increment 把通知值当作计数器。 */
+        task->notify_value++;
+        break;
+
+    case MRT_NOTIFY_OVERWRITE:
+        /* overwrite 直接替换旧通知值。 */
+        task->notify_value = value;
+        break;
+
+    case MRT_NOTIFY_NO_OVERWRITE:
+        /* no-overwrite 在无 pending 通知时写入新值。 */
+        task->notify_value = value;
+        break;
+
+    default:
+        /* 调用方应在进入本函数前校验动作，保守返回内部错误。 */
+        return MRT_RESULT_INTERNAL_ERROR;
+    }
+
+    /* 成功写入后标记存在未读通知。 */
+    task->notify_pending = true;
+
+    /* 通知动作执行成功。 */
+    return MRT_RESULT_OK;
+}
+
 MRT_Result MRT_TaskCreateStatic(const char *name,
                                 MRT_TaskEntry entry,
                                 void *arg,
@@ -645,6 +712,12 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
 
     /* 新任务默认不请求事件等待退出清位。 */
     storage->event_clear_on_exit = false;
+
+    /* 新任务通知值初始为 0。 */
+    storage->notify_value = 0u;
+
+    /* 新任务没有 pending 通知。 */
+    storage->notify_pending = false;
 
     /* 标记该任务使用静态存储。 */
     storage->static_storage = true;
@@ -810,4 +883,77 @@ const char *MRT_TaskGetName(MRT_TaskHandle task)
 
     /* 返回任务控制块中保存的名称指针。 */
     return task->name;
+}
+
+/**
+ * @brief 向指定任务发送通知。
+ * @param task 目标任务句柄，不能为空。
+ * @param value 通知值，具体含义由 action 决定。
+ * @param action 通知写入动作，必须是 MRT_NotifyAction 中的有效枚举值。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示通知写入成功；no-overwrite 遇到 pending 通知时返回
+ *         MRT_RESULT_OBJECT_BUSY；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TaskNotify(worker, 0x01u, MRT_NOTIFY_SET_BITS);
+ */
+MRT_Result MRT_TaskNotify(MRT_TaskHandle task, MRT_NotifyValue value, MRT_NotifyAction action)
+{
+    /* 目标任务不能为空，否则无法写入通知槽。 */
+    if (task == 0) {
+        /* 返回参数错误，提示调用方提供合法任务句柄。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 通知动作必须是定义过的枚举值。 */
+    if (!MRT_TaskNotifyActionIsValid(action)) {
+        /* 返回参数错误，避免非法动作破坏通知状态。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 对目标任务应用通知动作。 */
+    return MRT_TaskApplyNotification(task, value, action);
+}
+
+/**
+ * @brief 清除指定任务的 pending 通知状态。
+ * @param task 目标任务句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示清除成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TaskNotifyStateClear(worker);
+ */
+MRT_Result MRT_TaskNotifyStateClear(MRT_TaskHandle task)
+{
+    /* 目标任务不能为空，否则无法清除通知状态。 */
+    if (task == 0) {
+        /* 返回参数错误，提示调用方提供合法任务句柄。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 清除 pending 状态，但保留通知值供调试或后续覆盖。 */
+    task->notify_pending = false;
+
+    /* 状态清除成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 清除指定任务通知值中的 bit。
+ * @param task 目标任务句柄，不能为空。
+ * @param bits_to_clear 需要清除的 bit 掩码；为 0 时不改变通知值。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示清除成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TaskNotifyValueClear(worker, 0x01u);
+ */
+MRT_Result MRT_TaskNotifyValueClear(MRT_TaskHandle task, MRT_NotifyValue bits_to_clear)
+{
+    /* 目标任务不能为空，否则无法修改通知值。 */
+    if (task == 0) {
+        /* 返回参数错误，提示调用方提供合法任务句柄。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 按位清除调用方指定的通知 bit。 */
+    task->notify_value &= ~bits_to_clear;
+
+    /* 通知值清位成功。 */
+    return MRT_RESULT_OK;
 }

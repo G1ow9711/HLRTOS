@@ -173,13 +173,13 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_TaskNotify` set-bits, increment, overwrite, no-overwrite success on empty notification, no-overwrite busy on pending notification, `MRT_TaskNotifyStateClear`, `MRT_TaskNotifyValueClear`, null task, and invalid action.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing notify API declarations.
-- [ ] Add `MRT_NotifyAction` and per-task notification fields: `notify_value` and `notify_pending`.
-- [ ] Initialize notification fields in `MRT_TaskCreateStatic`.
-- [ ] Implement task-context notify actions and state/value clear helpers.
-- [ ] Run `python tools\run_host_tests.py`; expect 31 test targets pass.
-- [ ] Commit `feat: add task notification actions`.
+- [x] Write failing tests for `MRT_TaskNotify` set-bits, increment, overwrite, no-overwrite success on empty notification, no-overwrite busy on pending notification, `MRT_TaskNotifyStateClear`, `MRT_TaskNotifyValueClear`, null task, and invalid action.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing notify API declarations.
+- [x] Add `MRT_NotifyAction` and per-task notification fields: `notify_value` and `notify_pending`.
+- [x] Initialize notification fields in `MRT_TaskCreateStatic`.
+- [x] Implement task-context notify actions and state/value clear helpers.
+- [x] Run `python tools\run_host_tests.py`; expect 31 test targets pass.
+- [x] Commit `feat: add task notification actions`.
 
 ## Task 7: Task Notification Wait and Take Coupling
 
