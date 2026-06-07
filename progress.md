@@ -88,6 +88,9 @@
   - Queue Task 2 RED: `python tools\run_host_tests.py` failed because `MRT_QueueSend` and `MRT_QueueReceive` were not declared.
   - Queue Task 2 GREEN: implemented FIFO non-blocking `MRT_QueueSend` and `MRT_QueueReceive`; same command passed 13 test targets.
   - Committed Queue Task 2 with message `feat: add nonblocking queue send receive`.
+  - Queue Task 3 RED: `python tools\run_host_tests.py` failed because `MRT_QueuePeek`, `MRT_QueueSendFront`, `MRT_QueueOverwrite`, and `MRT_QueueReset` were not declared.
+  - Queue Task 3 GREEN: implemented peek, send-front, single-slot overwrite, and reset; same command passed 14 test targets.
+  - Committed Queue Task 3 with message `feat: add queue variants`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -136,6 +139,9 @@
   - `tests/unit/test_queue_send_receive.c` created.
   - `tests/CMakeLists.txt` updated for queue send/receive test.
   - `tools/run_host_tests.py` updated for queue send/receive test.
+  - `tests/unit/test_queue_variants.c` created.
+  - `include/myrtos/mrt_queue.h` updated with queue variant API declarations.
+  - `src/kernel/mrt_queue.c` updated with queue variant implementations.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -183,6 +189,8 @@
 | Queue Task 1 GREEN | `python tools\run_host_tests.py` after static queue creation | 12 test targets pass | `[summary] 12 test target(s) passed` | Pass |
 | Queue Task 2 RED | `python tools\run_host_tests.py` before send/receive declarations | Build fails due to missing function declarations | `implicit declaration of function 'MRT_QueueSend'`, `implicit declaration of function 'MRT_QueueReceive'` | Pass |
 | Queue Task 2 GREEN | `python tools\run_host_tests.py` after FIFO non-blocking send/receive | 13 test targets pass | `[summary] 13 test target(s) passed` | Pass |
+| Queue Task 3 RED | `python tools\run_host_tests.py` before queue variant declarations | Build fails due to missing function declarations | `implicit declaration of function 'MRT_QueuePeek'`, `MRT_QueueSendFront`, `MRT_QueueOverwrite`, `MRT_QueueReset` | Pass |
+| Queue Task 3 GREEN | `python tools\run_host_tests.py` after queue variants | 14 test targets pass | `[summary] 14 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

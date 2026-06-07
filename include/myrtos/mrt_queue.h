@@ -95,6 +95,52 @@ MRT_Result MRT_QueueSend(MRT_QueueHandle queue, const void *item, MRT_Timeout ti
 MRT_Result MRT_QueueReceive(MRT_QueueHandle queue, void *out_item, MRT_Timeout timeout);
 
 /**
+ * @brief 复制读取队列头部元素但不将其移出队列。
+ * @param queue 源队列句柄，不能为空。
+ * @param out_item 接收缓冲区地址，大小必须至少为创建队列时的 item_size。
+ * @param timeout 等待数据的 tick 数；当前阶段仅支持 0，非 0 会返回 MRT_RESULT_TIMEOUT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取成功；队列空且 timeout 为 0 时返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 0 timeout 暂未接入阻塞等待时返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * uint32_t value;
+ * MRT_QueuePeek(queue, &value, 0);
+ */
+MRT_Result MRT_QueuePeek(MRT_QueueHandle queue, void *out_item, MRT_Timeout timeout);
+
+/**
+ * @brief 将一个元素复制发送到队列头部。
+ * @param queue 目标队列句柄，不能为空。
+ * @param item 待发送元素地址，指向的数据大小必须至少为创建队列时的 item_size。
+ * @param timeout 等待空位的 tick 数；当前阶段仅支持 0，非 0 会返回 MRT_RESULT_TIMEOUT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示发送成功；队列满且 timeout 为 0 时返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 0 timeout 暂未接入阻塞等待时返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * uint32_t urgent = 1u;
+ * MRT_QueueSendFront(queue, &urgent, 0);
+ */
+MRT_Result MRT_QueueSendFront(MRT_QueueHandle queue, const void *item, MRT_Timeout timeout);
+
+/**
+ * @brief 覆盖写入单槽队列。
+ * @param queue 目标队列句柄，不能为空，且容量必须为 1。
+ * @param item 待覆盖写入元素地址，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示覆盖成功；参数非法或队列容量不是 1 时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * uint32_t latest = adc_sample;
+ * MRT_QueueOverwrite(queue, &latest);
+ */
+MRT_Result MRT_QueueOverwrite(MRT_QueueHandle queue, const void *item);
+
+/**
+ * @brief 清空队列中的全部元素并复位读写位置。
+ * @param queue 目标队列句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示复位成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_QueueReset(queue);
+ */
+MRT_Result MRT_QueueReset(MRT_QueueHandle queue);
+
+/**
  * @brief 查询队列剩余可写空间。
  * @param queue 待查询队列句柄，不能为空。
  * @return size_t 返回剩余可写元素数量；队列为空指针时返回 0。

@@ -57,10 +57,10 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for peek preserving item, send-front order, one-slot overwrite, multi-slot overwrite rejection, and reset clearing count.
-- [ ] Implement `MRT_QueuePeek`, `MRT_QueueSendFront`, `MRT_QueueOverwrite`, and `MRT_QueueReset`.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add queue variants`.
+- [x] Write failing tests for peek preserving item, send-front order, one-slot overwrite, multi-slot overwrite rejection, and reset clearing count.
+- [x] Implement `MRT_QueuePeek`, `MRT_QueueSendFront`, `MRT_QueueOverwrite`, and `MRT_QueueReset`.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add queue variants`.
 
 ## Task 4: ISR Variants
 
