@@ -46,8 +46,8 @@
 | C-029 | STM32 端口 + 临界区 | 嵌套进入临界区 | 中断屏蔽状态可恢复 | 端口 mock | 部分验证：`test_port_mock` 已验证 mock 临界区嵌套恢复；`test_port_stm32_tick_priority` 验证 BASEPRI 左对齐编码和非法 0 优先级拒绝；真实 PRIMASK/BASEPRI 读写待 STM32 手册和板级 smoke test 补证 |
 | C-030 | DSP 端口 + 栈初始化 | 创建任务栈帧 | 栈顶满足对齐和入口参数规则 | 端口 mock | 已验证：`test_port_dsp_stack` 覆盖 DSP C28x 风格向下增长栈、8 字节对齐、入口 PC、入口参数、退出处理函数、状态字和 XAR4-XAR7 保存槽占位 |
 | C-031 | DSP 端口 + 上下文切换 | 触发软件中断切换 | 保存/恢复接口调用顺序正确 | 端口 mock | 已验证：`test_port_dsp_context` 覆盖任务上下文请求/确认、ISR 嵌套期间延迟切换、最外层 ISR 退出提示切换、退出下溢和空输出参数拒绝；真实 DSP 汇编保存/恢复顺序待具体芯片端口补证 |
-| C-032 | 手册 + API | 每个 public API | 手册有原型、参数、返回值、示例、上下文限制 | 文档检查 | 待实现 |
-| C-033 | 注释 + 源码 | 每个函数 | 有中文函数头说明和内部步骤注释 | 静态扫描 | 待实现 |
+| C-032 | 手册 + API | 每个 public API | 手册有原型、参数、返回值、示例、上下文限制 | 文档检查 | 已验证：`python tools\verify\check_api_manual_coverage.py` 覆盖 `docs/api/myrtos_api_catalog.md` 中 125 个 API 条目，并检查每个条目包含函数原型、功能说明、参数、返回值、调用上下文、阻塞行为、ISR 限制、配置宏、调用示例、常见错误；同脚本验证 STM32/DSP 移植章节包含工具链、启动文件、向量表、tick、上下文切换、栈布局、临界区、低功耗、示例、排错 |
+| C-033 | 注释 + 源码 | 每个函数 | 有中文函数头说明和内部步骤注释 | 静态扫描 | 已验证：`python tools\verify\check_chinese_comments.py` 覆盖 `include/` 与 `src/` 函数头中文 Doxygen 字段和函数体附近中文步骤注释；`python tools\verify\check_original_symbols.py` 验证源码和手册未出现 banned FreeRTOS-style public symbols |
 
 ## 后续落地
 

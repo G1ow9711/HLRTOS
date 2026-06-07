@@ -744,6 +744,23 @@ static MRT_Result MRT_TaskApplyNotification(MRT_TaskHandle task, MRT_NotifyValue
     return MRT_RESULT_OK;
 }
 
+/**
+ * @brief 使用调用者提供的 TCB 和栈创建静态任务。
+ * @param name 任务名称指针，可为空；内核只保存指针不复制字符串。
+ * @param entry 任务入口函数，不能为空。
+ * @param arg 传给任务入口函数的用户参数，可为空。
+ * @param priority 任务优先级，必须小于 MRT_CFG_MAX_PRIORITIES。
+ * @param stack 调用者提供的任务栈，不能为空。
+ * @param stack_words 任务栈元素数量，必须大于 0。
+ * @param storage 调用者提供的任务控制块，不能为空。
+ * @param out_task 输出任务句柄，可为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_Task task_storage;
+ * MRT_StackType stack[128];
+ * MRT_TaskHandle task;
+ * MRT_TaskCreateStatic("app", app_task, arg, 3u, stack, 128u, &task_storage, &task);
+ */
 MRT_Result MRT_TaskCreateStatic(const char *name,
                                 MRT_TaskEntry entry,
                                 void *arg,

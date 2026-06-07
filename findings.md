@@ -161,6 +161,14 @@
 - DSP stack helper is now implemented and tested by `test_port_dsp_stack`: frame is host-verifiable, 8-byte aligned, downward-growing, and records status, entry argument, exit handler, entry PC, and XAR4-XAR7 placeholders.
 - DSP software-interrupt context model is now implemented and tested by `test_port_dsp_context`: requests remain pending until acknowledged, nested ISR exits defer switching until outermost exit, and underflow/null-output errors are rejected.
 - Requirement matrix now records STM32/DSP port-contract evidence under `R-003` and `R-004`; real board smoke tests and detailed final manual porting steps remain pending.
+- Manual/static verification branch starts from `feature/portable-stm32-dsp` at `eb0c965` with a 59-target host-test baseline passing.
+- Official reference-manual structure observed from FreeRTOS reference material: opening scope/about section, API usage restrictions, chapterized API groups, function prototype, summary/parameters/return/notes/examples, and appendices. MyRTOS manual must use this structure only as a template and keep all wording/examples/API names original.
+- New manual/static plan file: `docs/superpowers/plans/2026-06-08-myrtos-manual-static-verification.md`.
+- Static verification scripts added under `tools/verify/`: API manual coverage, Chinese function comments, and originality/symbol scan.
+- API manual coverage script verifies every API table entry in `docs/api/myrtos_api_catalog.md` has a matching `### API` manual section with function prototype, purpose, parameters, return value, calling context, blocking behavior, ISR limits, config dependencies, example, and common errors.
+- Chinese comment script initially found 13 gaps, mostly internal task scheduler prototypes plus two public function definitions. These were fixed in `src/kernel/mrt_task_internal.h`, `src/kernel/mrt_queue.c`, and `src/kernel/mrt_task.c`.
+- Manual file `docs/manual/MyRTOS_Reference_Manual_zh.md` now covers 125 API sections and includes detailed STM32 Cortex-M and DSP porting steps with toolchain, startup/vector table, tick, context switch, stack layout, critical section, low power, example, and troubleshooting content.
+- Static checks currently pass: manual coverage, Chinese comment coverage, and original-symbol scan.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 4: TDD Implementation
+Phase 5: Documentation
 
 ## Phases
 
@@ -40,17 +40,20 @@ Phase 4: TDD Implementation
 - **Status:** in_progress
 
 ### Phase 5: Documentation
-- [ ] Write original Chinese user manual in FreeRTOS-like structure
-- [ ] Document API, examples, detailed STM32/DSP porting steps, configuration, troubleshooting
-- [ ] Avoid verbatim FreeRTOS manual/template copying
-- **Status:** pending
+- [x] Write original Chinese user manual in FreeRTOS-like structure
+  - [x] API reference manual coverage
+  - [x] Detailed STM32 porting steps
+  - [x] Detailed DSP porting steps
+- [x] Document API, examples, detailed STM32/DSP porting steps, configuration, troubleshooting
+- [x] Avoid verbatim FreeRTOS manual/template copying
+- **Status:** complete
 
 ### Phase 6: Verification & Delivery
-- [ ] Run all host tests
-- [ ] Run coupling tests
-- [ ] Run static checks where available
+- [x] Run all host tests
+- [x] Run coupling tests
+- [x] Run static checks where available
 - [ ] Produce verification report
-- **Status:** pending
+- **Status:** in_progress
 
 ## Key Questions
 1. Which first target should drive the port: STM32 Cortex-M3/M4/M7, Cortex-M0/M0+, or a specific DSP family?

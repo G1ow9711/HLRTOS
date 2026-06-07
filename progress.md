@@ -470,6 +470,18 @@
 ---
 *Update after completing each phase or encountering errors.*
 
+## Manual/Static Verification Plan Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree creation | `git worktree add F:\My_RTOS\.worktrees\manual-static-verification -b feature/manual-static-verification feature/portable-stm32-dsp` | New branch from portable helper baseline | Worktree created at `F:\My_RTOS\.worktrees\manual-static-verification` | Pass |
+| Baseline | `python tools\run_host_tests.py` in `.worktrees\manual-static-verification` | 59 test targets pass | `[summary] 59 test target(s) passed` | Pass |
+| Plan file | Create `docs/superpowers/plans/2026-06-08-myrtos-manual-static-verification.md` | Plan 11 tasks defined | 4 tasks defined for static scripts, manual writing, static GREEN, and matrix evidence | Pass |
+| Static scripts RED | `python tools\verify\check_api_manual_coverage.py`; `python tools\verify\check_chinese_comments.py`; `python tools\verify\check_original_symbols.py` | Manual missing and comment gaps detected; originality scan clean | Manual missing; 13 comment failures; originality scan passed | Pass |
+| Comment coverage fix | `python tools\verify\check_chinese_comments.py` after adding missing comments | include/src comment check passes | `[chinese-comments] include/src function comments covered` | Pass |
+| Manual coverage GREEN | `python tools\verify\check_api_manual_coverage.py` after writing manual | Every catalog API has manual section | `[manual-coverage] 125 API section(s) covered` | Pass |
+| Static verification GREEN | Run all three `tools\verify` scripts | Manual, comments, originality all pass | API 125 covered; comments covered; no banned FreeRTOS-style public symbols | Pass |
+| Manual/static full verification | `python tools\run_host_tests.py` plus three `tools\verify` scripts | Host and static checks pass | `[summary] 59 test target(s) passed`; API 125 covered; comments covered; originality clean | Pass |
+
 ## Portable STM32/DSP Plan Results
 | Check | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|

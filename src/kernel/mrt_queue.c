@@ -745,6 +745,13 @@ MRT_Result MRT_QueueReceiveFromISR(MRT_QueueHandle queue, void *out_item, bool *
     return MRT_QueueReceive(queue, out_item, 0u);
 }
 
+/**
+ * @brief 查询队列当前剩余可写槽位数量。
+ * @param queue 队列句柄，可以为空；为空时返回 0。
+ * @return size_t 返回剩余可写元素数量。
+ * @example
+ * size_t spaces = MRT_QueueSpacesAvailable(queue);
+ */
 size_t MRT_QueueSpacesAvailable(MRT_QueueHandle queue)
 {
     /* 空队列句柄没有可查询对象，返回 0。 */
