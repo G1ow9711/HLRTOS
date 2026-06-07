@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 4 extension: Dynamic object API gap closure
+Phase 6 extension: remaining hardware smoke and policy coupling closure
 
 ## Phases
 
@@ -40,14 +40,14 @@ Phase 4 extension: Dynamic object API gap closure
 - [ ] Close preview API implementation gaps
   - [x] Task lifecycle APIs: dynamic create/delete, suspend/resume, delay-until, priority set, stack water mark
   - [x] Dynamic synchronization/buffer APIs
-  - [ ] Runtime stats API
+  - [x] Runtime stats API: task runtime tick accounting
 - **Status:** in_progress
 
 ### Phase 5: Documentation
 - [x] Write original Chinese user manual in FreeRTOS-like structure
   - [x] API reference manual coverage
-  - [x] Detailed STM32 porting steps
-  - [x] Detailed DSP porting steps
+  - [x] Detailed STM32 porting steps, minimal integration skeleton, and acceptance checklist
+  - [x] Detailed DSP porting steps, minimal integration skeleton, and acceptance checklist
 - [x] Document API, examples, detailed STM32/DSP porting steps, configuration, troubleshooting
 - [x] Avoid verbatim FreeRTOS manual/template copying
 - **Status:** complete
@@ -82,6 +82,8 @@ Phase 4 extension: Dynamic object API gap closure
 | Task lifecycle gap first | API catalog vs C source audit found 21 missing catalog APIs; start with 8 task lifecycle APIs because they unblock scheduler, heap, ISR, and manual consistency evidence. |
 | Dynamic object APIs second | After task lifecycle closure, 13 gaps remain. This branch targets 12 dynamic object APIs and leaves runtime statistics as the final source/catalog API gap. |
 | Heap exhaustion test helper | Free-list/coalescing heaps need block headers, so failure-path tests must exhaust heap by repeated smaller allocations instead of requesting the full reported free size at once. |
+| Runtime stats tick model | Current portable preview records task runtime in kernel ticks; high-resolution STM32/DSP counters remain a port enhancement without changing `MRT_StatsGetTaskRuntime`. |
+| Porting manual detail | STM32/DSP manual chapters now include concrete migration steps, handler skeletons, smoke-test guidance, troubleshooting, and acceptance checklists. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

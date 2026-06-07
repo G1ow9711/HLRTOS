@@ -71,6 +71,7 @@ TESTS = [
     ("test_tickless_timer_compensation", ROOT / "tests" / "coupling" / "test_tickless_timer_compensation.c"),
     ("test_trace_task_switch", ROOT / "tests" / "coupling" / "test_trace_task_switch.c"),
     ("test_trace_queue", ROOT / "tests" / "coupling" / "test_trace_queue.c"),
+    ("test_runtime_stats", ROOT / "tests" / "coupling" / "test_runtime_stats.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -86,6 +87,7 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_queue.c",
     ROOT / "src" / "kernel" / "mrt_semaphore.c",
     ROOT / "src" / "kernel" / "mrt_stream_buffer.c",
+    ROOT / "src" / "kernel" / "mrt_stats.c",
     ROOT / "src" / "kernel" / "mrt_task.c",
     ROOT / "src" / "kernel" / "mrt_tickless.c",
     ROOT / "src" / "kernel" / "mrt_trace.c",

@@ -7,7 +7,7 @@
 
 本手册采用嵌入式 RTOS 常见参考手册结构：先说明适用范围、调用限制和配置方法，再按 API 族分章列出函数原型、功能说明、参数、返回值、调用上下文、阻塞行为、ISR 限制、配置宏、调用示例和常见错误。本文档为 MyRTOS 原创说明，不复制其他 RTOS 的源码、注释或手册文字。
 
-MyRTOS 当前处于 preview 阶段。已经通过 host 自动化测试的模块包括：基础类型、配置、链表、优先级位图、mock 端口、任务调度、队列、信号量、互斥锁、事件组、任务通知、软件定时器、流缓冲、消息缓冲、堆、固定块内存池、tickless、trace、assert、STM32 Cortex-M 端口契约 helper、DSP C28x 风格端口契约 helper。真实 STM32/DSP 板级 smoke test 需要按本手册移植章节接入具体硬件后补证。
+MyRTOS 当前处于 preview 阶段。已经通过 host 自动化测试的模块包括：基础类型、配置、链表、优先级位图、mock 端口、任务调度、队列、信号量、互斥锁、事件组、任务通知、软件定时器、流缓冲、消息缓冲、堆、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、DSP C28x 风格端口契约 helper。真实 STM32/DSP 板级 smoke test 需要按本手册移植章节接入具体硬件后补证。
 
 ## 2. API 使用规则
 
@@ -1262,15 +1262,15 @@ int main(void)
 
 ### MRT_StatsGetTaskRuntime
 - 函数原型：`MRT_Result MRT_StatsGetTaskRuntime(MRT_TaskHandle task, uint64_t *out_runtime);`
-- 功能说明：读取任务运行时间统计。
-- 参数：任务句柄和输出计数。
-- 返回值：成功返回 `MRT_RESULT_OK`；未启用统计或参数错误返回相应错误。
+- 功能说明：读取任务累计运行时间统计；当前 portable preview 以 kernel tick 为单位，在每次 `MRT_KernelTick()` 到来时把刚结束的一个 tick 归属到当前运行任务。
+- 参数：任务句柄和输出计数；任务不能为空，且不能处于 deleted 状态，输出指针不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误或任务已删除返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：诊断任务。
 - 阻塞行为：不阻塞。
 - ISR 限制：不建议在 ISR 中调用。
-- 配置宏：运行统计配置。
+- 配置宏：当前实现不需要额外宏；tick 单位受 `MRT_CFG_TICK_RATE_HZ` 影响。
 - 调用示例：`MRT_StatsGetTaskRuntime(task, &ticks);`
-- 常见错误：未提供端口级高分辨率计数源。
+- 常见错误：把当前 tick 级统计当作 CPU cycle 精度；STM32/DSP 高分辨率计数源属于后续端口增强。
 
 ### MRT_AssertSetHook
 - 函数原型：`MRT_Result MRT_AssertSetHook(MRT_AssertHook hook, void *user);`
@@ -1567,6 +1567,55 @@ int main(void)
 11. 示例 smoke test：创建两个任务，一个 500 ms 翻转 LED，一个通过队列接收 UART RX ISR 发来的字节；创建一个周期软件定时器翻转第二个 GPIO；在 SysTick 中调用 `MRT_KernelTick()`；在 UART ISR 中调用 `MRT_QueueSendFromISR()` 并把 `should_yield` 传给 `MRT_PortYieldFromISR()`。
 12. 排错：若首任务不运行，检查 SVC/PendSV 向量和 PSP 初始化；若 HardFault，检查 PC 是否为 Thumb 地址、栈 8 字节对齐、任务栈是否溢出；若 ISR API 无效，检查 `MRT_PortIsInsideISR()` 和 NVIC 优先级；若 tick 不准，检查 reload、时钟源和 `SystemCoreClock` 更新。
 
+STM32 最小接入骨架如下，真实工程中可把寄存器写入替换为厂商 HAL 或 CMSIS 调用，但必须保持 tick、PendSV 和 ISR 延迟切换语义一致。
+
+```c
+void SysTick_Handler(void)
+{
+    MRT_KernelTick();
+}
+
+void USARTx_IRQHandler(void)
+{
+    bool should_yield = false;
+    uint8_t byte = USARTx->DR;
+
+    (void)MRT_QueueSendFromISR(rx_queue, &byte, &should_yield);
+    if (should_yield)
+    {
+        MRT_PortYieldFromISR();
+    }
+}
+
+int main(void)
+{
+    uint32_t reload = 0u;
+
+    SystemInit();
+    BoardPeripheralInit();
+    MRT_KernelInitialize();
+    MRT_HeapInitialize(heap_buffer, sizeof(heap_buffer), MRT_HEAP_MODE_COALESCING);
+    CreateApplicationTasks();
+    MRT_PortStm32CmCalculateSysTickReload(SystemCoreClock, MRT_CFG_TICK_RATE_HZ, &reload);
+    ConfigureSysTickReload(reload);
+    MRT_KernelStart();
+
+    for (;;)
+    {
+    }
+}
+```
+
+STM32 移植验收清单：
+
+- 编译检查：`arm-none-eabi-gcc` 无未定义 handler，map 文件中 MyRTOS 内核、端口汇编、任务栈和 heap 均已链接。
+- 启动检查：`MRT_KernelStart()` 后首个最高优先级任务运行，空闲路径不会回到 `main()`。
+- tick 检查：1 秒内 `MRT_KernelGetTick()` 增量等于 `MRT_CFG_TICK_RATE_HZ`，误差只来自晶振和测量工具。
+- 切换检查：高优先级任务被 ISR 唤醒后，在 ISR 退出后抢占低优先级任务，而不是在 ISR 内直接切换。
+- 临界区检查：嵌套进入/退出临界区后中断屏蔽状态恢复到进入前状态，高紧急中断不调用 MyRTOS API。
+- 低功耗检查：tickless 睡眠前后任务延时和软件定时器到期顺序保持一致。
+- 故障检查：开启断言 hook、trace hook 和栈水位查询，至少覆盖任务创建失败、队列满、ISR 唤醒任务、tickless 唤醒四类场景。
+
 ## 6. DSP 移植步骤
 
 ### DSP 移植步骤
@@ -1584,6 +1633,59 @@ int main(void)
 9. 链接脚本：为任务栈、heap、DMA 缓冲、采样帧和中断栈分区。DSP 项目常有快 RAM、共享 RAM、外部 RAM，任务栈应放在访问延迟可预测的区域。
 10. 示例 smoke test：创建一个采样处理任务和一个通信任务；timer ISR 每 1 ms 推进 tick；ADC ISR 把采样块指针写入固定块内存池或队列；软件中断执行上下文切换；低优先级任务用事件组等待处理完成。
 11. 排错：若任务入口参数错误，检查 ABI 参数槽；若切换后状态寄存器异常，检查 ST0/ST1 保存恢复；若 ISR 嵌套后不切换，检查进入/退出计数是否回到 0；若随机崩溃，检查栈对齐、双字访问和链接脚本栈区大小。
+
+DSP 最小接入骨架如下。不同 DSP 的寄存器名称不同，示例只表达调用顺序和耦合关系。
+
+```c
+interrupt void CpuTimer0Isr(void)
+{
+    ClearCpuTimer0InterruptFlag();
+    MRT_KernelTick();
+    MRT_PortDspC28xRequestContextSwitch();
+    AcknowledgeTimerInterruptGroup();
+}
+
+interrupt void AdcIsr(void)
+{
+    bool should_switch = false;
+    SampleBlock *block = AcquireSampleBlockFromIsr();
+
+    MRT_PortDspC28xEnterInterrupt();
+    (void)MRT_QueueSendFromISR(sample_queue, &block, &should_switch);
+    if (should_switch)
+    {
+        MRT_PortDspC28xRequestContextSwitch();
+    }
+    ClearAdcInterruptFlag();
+    MRT_PortDspC28xExitInterrupt(&should_switch);
+}
+
+int main(void)
+{
+    DspClockInit();
+    DspInterruptControllerInit();
+    MRT_KernelInitialize();
+    MRT_HeapInitialize(heap_buffer, sizeof(heap_buffer), MRT_HEAP_MODE_COALESCING);
+    CreateDspApplicationTasks();
+    ConfigureCpuTimer0ForTick(MRT_CFG_TICK_RATE_HZ);
+    EnableSoftwareContextSwitchInterrupt();
+    MRT_KernelStart();
+
+    for (;;)
+    {
+    }
+}
+```
+
+DSP 移植验收清单：
+
+- ABI 检查：上下文切换汇编保存并恢复所有被调用者保存寄存器、状态寄存器、返回地址、栈指针和必要的扩展寄存器。
+- 栈检查：任务栈满足目标 ABI 对齐要求，入口参数能被任务函数稳定读取，任务误返回时进入统一退出兜底函数。
+- tick 检查：硬件 timer ISR 只推进内核 tick 并请求延迟切换，不执行长时间 DSP 算法。
+- 嵌套检查：多层 ISR 中只有最外层退出后允许切换，`MRT_PortDspC28xGetInterruptNesting()` 不出现下溢。
+- 数据通路检查：ADC/DMA ISR 通过队列、事件组或固定块内存池把数据交给任务，任务侧能在预期 tick 内被唤醒。
+- 内存检查：任务栈、heap、DMA buffer、采样 buffer 放在确定的 RAM 区域，cache 或共享 RAM 同步策略已写入端口说明。
+- smoke 检查：至少运行 30 分钟采样/通信/定时器混合负载，记录 tick 计数、队列峰值、内存最小剩余量和断言 hook 触发次数。
 
 ## 7. 附录
 

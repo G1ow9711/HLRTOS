@@ -132,6 +132,8 @@ typedef struct MRT_Task {
     bool notify_pending;
     /** @brief 是否使用静态存储创建。 */
     bool static_storage;
+    /** @brief 任务累计运行时间；当前 preview 以 kernel tick 为单位。 */
+    uint64_t runtime_ticks;
 } MRT_Task;
 
 /**

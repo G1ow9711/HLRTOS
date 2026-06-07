@@ -410,6 +410,31 @@ void MRT_TaskKernelTick(MRT_Tick now)
 }
 
 /**
+ * @brief 把经过的运行 tick 累计到当前任务。
+ * @param elapsed_ticks 已经过的运行 tick 数；为 0 时不改变统计。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskKernelAccumulateCurrentRuntime(1u);
+ */
+void MRT_TaskKernelAccumulateCurrentRuntime(MRT_Tick elapsed_ticks)
+{
+    /* 没有运行任务时，空闲时间暂不归属到具体任务。 */
+    if (g_current_task == 0) {
+        /* 直接返回调用方。 */
+        return;
+    }
+
+    /* 0 tick 累计没有意义，直接忽略。 */
+    if (elapsed_ticks == 0u) {
+        /* 直接返回调用方。 */
+        return;
+    }
+
+    /* 把经过的 tick 计入当前任务累计运行时间。 */
+    g_current_task->runtime_ticks += (uint64_t)elapsed_ticks;
+}
+
+/**
  * @brief 使用调用方提供的 TCB 和栈静态创建任务。
  * @param name 任务名称，允许为空，仅用于调试显示。
  * @param entry 任务入口函数，不能为空。
@@ -927,6 +952,9 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
 
     /* 标记该任务使用静态存储。 */
     storage->static_storage = true;
+
+    /* 新任务尚未运行，运行统计从 0 tick 开始。 */
+    storage->runtime_ticks = 0u;
 
     /* 将任务加入 ready list，等待调度器选择。 */
     MRT_TaskAddReady(storage);

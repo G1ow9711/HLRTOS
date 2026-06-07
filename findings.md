@@ -195,3 +195,12 @@
 - First GREEN run exposed a test assumption bug: `MRT_Malloc(free_before)` fails on coalescing heap because `free_before` includes the heap block header overhead. Failure-path tests now use a helper that repeatedly allocates smaller blocks until even the minimum payload cannot be allocated, then compares heap free size before/after the target dynamic API failure.
 - Dynamic object implementation is now covered by 64 passing host targets. The 12 dynamic object source/catalog gaps are closed; the remaining known source/catalog gap is `MRT_StatsGetTaskRuntime`.
 - Manual updates now document exact dynamic object prototypes, failed-create handle clearing, static-delete rejection, waiters/locked-object busy deletion, active timer delete-stop-free behavior, dynamic stream/message buffer single-block heap layout, and the current absence of stream/message buffer delete APIs.
+
+## Runtime Stats API Gap Closure
+- Branch `feature/runtime-stats-api` starts from `feature/dynamic-object-apis` at `dfe4838`.
+- Baseline verification in the new worktree passes: `python tools\run_host_tests.py` reports `[summary] 64 test target(s) passed`.
+- `MRT_StatsGetTaskRuntime` is the remaining known API catalog/source gap after dynamic object APIs.
+- Runtime stats will use portable tick-level accounting for this branch: each `MRT_KernelTick()` attributes one runtime tick to the task that was current before the tick interrupt processed wakeups and timers. This is deterministic on host and maps to real ports; STM32/DSP cycle-accurate counters can later feed the same public query API.
+- Runtime stats implementation is now covered by 65 passing host targets. `MRT_StatsGetTaskRuntime` has public header/source, task TCB storage, kernel tick accumulation, and coupling tests for high/low task runtime attribution plus invalid/deleted-task arguments.
+- Current API catalog/source implementation gap count is 0 for the 125 public API entries in `docs/api/myrtos_api_catalog.md`. Remaining work is system-level: real STM32/DSP smoke, mutex timeout rollback, held-mutex task deletion policy, timer service task, and broader comment scanning.
+- Manual porting chapters have been strengthened beyond API reference coverage: STM32 and DSP sections now include minimum handler/application skeletons, smoke-test expectations, troubleshooting points, and explicit acceptance checklists for build, tick, context switch, ISR wakeup, low power, ABI, stack, and memory placement.

@@ -2,6 +2,12 @@
 
 ## Session: 2026-06-07
 
+### Runtime Stats Branch Resume Verification
+- Recovered active worktree `F:\My_RTOS\.worktrees\runtime-stats-api` on branch `feature/runtime-stats-api`.
+- Static verification passed: `check_api_manual_coverage.py` covered 125 API sections, `check_chinese_comments.py` covered include/src function comments, and `check_original_symbols.py` found no banned FreeRTOS-style public symbols.
+- First parallel `python tools\run_host_tests.py` attempt timed out after 124 seconds while static checks ran concurrently; reran host tests alone with a longer timeout.
+- Host verification passed: `python tools\run_host_tests.py` reported `[summary] 65 test target(s) passed`.
+
 ### Tickless/Trace/Assert Branch
 - Created design document `docs/superpowers/specs/2026-06-07-myrtos-tickless-trace-assert-design.md`.
 - Created implementation plan `docs/superpowers/plans/2026-06-07-myrtos-tickless-trace-hooks.md`.
@@ -495,6 +501,19 @@
 | Documentation evidence | Update manual, requirement matrix, coupling matrix, final report | Dynamic object APIs documented as implemented; remaining gap stated accurately | Manual dynamic sections updated; R-002/R-003/R-004/R-008/R-009/R-010/C-017/C-020/C-022/C-023/C-032/final report updated | Pass |
 | Static checks | Run three `tools\verify` scripts | Manual/comments/originality pass | API 125 covered; comments covered; originality clean | Pass |
 | Final verification | `python tools\run_host_tests.py` plus three static scripts and `git diff --check` | Host/static checks pass; no real whitespace errors | `[summary] 64 test target(s) passed`; API 125 covered; comments covered; originality clean; `git diff --check` exit 0 with expected CRLF warnings only | Pass |
+
+## Runtime Stats API Gap Closure Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree creation | `git worktree add .worktrees\runtime-stats-api -b feature/runtime-stats-api feature/dynamic-object-apis` | New branch from dynamic object baseline | Worktree created at `F:\My_RTOS\.worktrees\runtime-stats-api` | Pass |
+| Baseline host verification | `python tools\run_host_tests.py` | 64 host test targets pass | `[summary] 64 test target(s) passed` | Pass |
+| Plan file | Create `docs/superpowers/plans/2026-06-08-myrtos-runtime-stats-api.md` | Runtime stats API plan recorded | Plan covers tick-level runtime accounting and final catalog/source gap closure | Pass |
+| Runtime stats RED | `python tools\run_host_tests.py` after adding runtime stats test | Build fails because stats API is missing | `test_runtime_stats` fails with `fatal error: myrtos/mrt_stats.h: No such file or directory`; all prior targets pass | Pass |
+| Runtime stats GREEN | `python tools\run_host_tests.py` after implementation | Existing and new runtime stats tests pass | `[summary] 65 test target(s) passed` | Pass |
+| Documentation evidence | Update manual, requirement matrix, coupling matrix, final report | Runtime stats documented as implemented; catalog/source gap count recorded as 0 | Manual `MRT_StatsGetTaskRuntime` updated; R-002/R-008/R-009/R-010/C-034/final report updated | Pass |
+| Static checks | Run three `tools\verify` scripts | Manual/comments/originality pass | API 125 covered; comments covered; originality clean | Pass |
+| Porting manual detail refresh | Strengthen manual STM32/DSP porting chapters | Manual includes detailed steps plus concrete integration and acceptance guidance | Added STM32/DSP minimal skeletons and acceptance checklists | Pass |
+| Runtime stats final verification | `python tools\run_host_tests.py` plus three static scripts | Host/static checks pass | `[summary] 65 test target(s) passed`; API 125 covered; comments covered; originality clean | Pass |
 
 ## Final Verification Report Results
 | Check | Command | Expected | Actual | Status |

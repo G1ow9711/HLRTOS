@@ -20,6 +20,7 @@ add_library(myrtos_kernel STATIC
     src/kernel/mrt_queue.c
     src/kernel/mrt_semaphore.c
     src/kernel/mrt_stream_buffer.c
+    src/kernel/mrt_stats.c
     src/kernel/mrt_task.c
     src/kernel/mrt_tickless.c
     src/kernel/mrt_trace.c

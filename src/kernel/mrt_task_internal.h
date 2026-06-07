@@ -50,6 +50,15 @@ void MRT_TaskKernelYield(void);
 void MRT_TaskKernelTick(MRT_Tick now);
 
 /**
+ * @brief 把经过的运行 tick 累计到当前任务。
+ * @param elapsed_ticks 已经过的运行 tick 数；为 0 时不改变统计。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskKernelAccumulateCurrentRuntime(1u);
+ */
+void MRT_TaskKernelAccumulateCurrentRuntime(MRT_Tick elapsed_ticks);
+
+/**
  * @brief 查询最近的任务唤醒 tick。
  * @param out_tick 输出最近唤醒 tick，不能为空。
  * @return bool 返回 true 表示存在延时任务 deadline；false 表示没有延时任务。

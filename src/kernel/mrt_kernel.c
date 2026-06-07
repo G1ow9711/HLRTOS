@@ -109,6 +109,9 @@ MRT_Tick MRT_KernelGetTick(void)
  */
 void MRT_KernelTick(void)
 {
+    /* tick 中断到来时，先把刚结束的一个 tick 归属到当前运行任务。 */
+    MRT_TaskKernelAccumulateCurrentRuntime(1u);
+
     /* 将系统 tick 递增 1，溢出按无符号整数自然回绕。 */
     g_kernel_tick++;
 

@@ -48,6 +48,7 @@
 | C-031 | DSP 端口 + 上下文切换 | 触发软件中断切换 | 保存/恢复接口调用顺序正确 | 端口 mock | 已验证：`test_port_dsp_context` 覆盖任务上下文请求/确认、ISR 嵌套期间延迟切换、最外层 ISR 退出提示切换、退出下溢和空输出参数拒绝；真实 DSP 汇编保存/恢复顺序待具体芯片端口补证 |
 | C-032 | 手册 + API | 每个 public API | 手册有原型、参数、返回值、示例、上下文限制 | 文档检查 | 已验证：`python tools\verify\check_api_manual_coverage.py` 覆盖 `docs/api/myrtos_api_catalog.md` 中 125 个 API 条目，并检查每个条目包含函数原型、功能说明、参数、返回值、调用上下文、阻塞行为、ISR 限制、配置宏、调用示例、常见错误；同脚本验证 STM32/DSP 移植章节包含工具链、启动文件、向量表、tick、上下文切换、栈布局、临界区、低功耗、示例、排错；本阶段手册补充动态对象精确原型、静态删除拒绝、等待者/持锁忙删除、活动定时器删除先停止、动态缓冲单堆块布局和当前无缓冲删除 API 的限制 |
 | C-033 | 注释 + 源码 | 每个函数 | 有中文函数头说明和内部步骤注释 | 静态扫描 | 已验证：`python tools\verify\check_chinese_comments.py` 覆盖 `include/` 与 `src/` 函数头中文 Doxygen 字段和函数体附近中文步骤注释；`python tools\verify\check_original_symbols.py` 验证源码和手册未出现 banned FreeRTOS-style public symbols |
+| C-034 | 运行统计 + tick + 调度 | 当前任务跨 tick 运行，随后阻塞并切换到其他任务 | 每个 kernel tick 归属到 tick 到来前的当前运行任务；任务删除后拒绝统计查询 | host 耦合测试 | 已验证：`test_runtime_stats` 覆盖高优先级任务连续运行两个 tick 后累计 2，阻塞期间低优先级任务累计 2，高优先级任务唤醒后继续累计；同时覆盖空任务、空输出和已删除任务查询返回 `MRT_RESULT_INVALID_ARGUMENT` |
 
 ## 后续落地
 
