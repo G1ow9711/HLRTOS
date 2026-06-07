@@ -373,6 +373,63 @@ MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
     return task->wait_result;
 }
 
+/**
+ * @brief 唤醒对象等待链表中的第一个任务。
+ * @param wait_list 队列、信号量等对象的等待链表，不能为空。
+ * @param wait_result 写入被唤醒任务的等待结果。
+ * @param switch_now true 表示立即重选当前任务，false 表示只让任务 ready，由 ISR 退出后再切换。
+ * @return bool 返回 true 表示成功唤醒了一个任务，返回 false 表示等待链表为空或参数非法。
+ * @example
+ * bool woke = MRT_TaskKernelWakeFirstObjectWaiter(&queue->waiting_receivers, MRT_RESULT_OK, true);
+ */
+bool MRT_TaskKernelWakeFirstObjectWaiter(MRT_List *wait_list, MRT_Result wait_result, bool switch_now)
+{
+    /* 等待链表不能为空。 */
+    if (wait_list == 0) {
+        /* 参数非法时没有任务可唤醒。 */
+        return false;
+    }
+
+    /* 空等待链表表示没有任务正在等待该对象。 */
+    if (MRT_ListIsEmpty(wait_list)) {
+        /* 没有唤醒任何任务。 */
+        return false;
+    }
+
+    /* 取出等待链表头部任务；链表按反向优先级排序，头部优先级最高。 */
+    MRT_ListNode *wait_node = MRT_ListGetHead(wait_list);
+
+    /* 从等待节点恢复任务控制块指针。 */
+    MRT_Task *task = (MRT_Task *)wait_node->item;
+
+    /* 从对象等待链表移除该任务。 */
+    MRT_ListRemove(&task->wait_node);
+
+    /* 如果该任务还在 delay list 中等待 timeout，需要同步移除。 */
+    if (MRT_ListNodeIsLinked(&task->state_node)) {
+        /* 移除 timeout 节点，防止后续 tick 再次唤醒同一任务。 */
+        MRT_ListRemove(&task->state_node);
+    }
+
+    /* 写入对象等待结果。 */
+    task->wait_result = wait_result;
+
+    /* 被对象唤醒后不再等待具体对象。 */
+    task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
+
+    /* 重新加入 ready list，等待调度器选择。 */
+    MRT_TaskAddReady(task);
+
+    /* 任务上下文唤醒时需要立即重选当前任务。 */
+    if (switch_now) {
+        /* 如果被唤醒任务优先级更高，将立即成为当前任务。 */
+        MRT_TaskSwitchToHighestReady();
+    }
+
+    /* 已成功唤醒一个等待任务。 */
+    return true;
+}
+
 MRT_Result MRT_TaskCreateStatic(const char *name,
                                 MRT_TaskEntry entry,
                                 void *arg,

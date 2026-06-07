@@ -97,6 +97,9 @@
   - Queue Task 5 RED: `python tools\run_host_tests.py` failed in `test_queue_task_timeout` because `MRT_QueueReceive(queue, out, 3)` did not block the current task or switch to the low-priority task.
   - Queue Task 5 GREEN: added task object-wait node/result/reason fields, queue receive waiting list coupling, and timeout cleanup on tick wake; same command passed 16 test targets.
   - Queue Task 5 commit message: `feat: add queue receive timeout coupling`.
+  - Queue Task 6 RED: `python tools\run_host_tests.py` failed in `test_queue_send_wakes_receiver` because queue send did not wake the blocked receiver.
+  - Queue Task 6 GREEN: added object-wait wakeup helper, normal send immediate reschedule, and ISR send delayed-yield signaling; same command passed 17 test targets.
+  - Queue Task 6 commit message: `feat: wake receiver on queue send`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -155,6 +158,9 @@
   - `include/myrtos/mrt_task.h` updated with task wait reason/result fields.
   - `src/kernel/mrt_task_internal.h` updated with object-wait blocking API.
   - `src/kernel/mrt_task.c` updated with object-wait timeout coupling.
+  - `tests/coupling/test_queue_send_wakes_receiver.c` created.
+  - `src/kernel/mrt_task_internal.h` updated with object-wait wakeup API.
+  - `src/kernel/mrt_queue.c` updated so task-context send wakes receivers and ISR send sets delayed-yield output when a receiver wakes.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -208,6 +214,8 @@
 | Queue Task 4 GREEN | `python tools\run_host_tests.py` after ISR queue APIs | 15 test targets pass | `[summary] 15 test target(s) passed` | Pass |
 | Queue Task 5 RED | `python tools\run_host_tests.py` before queue receive blocking | Coupling test fails because current task does not block | `assertion failed: MRT_TaskGetCurrent() == low_task` | Pass |
 | Queue Task 5 GREEN | `python tools\run_host_tests.py` after queue receive timeout coupling | 16 test targets pass | `[summary] 16 test target(s) passed` | Pass |
+| Queue Task 6 RED | `python tools\run_host_tests.py` before send wakeup | Coupling test fails because sender does not wake receiver | `assertion failed: MRT_TaskGetCurrent() == receiver_task` | Pass |
+| Queue Task 6 GREEN | `python tools\run_host_tests.py` after send wakeup | 17 test targets pass | `[summary] 17 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

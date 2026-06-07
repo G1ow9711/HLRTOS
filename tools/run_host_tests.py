@@ -23,6 +23,7 @@ TESTS = [
     ("test_queue_variants", ROOT / "tests" / "unit" / "test_queue_variants.c"),
     ("test_queue_isr", ROOT / "tests" / "unit" / "test_queue_isr.c"),
     ("test_queue_task_timeout", ROOT / "tests" / "coupling" / "test_queue_task_timeout.c"),
+    ("test_queue_send_wakes_receiver", ROOT / "tests" / "coupling" / "test_queue_send_wakes_receiver.c"),
 ]
 
 KERNEL_SOURCES = [

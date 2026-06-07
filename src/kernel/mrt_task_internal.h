@@ -21,5 +21,6 @@ MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
                                               MRT_Tick ticks,
                                               MRT_TaskWaitReason wait_reason,
                                               MRT_Result wait_result);
+bool MRT_TaskKernelWakeFirstObjectWaiter(MRT_List *wait_list, MRT_Result wait_result, bool switch_now);
 
 #endif

@@ -163,6 +163,9 @@ MRT_Result MRT_QueueSend(MRT_QueueHandle queue, const void *item, MRT_Timeout ti
     /* 队列中有效元素数量增加 1。 */
     queue->count++;
 
+    /* 如果有任务正在等待接收该队列，唤醒最高优先级等待者并立即重调度。 */
+    (void)MRT_TaskKernelWakeFirstObjectWaiter(&queue->waiting_receivers, MRT_RESULT_OK, true);
+
     /* 本次发送成功完成。 */
     return MRT_RESULT_OK;
 }
@@ -427,8 +430,47 @@ MRT_Result MRT_QueueSendFromISR(MRT_QueueHandle queue, const void *item, bool *s
         return MRT_RESULT_INVALID_CONTEXT;
     }
 
-    /* 复用普通非阻塞发送逻辑，timeout 固定为 0。 */
-    return MRT_QueueSend(queue, item, 0u);
+    /* 队列句柄不能为空，否则无法定位队列控制块。 */
+    if (queue == 0) {
+        /* 返回参数错误，提示调用方传入有效队列句柄。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 待发送元素地址不能为空，否则无法执行按值复制。 */
+    if (item == 0) {
+        /* 返回参数错误，提示调用方传入有效元素地址。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* ISR 发送不能等待空间，队列满时立即返回。 */
+    if (queue->count == queue->capacity) {
+        /* 返回对象已满，调用方可在下次中断或任务上下文重试。 */
+        return MRT_RESULT_OBJECT_FULL;
+    }
+
+    /* 根据写下标计算目标槽位的字节地址。 */
+    uint8_t *slot = &queue->buffer[queue->write_index * queue->item_size];
+
+    /* 将调用方元素完整复制到队列内部缓冲区。 */
+    memcpy(slot, item, queue->item_size);
+
+    /* 写下标前进一个槽位，到达队尾后回绕到 0。 */
+    queue->write_index = (queue->write_index + 1u) % queue->capacity;
+
+    /* 队列中有效元素数量增加 1。 */
+    queue->count++;
+
+    /* ISR 上下文只让等待接收任务 ready，不在函数内部直接切换当前任务。 */
+    bool woke_receiver = MRT_TaskKernelWakeFirstObjectWaiter(&queue->waiting_receivers, MRT_RESULT_OK, false);
+
+    /* 如果唤醒了接收任务，需要通知端口层在 ISR 退出时请求调度。 */
+    if ((should_yield != 0) && woke_receiver) {
+        /* 写入 true，调用方随后可传给 MRT_PortYieldFromISR。 */
+        *should_yield = true;
+    }
+
+    /* ISR 发送成功完成。 */
+    return MRT_RESULT_OK;
 }
 
 /**

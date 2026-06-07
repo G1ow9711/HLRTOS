@@ -110,11 +110,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing test where high-priority task blocks on empty queue and low-priority task sends item.
-- [ ] Wake highest-priority waiting receiver when send succeeds.
-- [ ] Verify receiver becomes current task and receives item.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: wake receiver on queue send`.
+- [x] Write failing test where high-priority task blocks on empty queue and low-priority task sends item.
+- [x] Wake highest-priority waiting receiver when send succeeds.
+- [x] Verify receiver becomes current task and receives item.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: wake receiver on queue send`.
 
 ## Task 7: Verification Matrix Update
 
