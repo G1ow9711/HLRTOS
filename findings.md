@@ -126,6 +126,7 @@
 - Stream Buffer Task 2 adds nonblocking byte FIFO send/receive and reset. The stream buffer supports wrap-around, partial sends when free space is smaller than requested bytes, empty receive returning `MRT_RESULT_OBJECT_EMPTY`, full send returning `MRT_RESULT_OBJECT_FULL`, and reset clearing read/write indexes plus used byte count.
 - Stream Buffer Task 3 adds ISR send/receive and reader wake coupling. Empty receive with nonzero timeout blocks the current task on `waiting_readers`; task-context send and ISR send wake a reader when `bytes_used >= trigger_level`. ISR send never switches immediately and reports `should_yield=true` when it wakes a reader.
 - Message Buffer Task 4 adds static message buffer creation with caller-provided control block and byte storage. Capacity must hold a 4-byte length header plus at least one payload byte; query APIs report used bytes and free spaces.
+- Message Buffer Task 5 adds packet-preserving send/receive with a 32-bit little-endian length header. Sends require enough free space for both header and payload, receives reject undersized output buffers without removing the pending message, and reset clears read/write indexes plus used-byte state.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

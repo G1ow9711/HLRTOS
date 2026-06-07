@@ -181,14 +181,14 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for sending two messages, receiving them as complete packets, preserving packet boundaries, rejecting a message too large for total capacity, rejecting send when remaining space cannot hold length header plus payload, output buffer too small returning `MRT_RESULT_OBJECT_FULL` without removing the message, and reset clearing stored messages.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing message send/receive/reset declarations.
-- [ ] Implement 32-bit little-endian length header write/read helpers.
-- [ ] Implement packet send only when full header plus payload fits.
-- [ ] Implement packet receive only when the output buffer can hold the whole next message.
-- [ ] Implement `MRT_MessageBufferReset`.
-- [ ] Run `python tools\run_host_tests.py`; expect 43 test targets pass.
-- [ ] Commit `feat: add message buffer send receive`.
+- [x] Write failing tests for sending two messages, receiving them as complete packets, preserving packet boundaries, rejecting a message too large for total capacity, rejecting send when remaining space cannot hold length header plus payload, output buffer too small returning `MRT_RESULT_OBJECT_FULL` without removing the message, and reset clearing stored messages.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing message send/receive/reset declarations.
+- [x] Implement 32-bit little-endian length header write/read helpers.
+- [x] Implement packet send only when full header plus payload fits.
+- [x] Implement packet receive only when the output buffer can hold the whole next message.
+- [x] Implement `MRT_MessageBufferReset`.
+- [x] Run `python tools\run_host_tests.py`; expect 43 test targets pass.
+- [x] Commit `feat: add message buffer send receive`.
 
 ## Task 6: Message Buffer ISR APIs
 

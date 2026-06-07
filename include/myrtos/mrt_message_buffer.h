@@ -56,6 +56,44 @@ MRT_Result MRT_MessageBufferCreateStatic(size_t capacity,
                                          MRT_MessageBufferHandle *out_message_buffer);
 
 /**
+ * @brief 向消息缓冲写入一条完整消息。
+ * @param message_buffer 目标消息缓冲句柄，不能为空。
+ * @param message 待写入消息地址；length 大于 0 时不能为空。
+ * @param length 消息载荷字节数，必须大于 0。
+ * @param timeout 等待可写空间的 tick 数；当前阶段非阻塞路径会在空间不足时返回。
+ * @param out_sent 输出实际写入的消息载荷字节数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示整条消息写入成功；空间不足返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * size_t sent;
+ * MRT_MessageBufferSend(message_buffer, data, len, 0, &sent);
+ */
+MRT_Result MRT_MessageBufferSend(MRT_MessageBufferHandle message_buffer,
+                                 const void *message,
+                                 size_t length,
+                                 MRT_Timeout timeout,
+                                 size_t *out_sent);
+
+/**
+ * @brief 从消息缓冲读取一条完整消息。
+ * @param message_buffer 源消息缓冲句柄，不能为空。
+ * @param out_message 输出消息地址，不能为空。
+ * @param output_capacity 输出缓冲容量，单位为字节。
+ * @param timeout 等待完整消息的 tick 数；当前阶段非阻塞路径会在空缓冲时返回。
+ * @param out_received 输出实际读取的消息载荷字节数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取成功；无消息返回 MRT_RESULT_OBJECT_EMPTY；
+ *         输出缓冲太小返回 MRT_RESULT_OBJECT_FULL 且不移除消息；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * size_t received;
+ * MRT_MessageBufferReceive(message_buffer, out, sizeof(out), 0, &received);
+ */
+MRT_Result MRT_MessageBufferReceive(MRT_MessageBufferHandle message_buffer,
+                                    void *out_message,
+                                    size_t output_capacity,
+                                    MRT_Timeout timeout,
+                                    size_t *out_received);
+
+/**
  * @brief 查询消息缓冲当前已使用字节数。
  * @param message_buffer 消息缓冲句柄，不能为空。
  * @param out_bytes 输出已使用字节数，不能为空。
@@ -76,5 +114,14 @@ MRT_Result MRT_MessageBufferBytesAvailable(MRT_MessageBufferHandle message_buffe
  * MRT_MessageBufferSpacesAvailable(message_buffer, &spaces);
  */
 MRT_Result MRT_MessageBufferSpacesAvailable(MRT_MessageBufferHandle message_buffer, size_t *out_spaces);
+
+/**
+ * @brief 清空消息缓冲并复位读写索引。
+ * @param message_buffer 消息缓冲句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示复位成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_MessageBufferReset(message_buffer);
+ */
+MRT_Result MRT_MessageBufferReset(MRT_MessageBufferHandle message_buffer);
 
 #endif

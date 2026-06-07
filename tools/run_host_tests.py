@@ -49,6 +49,7 @@ TESTS = [
     ("test_stream_buffer_isr", ROOT / "tests" / "unit" / "test_stream_buffer_isr.c"),
     ("test_stream_buffer_isr_wakes_reader", ROOT / "tests" / "coupling" / "test_stream_buffer_isr_wakes_reader.c"),
     ("test_message_buffer_create_static", ROOT / "tests" / "unit" / "test_message_buffer_create_static.c"),
+    ("test_message_buffer_send_receive", ROOT / "tests" / "unit" / "test_message_buffer_send_receive.c"),
 ]
 
 KERNEL_SOURCES = [

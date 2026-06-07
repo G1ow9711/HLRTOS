@@ -369,6 +369,8 @@
 | Stream Buffer Task 3 GREEN | `python tools\run_host_tests.py` after stream ISR and reader wake coupling | 41 test targets pass | `[summary] 41 test target(s) passed` | Pass |
 | Message Buffer Task 4 RED | `python tools\run_host_tests.py` before message buffer header | Build fails due to missing header | `fatal error: myrtos/mrt_message_buffer.h: No such file or directory` | Pass |
 | Message Buffer Task 4 GREEN | `python tools\run_host_tests.py` after static message buffer creation | 42 test targets pass | `[summary] 42 test target(s) passed` | Pass |
+| Message Buffer Task 5 RED | `python tools\run_host_tests.py` before message send/receive/reset declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_MessageBufferSend'`, `MRT_MessageBufferReceive`, `MRT_MessageBufferReset` | Pass |
+| Message Buffer Task 5 GREEN | `python tools\run_host_tests.py` after packet send/receive/reset | 43 test targets pass | `[summary] 43 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
