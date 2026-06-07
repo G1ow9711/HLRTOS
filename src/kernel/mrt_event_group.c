@@ -27,6 +27,84 @@ static bool MRT_EventGroupBitsMatch(MRT_EventBits current_bits, MRT_EventBits bi
 }
 
 /**
+ * @brief 根据事件 bit 快照唤醒所有匹配等待者。
+ * @param group 事件组句柄，不能为空。
+ * @param snapshot 设置 bit 后、清位前的事件组 bit 快照。
+ * @param switch_now true 表示任务上下文需要立即重选当前任务，false 表示 ISR 场景只标记 ready。
+ * @return bool 返回 true 表示至少唤醒一个任务，返回 false 表示没有等待者被唤醒。
+ * @example
+ * bool woke = MRT_EventGroupWakeMatchingTasks(group, group->bits, true);
+ */
+static bool MRT_EventGroupWakeMatchingTasks(MRT_EventGroupHandle group, MRT_EventBits snapshot, bool switch_now)
+{
+    /* 记录是否至少唤醒过一个等待任务。 */
+    bool woke_task = false;
+
+    /* 记录所有 clear-on-exit 等待者匹配到的 bit 并集。 */
+    MRT_EventBits clear_mask = 0u;
+
+    /* 从等待链表头部开始遍历；链表按任务优先级排序。 */
+    MRT_ListNode *node = MRT_ListGetHead(&group->waiting_tasks);
+
+    /* 遍历直到链表为空或走到哨兵节点。 */
+    while ((node != 0) && (node != &group->waiting_tasks.sentinel)) {
+        /* 先保存后继节点，因为当前节点可能在唤醒时被移除。 */
+        MRT_ListNode *next = MRT_ListGetNext(node);
+
+        /* 从等待节点恢复任务句柄。 */
+        MRT_TaskHandle task = (MRT_TaskHandle)node->item;
+
+        /* 计算该任务在快照中命中的请求 bit。 */
+        MRT_EventBits matched_bits = snapshot & task->event_wait_bits;
+
+        /* 判断该任务的 wait-all 或 wait-any 条件是否满足。 */
+        if (MRT_EventGroupBitsMatch(snapshot, task->event_wait_bits, task->event_wait_all)) {
+            /* 保存匹配结果，便于后续调试或扩展恢复路径。 */
+            task->event_matched_bits = matched_bits;
+
+            /* 如果任务请求成功退出后清位，则累积其匹配 bit。 */
+            if (task->event_clear_on_exit) {
+                /* 只清除该任务实际匹配到的请求 bit。 */
+                clear_mask |= matched_bits;
+            }
+
+            /* 任务被唤醒后不再持有事件等待请求。 */
+            task->event_wait_bits = 0u;
+
+            /* 清除 wait-all 策略标记。 */
+            task->event_wait_all = false;
+
+            /* 清除退出清位策略标记。 */
+            task->event_clear_on_exit = false;
+
+            /* 唤醒该任务，但先不切换，保证本轮能检查所有等待者。 */
+            (void)MRT_TaskKernelWakeTask(task, MRT_RESULT_OK, false);
+
+            /* 标记本次 set bits 至少唤醒了一个任务。 */
+            woke_task = true;
+        }
+
+        /* 移动到原链表中的下一个节点；若是哨兵，循环会结束。 */
+        node = next;
+    }
+
+    /* 所有等待者判定完成后，再统一执行 clear-on-exit 清位。 */
+    if (clear_mask != 0u) {
+        /* 清除所有匹配等待者请求清除的 bit。 */
+        group->bits &= ~clear_mask;
+    }
+
+    /* 任务上下文唤醒后，需要让高优先级被唤醒任务有机会抢占。 */
+    if (woke_task && switch_now) {
+        /* 复用调度器 yield 路径重选最高优先级 ready 任务。 */
+        MRT_TaskKernelYield();
+    }
+
+    /* 返回是否唤醒过任务。 */
+    return woke_task;
+}
+
+/**
  * @brief 使用调用方提供的控制块静态创建事件组。
  * @param storage 事件组控制块存储，不能为空。
  * @param out_group 输出事件组句柄，不能为空。
@@ -93,11 +171,17 @@ MRT_Result MRT_EventGroupSetBits(MRT_EventGroupHandle group, MRT_EventBits bits_
     /* 将请求 bit 按位或到当前事件集合。 */
     group->bits |= bits_to_set;
 
+    /* 保存清位前快照，输出和等待者判定都基于同一个事件状态。 */
+    MRT_EventBits snapshot = group->bits;
+
     /* 如果调用方需要观察结果，则写回完整 bit 集合。 */
     if (out_bits != 0) {
-        /* 写回设置后的事件集合。 */
-        *out_bits = group->bits;
+        /* 写回设置后的事件集合快照，可能早于 clear-on-exit 清位。 */
+        *out_bits = snapshot;
     }
+
+    /* 根据设置后的快照唤醒所有匹配等待者，并允许任务上下文立即调度。 */
+    (void)MRT_EventGroupWakeMatchingTasks(group, snapshot, true);
 
     /* bit 设置成功。 */
     return MRT_RESULT_OK;

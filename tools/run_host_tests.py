@@ -35,6 +35,7 @@ TESTS = [
     ("test_event_group_create_bits", ROOT / "tests" / "unit" / "test_event_group_create_bits.c"),
     ("test_event_group_wait_immediate", ROOT / "tests" / "unit" / "test_event_group_wait_immediate.c"),
     ("test_event_group_task_timeout", ROOT / "tests" / "coupling" / "test_event_group_task_timeout.c"),
+    ("test_event_group_set_wakes_tasks", ROOT / "tests" / "coupling" / "test_event_group_set_wakes_tasks.c"),
 ]
 
 KERNEL_SOURCES = [

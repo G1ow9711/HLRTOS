@@ -292,6 +292,8 @@
 | Event Group Task 2 GREEN | `python tools\run_host_tests.py` after immediate wait implementation | 27 test targets pass | `[summary] 27 test target(s) passed` | Pass |
 | Event Group Task 3 RED | `python tools\run_host_tests.py` before event wait blocking | Coupling test fails because current task does not block | `assertion failed: MRT_TaskGetCurrent() == low_task` | Pass |
 | Event Group Task 3 GREEN | `python tools\run_host_tests.py` after event wait timeout coupling | 28 test targets pass | `[summary] 28 test target(s) passed` | Pass |
+| Event Group Task 4 RED | `python tools\run_host_tests.py` before set-wake coupling | Coupling test fails because set bits does not wake waiters | `assertion failed: MRT_TaskGetCurrent() == high_task` | Pass |
+| Event Group Task 4 GREEN | `python tools\run_host_tests.py` after set-wake coupling | 29 test targets pass | `[summary] 29 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

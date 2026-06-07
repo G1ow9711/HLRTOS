@@ -431,6 +431,54 @@ bool MRT_TaskKernelWakeFirstObjectWaiter(MRT_List *wait_list, MRT_Result wait_re
 }
 
 /**
+ * @brief 唤醒指定任务。
+ * @param task 待唤醒任务句柄，不能为空。
+ * @param wait_result 写入被唤醒任务的等待结果。
+ * @param switch_now true 表示立即重选当前任务，false 表示只让任务 ready。
+ * @return bool 返回 true 表示成功唤醒任务，返回 false 表示参数非法。
+ * @example
+ * MRT_TaskKernelWakeTask(waiter, MRT_RESULT_OK, true);
+ */
+bool MRT_TaskKernelWakeTask(MRT_TaskHandle task, MRT_Result wait_result, bool switch_now)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 没有目标任务时无法唤醒。 */
+        return false;
+    }
+
+    /* 如果任务还挂在对象等待链表上，需要先摘除。 */
+    if (MRT_ListNodeIsLinked(&task->wait_node)) {
+        /* 移除队列、信号量、事件组等对象等待关系。 */
+        MRT_ListRemove(&task->wait_node);
+    }
+
+    /* 如果任务还挂在 delay list 上，需要同步移除 timeout 节点。 */
+    if (MRT_ListNodeIsLinked(&task->state_node)) {
+        /* 移除延时节点，避免 tick 后续重复唤醒同一任务。 */
+        MRT_ListRemove(&task->state_node);
+    }
+
+    /* 写入对象等待结果。 */
+    task->wait_result = wait_result;
+
+    /* 被唤醒后不再等待具体对象。 */
+    task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
+
+    /* 将任务重新加入 ready list。 */
+    MRT_TaskAddReady(task);
+
+    /* 如果调用方要求立即切换，则重选最高优先级任务。 */
+    if (switch_now) {
+        /* 可能让刚唤醒的高优先级任务抢占当前任务。 */
+        MRT_TaskSwitchToHighestReady();
+    }
+
+    /* 唤醒成功。 */
+    return true;
+}
+
+/**
  * @brief 设置任务当前有效优先级。
  * @param task 目标任务句柄，不能为空。
  * @param priority 新有效优先级，必须小于 MRT_CFG_MAX_PRIORITIES。

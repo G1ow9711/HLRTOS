@@ -137,13 +137,13 @@ Steps:
 
 Steps:
 
-- [ ] Write failing test where two tasks wait on the same event group, `MRT_EventGroupSetBits` wakes every waiter whose condition matches the post-set bit snapshot, and the highest-priority awakened task runs.
-- [ ] Write failing test where clear-on-exit clears the union of matched bits after all eligible waiters are selected.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is that set bits changes only the stored bits and does not wake waiters.
-- [ ] Add `MRT_TaskKernelWakeTask(MRT_TaskHandle task, MRT_Result wait_result, bool switch_now)` to remove a task from object and delay lists, mark it ready, and optionally reschedule.
-- [ ] Implement event group waiter iteration using the post-set snapshot so one clear-on-exit waiter cannot hide bits from a later matching waiter in the same set operation.
-- [ ] Run `python tools\run_host_tests.py`; expect 29 test targets pass.
-- [ ] Commit `feat: wake event group waiters`.
+- [x] Write failing test where two tasks wait on the same event group, `MRT_EventGroupSetBits` wakes every waiter whose condition matches the post-set bit snapshot, and the highest-priority awakened task runs.
+- [x] Write failing test where clear-on-exit clears the union of matched bits after all eligible waiters are selected.
+- [x] Run `python tools\run_host_tests.py`; expected failure is that set bits changes only the stored bits and does not wake waiters.
+- [x] Add `MRT_TaskKernelWakeTask(MRT_TaskHandle task, MRT_Result wait_result, bool switch_now)` to remove a task from object and delay lists, mark it ready, and optionally reschedule.
+- [x] Implement event group waiter iteration using the post-set snapshot so one clear-on-exit waiter cannot hide bits from a later matching waiter in the same set operation.
+- [x] Run `python tools\run_host_tests.py`; expect 29 test targets pass.
+- [x] Commit `feat: wake event group waiters`.
 
 ## Task 5: Event Group ISR Set
 

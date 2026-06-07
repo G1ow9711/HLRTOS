@@ -22,6 +22,7 @@ MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
                                               MRT_TaskWaitReason wait_reason,
                                               MRT_Result wait_result);
 bool MRT_TaskKernelWakeFirstObjectWaiter(MRT_List *wait_list, MRT_Result wait_result, bool switch_now);
+bool MRT_TaskKernelWakeTask(MRT_TaskHandle task, MRT_Result wait_result, bool switch_now);
 void MRT_TaskKernelSetEffectivePriority(MRT_TaskHandle task, MRT_Priority priority);
 void MRT_TaskKernelRestoreBasePriority(MRT_TaskHandle task);
 
