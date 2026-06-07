@@ -33,15 +33,15 @@
 | C-016 | 任务通知 + 覆盖策略 | no-overwrite 遇到未读通知 | 返回对象忙，不覆盖旧值 | host 单测 | 已验证：`test_task_notify_actions` 覆盖 pending 通知下 `MRT_NOTIFY_NO_OVERWRITE` 返回 `MRT_RESULT_OBJECT_BUSY` 且旧值不变；`test_task_notify_isr` 覆盖 ISR no-overwrite busy 同样不改旧值 |
 | C-017 | 软件定时器 + 命令队列 | 启动/停止/复位命令排队 | 服务任务按序处理命令 | host 单测 | 部分验证：`test_timer_control` 覆盖启动/停止/复位/改周期控制语义，`test_timer_pending_function` 覆盖 deterministic service-shim pending FIFO、参数传递、满队列和 drain；真正独立 timer service task 与异步命令队列将在后续 scheduler/service 增强计划补测 |
 | C-018 | 软件定时器 + 调度 | 定时器到期 | 回调在服务任务上下文执行 | 调度仿真 | 已验证：`test_timer_tick_expiry` 覆盖 `MRT_KernelTick` 驱动单次定时器到期一次、自动重载定时器在 tick 2/tick 4 触发并保持活动、多个定时器按到期 tick 顺序执行；当前 host 模型使用 timer service shim，真实服务任务上下文待后续增强 |
-| C-019 | 软件定时器 + tickless | 睡眠期间定时器到期 | 唤醒后补偿 tick 并执行回调 | 端口 mock | 待实现：tickless idle 属于后续低功耗端口计划，本 timer 计划仅验证常规 tick 到期 |
+| C-019 | 软件定时器 + tickless | 睡眠期间定时器到期 | 唤醒后补偿 tick 并执行回调 | 端口 mock | 已验证：`test_tickless_expected_idle` 覆盖任务/定时器最近 deadline 估算；`test_tickless_timer_compensation` 覆盖 mock 端口睡眠后补偿 tick、执行软件定时器回调、唤醒延时任务、遵守最大睡眠 tick 限制和无 deadline 跳过睡眠 |
 | C-020 | 流缓冲 + 环绕 | 写指针环绕后读取 | 数据顺序保持正确 | host 单测 | 已验证：`test_stream_buffer_send_receive` 覆盖写入、读取、再写入触发环形回绕后仍按 FIFO 顺序读出 |
 | C-021 | 流缓冲 + ISR | ISR 写入，任务阻塞读 | 任务被唤醒并读到数据 | host/mock ISR | 已验证：`test_stream_buffer_isr_wakes_reader` 覆盖高优先级读者阻塞、ISR 写入达到触发水位、读者回到 ready、`should_yield=true`；`test_stream_buffer_isr` 覆盖 ISR 非阻塞收发和非法上下文 |
 | C-022 | 消息缓冲 + 容量 | 剩余空间不足以放完整消息 | 写入失败，不产生半包 | host 单测 | 已验证：`test_message_buffer_send_receive` 覆盖整包边界、小输出不移除消息、剩余空间不足不写半包；`test_message_buffer_isr` 覆盖 ISR 容量拒绝、小输出保持消息和读者唤醒 |
 | C-023 | 内存堆 + 对象创建 | heap 分配失败 | API 返回资源不足，内部状态不变 | host 单测 | 已验证：`test_heap_linear` 覆盖堆耗尽分配返回 NULL；`test_queue_dynamic_allocation` 覆盖对象创建失败返回 `MRT_RESULT_NO_MEMORY` 且堆空闲水位不变 |
 | C-024 | 内存堆 + 释放合并 | 释放相邻块 | 空闲块合并，碎片减少 | host 单测 | 已验证：`test_heap_coalescing` 覆盖释放两个相邻块后分配大于任一单块的请求成功，并验证普通 free-list 模式仍不合并 |
-| C-025 | trace + 任务切换 | trace 开启 | hook 收到切换事件，不改变调度结果 | host 单测 | 待实现 |
-| C-026 | trace + 队列 | 队列 send/receive | hook 收到事件，不改变队列数据 | host 单测 | 待实现 |
-| C-027 | 断言 + 非法上下文 | ISR 调用禁止 API | 触发断言或返回非法上下文 | host/mock ISR | 部分验证：`test_semaphore_isr`、`test_event_group_isr`、`test_task_notify_isr` 覆盖任务上下文调用 FromISR API 返回 `MRT_RESULT_INVALID_CONTEXT`；`test_mutex_create_lock` 覆盖无当前任务调用互斥锁 API 返回 `MRT_RESULT_INVALID_CONTEXT`；统一断言 hook 和 ISR 调用非 ISR-safe API 的断言路径待 trace/assert 模块补测 |
+| C-025 | trace + 任务切换 | trace 开启 | hook 收到切换事件，不改变调度结果 | host 单测 | 已验证：`test_trace_task_switch` 覆盖高优先级任务延时切到低优先级任务、tick 到期后低优先级切回高优先级，并验证 trace 事件中的旧任务、新任务和 tick |
+| C-026 | trace + 队列 | 队列 send/receive | hook 收到事件，不改变队列数据 | host 单测 | 已验证：`test_trace_queue` 覆盖队列 send/receive 后 trace sink 收到事件，队列数据 FIFO 语义保持不变，事件 value 记录操作后队列水位 |
+| C-027 | 断言 + 非法上下文 | ISR 调用禁止 API | 触发断言或返回非法上下文 | host/mock ISR | 部分验证：`test_semaphore_isr`、`test_event_group_isr`、`test_task_notify_isr` 覆盖任务上下文调用 FromISR API 返回 `MRT_RESULT_INVALID_CONTEXT`；`test_mutex_create_lock` 覆盖无当前任务调用互斥锁 API 返回 `MRT_RESULT_INVALID_CONTEXT`；`test_assert_hook` 覆盖 `MRT_ASSERT` 与 `MRT_AssertFailed` 会把表达式、文件、行号分发给统一 hook。ISR 调用非 ISR-safe API 后触发断言的强制策略仍待后续 API 约束收敛 |
 | C-028 | STM32 端口 + tick | SysTick 调用内核 tick | tick 推进并按需触发 PendSV | 端口 mock/smoke | 部分验证：`test_kernel_tick` 已验证 tick 推进与 kernel yield 转发；真实 SysTick/PendSV 待 STM32 端口计划 |
 | C-029 | STM32 端口 + 临界区 | 嵌套进入临界区 | 中断屏蔽状态可恢复 | 端口 mock | 部分验证：`test_port_mock` 已验证 mock 临界区嵌套恢复；真实 PRIMASK/BASEPRI 待 STM32 端口计划 |
 | C-030 | DSP 端口 + 栈初始化 | 创建任务栈帧 | 栈顶满足对齐和入口参数规则 | 端口 mock | 待实现 |

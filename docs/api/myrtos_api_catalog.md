@@ -204,11 +204,14 @@ typedef enum MRT_Result {
 
 | API | 功能 | 关键测试 |
 |-----|------|----------|
-| `MRT_TicklessGetExpectedIdleTicks(...)` | 获取可睡眠 tick 数 | 定时器/延时约束 |
-| `MRT_TicklessEnterIdle(...)` | 进入 tickless idle | tick 补偿 |
-| `MRT_TraceSetSink(...)` | 设置 trace 接收器 | 开关无副作用 |
+| `MRT_TicklessGetExpectedIdleTicks(...)` | 获取可睡眠 tick 数 | `test_tickless_expected_idle` |
+| `MRT_TicklessEnterIdle(...)` | 进入 tickless idle | `test_tickless_timer_compensation` |
+| `MRT_TraceSetSink(...)` | 设置 trace 接收器 | `test_trace_task_switch`、`test_trace_queue` |
+| `MRT_TraceEmit(...)` | 发布 trace 事件 | `test_trace_task_switch`、`test_trace_queue` |
 | `MRT_StatsGetTaskRuntime(...)` | 获取任务运行统计 | 切换统计 |
-| `MRT_AssertFailed(...)` | 断言失败处理 | 可替换 hook |
+| `MRT_AssertSetHook(...)` | 设置断言 hook | `test_assert_hook` |
+| `MRT_AssertFailed(...)` | 断言失败处理 | `test_assert_hook` |
+| `MRT_ASSERT(expr)` | 断言宏 | `test_assert_hook` |
 
 ## 13. 移植层接口
 
