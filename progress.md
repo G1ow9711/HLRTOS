@@ -114,6 +114,9 @@
   - Semaphore Task 2 RED: `python tools\run_host_tests.py` failed because `MRT_SemaphoreTake` and `MRT_SemaphoreGive` were not declared.
   - Semaphore Task 2 GREEN: implemented nonblocking take/give, empty/full results, null-handle validation, and no-current timeout result; same command passed 19 test targets.
   - Semaphore Task 2 commit message: `feat: add semaphore take give`.
+  - Semaphore Task 3 RED: `python tools\run_host_tests.py` failed in semaphore timeout/wake coupling because take did not block the current high-priority task.
+  - Semaphore Task 3 GREEN: added `MRT_TASK_WAIT_REASON_SEMAPHORE_TAKE`, semaphore take object-wait blocking, and give wakeup transfer; same command passed 21 test targets.
+  - Semaphore Task 3 commit message: `feat: add semaphore scheduler coupling`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -235,6 +238,8 @@
 | Semaphore Task 1 GREEN | `python tools\run_host_tests.py` after static semaphore creation | 18 test targets pass | `[summary] 18 test target(s) passed` | Pass |
 | Semaphore Task 2 RED | `python tools\run_host_tests.py` before take/give declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_SemaphoreTake'`, `implicit declaration of function 'MRT_SemaphoreGive'` | Pass |
 | Semaphore Task 2 GREEN | `python tools\run_host_tests.py` after take/give | 19 test targets pass | `[summary] 19 test target(s) passed` | Pass |
+| Semaphore Task 3 RED | `python tools\run_host_tests.py` before semaphore scheduler coupling | Coupling tests fail because take does not block current task | `assertion failed: MRT_TaskGetCurrent() == low_task`, `assertion failed: MRT_TaskGetCurrent() == giver_task` | Pass |
+| Semaphore Task 3 GREEN | `python tools\run_host_tests.py` after semaphore scheduler coupling | 21 test targets pass | `[summary] 21 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

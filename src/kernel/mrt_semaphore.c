@@ -1,4 +1,5 @@
 #include "myrtos/mrt_semaphore.h"
+#include "mrt_task_internal.h"
 
 /**
  * @brief 使用调用方提供的控制块静态创建二值信号量。
@@ -157,8 +158,11 @@ MRT_Result MRT_SemaphoreTake(MRT_SemaphoreHandle semaphore, MRT_Timeout timeout)
         return MRT_RESULT_OBJECT_EMPTY;
     }
 
-    /* 阻塞耦合会在后续任务接入；当前先返回等待超时。 */
-    return MRT_RESULT_TIMEOUT;
+    /* 将当前任务挂入信号量等待链表，并设置 tick 超时。 */
+    return MRT_TaskKernelBlockCurrentOnObject(&semaphore->waiting_takers,
+                                              timeout,
+                                              MRT_TASK_WAIT_REASON_SEMAPHORE_TAKE,
+                                              MRT_RESULT_TIMEOUT);
 }
 
 /**
@@ -175,6 +179,15 @@ MRT_Result MRT_SemaphoreGive(MRT_SemaphoreHandle semaphore)
     if (semaphore == 0) {
         /* 返回参数错误，提示调用方传入有效信号量。 */
         return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 如果已有任务等待获取该信号量，本次释放直接交给最高优先级等待者。 */
+    if (!MRT_ListIsEmpty(&semaphore->waiting_takers)) {
+        /* 唤醒等待任务并立即按优先级重调度；计数不增加，因为令牌被等待者消费。 */
+        (void)MRT_TaskKernelWakeFirstObjectWaiter(&semaphore->waiting_takers, MRT_RESULT_OK, true);
+
+        /* 释放给等待任务成功完成。 */
+        return MRT_RESULT_OK;
     }
 
     /* 当前计数达到最大计数时不能继续释放。 */

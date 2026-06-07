@@ -58,12 +58,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing test where high-priority task blocks on empty semaphore with 3 tick timeout and wakes with timeout.
-- [ ] Write failing test where low-priority task gives semaphore and wakes high-priority taker.
-- [ ] Add semaphore wait reason to `MRT_TaskWaitReason`.
-- [ ] Use `MRT_TaskKernelBlockCurrentOnObject` and `MRT_TaskKernelWakeFirstObjectWaiter` for semaphore takers.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add semaphore scheduler coupling`.
+- [x] Write failing test where high-priority task blocks on empty semaphore with 3 tick timeout and wakes with timeout.
+- [x] Write failing test where low-priority task gives semaphore and wakes high-priority taker.
+- [x] Add semaphore wait reason to `MRT_TaskWaitReason`.
+- [x] Use `MRT_TaskKernelBlockCurrentOnObject` and `MRT_TaskKernelWakeFirstObjectWaiter` for semaphore takers.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add semaphore scheduler coupling`.
 
 ## Task 4: Semaphore ISR Give
 
