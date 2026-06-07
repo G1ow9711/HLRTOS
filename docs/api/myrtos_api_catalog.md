@@ -224,9 +224,19 @@ typedef enum MRT_Result {
 | `MRT_PortEnterCritical(void)` | 进入临界区 | 嵌套保存 |
 | `MRT_PortExitCritical(MRT_IntState state)` | 退出临界区 | 状态恢复 |
 | `MRT_PortIsInsideISR(void)` | 判断 ISR 上下文 | mock 切换 |
-| `MRT_PortSetupTimerInterrupt(MRT_Tick tick_hz)` | 配置 tick 中断 | 参数校验 |
-| `MRT_PortInitializeStack(...)` | 初始化任务栈帧 | STM32/DSP 栈布局 |
 | `MRT_PortSuppressTicksAndSleep(...)` | 端口低功耗睡眠 | tickless 补偿 |
+| `MRT_PortStm32CmInitializeStack(...)` | 初始化 STM32 Cortex-M 初始任务栈帧 | `test_port_stm32_stack` |
+| `MRT_PortStm32CmCalculateSysTickReload(...)` | 计算 SysTick 24 位 reload 值 | `test_port_stm32_tick_priority` |
+| `MRT_PortStm32CmEncodeBasepri(...)` | 按 NVIC 优先级 bit 编码 BASEPRI 屏蔽值 | `test_port_stm32_tick_priority` |
+| `MRT_PortDspC28xInitializeStack(...)` | 初始化 DSP C28x 风格任务栈帧 | `test_port_dsp_stack` |
+| `MRT_PortDspC28xContextModelReset(...)` | 复位 DSP 上下文切换模型 | `test_port_dsp_context` |
+| `MRT_PortDspC28xRequestContextSwitch(...)` | 请求 DSP 软件中断式上下文切换 | `test_port_dsp_context` |
+| `MRT_PortDspC28xAcknowledgeContextSwitch(...)` | 确认 DSP 挂起切换已服务 | `test_port_dsp_context` |
+| `MRT_PortDspC28xEnterInterrupt(...)` | 进入 DSP ISR 嵌套模型 | `test_port_dsp_context` |
+| `MRT_PortDspC28xExitInterrupt(...)` | 退出 DSP ISR 并报告延迟切换 | `test_port_dsp_context` |
+| `MRT_PortDspC28xIsContextSwitchPending(...)` | 查询 DSP 切换请求挂起状态 | `test_port_dsp_context` |
+| `MRT_PortDspC28xGetContextSwitchRequestCount(...)` | 查询 DSP 切换请求累计次数 | `test_port_dsp_context` |
+| `MRT_PortDspC28xGetInterruptNesting(...)` | 查询 DSP ISR 嵌套深度 | `test_port_dsp_context` |
 
 ## 14. 手册覆盖规则
 

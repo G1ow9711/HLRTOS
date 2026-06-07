@@ -34,6 +34,8 @@ Phase 4: TDD Implementation
 - [x] Implement foundation kernel core incrementally
 - [x] Implement task scheduler core incrementally
 - [ ] Implement portable layers and demos
+  - [x] STM32 Cortex-M stack/tick/priority helper contract
+  - [x] DSP C28x-style stack/software-interrupt helper contract
 - [ ] Add detailed Chinese comments to every public and internal function
 - **Status:** in_progress
 

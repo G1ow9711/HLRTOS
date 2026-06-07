@@ -24,7 +24,9 @@ add_library(myrtos_kernel STATIC
     src/kernel/mrt_tickless.c
     src/kernel/mrt_trace.c
     src/kernel/mrt_timer.c
+    src/portable/dsp_c28x/mrt_port_dsp_c28x.c
     src/portable/mock/mrt_port_mock.c
+    src/portable/stm32_cm/mrt_port_stm32_cm.c
 )
 target_include_directories(myrtos_kernel PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include

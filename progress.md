@@ -469,3 +469,18 @@
 
 ---
 *Update after completing each phase or encountering errors.*
+
+## Portable STM32/DSP Plan Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree baseline | `git -C F:\My_RTOS\.worktrees\portable-stm32-dsp status --short --branch` | Clean feature branch | `## feature/portable-stm32-dsp` | Pass |
+| Plan file | Create `docs/superpowers/plans/2026-06-08-myrtos-portable-stm32-dsp.md` | Plan 10 tasks defined | 5 tasks defined for STM32 stack, STM32 tick/priority, DSP stack, DSP context model, and evidence update | Pass |
+| STM32 Stack Task 1 RED | `python tools\run_host_tests.py` before STM32 port header | Build fails due to missing header | `fatal error: myrtos/portable/mrt_port_stm32_cm.h: No such file or directory`; `[summary] 1 test target(s) failed` | Pass |
+| STM32 Stack Task 1 GREEN | `python tools\run_host_tests.py` after STM32 stack helper | New stack test plus prior modules pass | `[summary] 56 test target(s) passed` | Pass |
+| STM32 Tick/Priority Task 2 RED | `python tools\run_host_tests.py` before tick/priority helpers | Build fails due to missing declarations | implicit declaration of `MRT_PortStm32CmCalculateSysTickReload` and `MRT_PortStm32CmEncodeBasepri`; `[summary] 1 test target(s) failed` | Pass |
+| STM32 Tick/Priority Task 2 GREEN | `python tools\run_host_tests.py` after SysTick/BASEPRI helpers | STM32 port helpers plus prior modules pass | `[summary] 57 test target(s) passed` | Pass |
+| DSP Stack Task 3 RED | `python tools\run_host_tests.py` before DSP port header | Build fails due to missing header | `fatal error: myrtos/portable/mrt_port_dsp_c28x.h: No such file or directory`; `[summary] 1 test target(s) failed` | Pass |
+| DSP Stack Task 3 GREEN | `python tools\run_host_tests.py` after DSP stack helper | DSP stack helper plus prior modules pass | `[summary] 58 test target(s) passed` | Pass |
+| DSP Context Task 4 RED | `python tools\run_host_tests.py` before DSP context model APIs | Build fails due to missing declarations | implicit declarations for context reset/request/ack/nesting APIs; `[summary] 1 test target(s) failed` | Pass |
+| DSP Context Task 4 GREEN | `python tools\run_host_tests.py` after DSP context model | DSP context model plus prior modules pass | `[summary] 59 test target(s) passed` | Pass |
+| Portable Task 5 verification | `python tools\run_host_tests.py` after build/docs/matrix updates and test comments | STM32/DSP port helpers plus prior modules pass | `[summary] 59 test target(s) passed` | Pass |

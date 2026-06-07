@@ -42,10 +42,10 @@
 | C-025 | trace + 任务切换 | trace 开启 | hook 收到切换事件，不改变调度结果 | host 单测 | 已验证：`test_trace_task_switch` 覆盖高优先级任务延时切到低优先级任务、tick 到期后低优先级切回高优先级，并验证 trace 事件中的旧任务、新任务和 tick |
 | C-026 | trace + 队列 | 队列 send/receive | hook 收到事件，不改变队列数据 | host 单测 | 已验证：`test_trace_queue` 覆盖队列 send/receive 后 trace sink 收到事件，队列数据 FIFO 语义保持不变，事件 value 记录操作后队列水位 |
 | C-027 | 断言 + 非法上下文 | ISR 调用禁止 API | 触发断言或返回非法上下文 | host/mock ISR | 部分验证：`test_semaphore_isr`、`test_event_group_isr`、`test_task_notify_isr` 覆盖任务上下文调用 FromISR API 返回 `MRT_RESULT_INVALID_CONTEXT`；`test_mutex_create_lock` 覆盖无当前任务调用互斥锁 API 返回 `MRT_RESULT_INVALID_CONTEXT`；`test_assert_hook` 覆盖 `MRT_ASSERT` 与 `MRT_AssertFailed` 会把表达式、文件、行号分发给统一 hook。ISR 调用非 ISR-safe API 后触发断言的强制策略仍待后续 API 约束收敛 |
-| C-028 | STM32 端口 + tick | SysTick 调用内核 tick | tick 推进并按需触发 PendSV | 端口 mock/smoke | 部分验证：`test_kernel_tick` 已验证 tick 推进与 kernel yield 转发；真实 SysTick/PendSV 待 STM32 端口计划 |
-| C-029 | STM32 端口 + 临界区 | 嵌套进入临界区 | 中断屏蔽状态可恢复 | 端口 mock | 部分验证：`test_port_mock` 已验证 mock 临界区嵌套恢复；真实 PRIMASK/BASEPRI 待 STM32 端口计划 |
-| C-030 | DSP 端口 + 栈初始化 | 创建任务栈帧 | 栈顶满足对齐和入口参数规则 | 端口 mock | 待实现 |
-| C-031 | DSP 端口 + 上下文切换 | 触发软件中断切换 | 保存/恢复接口调用顺序正确 | 端口 mock | 待实现 |
+| C-028 | STM32 端口 + tick | SysTick 调用内核 tick | tick 推进并按需触发 PendSV | 端口 mock/smoke | 部分验证：`test_kernel_tick` 已验证 tick 推进与 kernel yield 转发；`test_port_stm32_tick_priority` 验证 SysTick reload 计算、24 位上限和参数校验；真实 SysTick_Handler/PendSV_Handler/SVC_Handler 接入待 STM32 手册和板级 smoke test 补证 |
+| C-029 | STM32 端口 + 临界区 | 嵌套进入临界区 | 中断屏蔽状态可恢复 | 端口 mock | 部分验证：`test_port_mock` 已验证 mock 临界区嵌套恢复；`test_port_stm32_tick_priority` 验证 BASEPRI 左对齐编码和非法 0 优先级拒绝；真实 PRIMASK/BASEPRI 读写待 STM32 手册和板级 smoke test 补证 |
+| C-030 | DSP 端口 + 栈初始化 | 创建任务栈帧 | 栈顶满足对齐和入口参数规则 | 端口 mock | 已验证：`test_port_dsp_stack` 覆盖 DSP C28x 风格向下增长栈、8 字节对齐、入口 PC、入口参数、退出处理函数、状态字和 XAR4-XAR7 保存槽占位 |
+| C-031 | DSP 端口 + 上下文切换 | 触发软件中断切换 | 保存/恢复接口调用顺序正确 | 端口 mock | 已验证：`test_port_dsp_context` 覆盖任务上下文请求/确认、ISR 嵌套期间延迟切换、最外层 ISR 退出提示切换、退出下溢和空输出参数拒绝；真实 DSP 汇编保存/恢复顺序待具体芯片端口补证 |
 | C-032 | 手册 + API | 每个 public API | 手册有原型、参数、返回值、示例、上下文限制 | 文档检查 | 待实现 |
 | C-033 | 注释 + 源码 | 每个函数 | 有中文函数头说明和内部步骤注释 | 静态扫描 | 待实现 |
 

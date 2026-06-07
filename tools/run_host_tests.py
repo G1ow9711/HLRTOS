@@ -12,6 +12,10 @@ TESTS = [
     ("test_list", ROOT / "tests" / "unit" / "test_list.c"),
     ("test_priority_bitmap", ROOT / "tests" / "unit" / "test_priority_bitmap.c"),
     ("test_port_mock", ROOT / "tests" / "port_mock" / "test_port_mock.c"),
+    ("test_port_stm32_stack", ROOT / "tests" / "port_mock" / "test_port_stm32_stack.c"),
+    ("test_port_stm32_tick_priority", ROOT / "tests" / "port_mock" / "test_port_stm32_tick_priority.c"),
+    ("test_port_dsp_stack", ROOT / "tests" / "port_mock" / "test_port_dsp_stack.c"),
+    ("test_port_dsp_context", ROOT / "tests" / "port_mock" / "test_port_dsp_context.c"),
     ("test_kernel_tick", ROOT / "tests" / "unit" / "test_kernel_tick.c"),
     ("test_task_create_static", ROOT / "tests" / "sim" / "test_task_create_static.c"),
     ("test_scheduler_start", ROOT / "tests" / "sim" / "test_scheduler_start.c"),
@@ -82,6 +86,8 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_trace.c",
     ROOT / "src" / "kernel" / "mrt_timer.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
+    ROOT / "src" / "portable" / "dsp_c28x" / "mrt_port_dsp_c28x.c",
+    ROOT / "src" / "portable" / "stm32_cm" / "mrt_port_stm32_cm.c",
 ]
 
 

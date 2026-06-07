@@ -151,6 +151,16 @@
 - Task switch trace needs special handling for blocking paths because the scheduler clears `g_current_task` before choosing the next task. Blocking helpers explicitly publish `blocked_task -> new_current` after selection.
 - Queue trace records successful send/receive only, with `value` set to the queue element count after the operation.
 - Assert hook module stores one optional failure callback and user pointer. `MRT_ASSERT(expr)` stringifies the expression and dispatches file/line information, while default no-hook behavior returns without halting so host tests remain deterministic.
+- Portable branch starts from `feature/tickless-trace-hooks` at `cee5b2d` with a clean worktree and a 55-target host-test baseline from the previous session.
+- New port plan file: `docs/superpowers/plans/2026-06-08-myrtos-portable-stm32-dsp.md`.
+- STM32/DSP code will first implement host-testable port-contract helpers rather than direct chip register writes. Real vector-table, SysTick/PendSV/SVC, low-power, and DSP interrupt hook-up steps remain mandatory in the final manual.
+- STM32 helper scope: Cortex-M automatic exception frame layout, callee-saved register reserve area, stack alignment, SysTick reload calculation, and BASEPRI priority encoding.
+- DSP helper scope: C28x-style downward-growing stack model, entry/argument/status/register save fields, alignment, software-interrupt context switch request, nesting counter, and acknowledgement behavior.
+- STM32 stack helper is now implemented and tested by `test_port_stm32_stack`: initial frame uses 16 MRT_StackType words, 8-byte aligned stack top, R4-R11 debug placeholders, R0 argument, LR task-exit handler, PC task entry, and xPSR Thumb bit.
+- STM32 tick/priority helper is now implemented and tested by `test_port_stm32_tick_priority`: SysTick reload rejects zero/too-fast/24-bit-overflow inputs, and BASEPRI encoding rejects invalid priority bit widths, logical priority 0, and out-of-range priorities.
+- DSP stack helper is now implemented and tested by `test_port_dsp_stack`: frame is host-verifiable, 8-byte aligned, downward-growing, and records status, entry argument, exit handler, entry PC, and XAR4-XAR7 placeholders.
+- DSP software-interrupt context model is now implemented and tested by `test_port_dsp_context`: requests remain pending until acknowledged, nested ISR exits defer switching until outermost exit, and underflow/null-output errors are rejected.
+- Requirement matrix now records STM32/DSP port-contract evidence under `R-003` and `R-004`; real board smoke tests and detailed final manual porting steps remain pending.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
