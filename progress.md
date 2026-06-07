@@ -108,6 +108,9 @@
   - Created semaphore/mutex worktree `feature/semaphore-mutex` from queue verification baseline.
   - Created semaphore/mutex implementation plan at `docs/superpowers/plans/2026-06-07-myrtos-semaphore-mutex.md`.
   - Synchronization baseline verification: `python tools\run_host_tests.py` passed 17 test targets.
+  - Semaphore Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_semaphore.h` was missing.
+  - Semaphore Task 1 GREEN: added static binary/counting semaphore creation and count query; same command passed 18 test targets.
+  - Semaphore Task 1 commit message: `feat: add static semaphore creation`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -225,6 +228,8 @@
 | Queue Task 6 RED | `python tools\run_host_tests.py` before send wakeup | Coupling test fails because sender does not wake receiver | `assertion failed: MRT_TaskGetCurrent() == receiver_task` | Pass |
 | Queue Task 6 GREEN | `python tools\run_host_tests.py` after send wakeup | 17 test targets pass | `[summary] 17 test target(s) passed` | Pass |
 | Queue final verification | `python tools\run_host_tests.py` after matrix updates | 17 test targets pass | `[summary] 17 test target(s) passed` | Pass |
+| Semaphore Task 1 RED | `python tools\run_host_tests.py` before semaphore header | Build fails due to missing header | `fatal error: myrtos/mrt_semaphore.h: No such file or directory` | Pass |
+| Semaphore Task 1 GREEN | `python tools\run_host_tests.py` after static semaphore creation | 18 test targets pass | `[summary] 18 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

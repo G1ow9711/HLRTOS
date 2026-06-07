@@ -22,11 +22,11 @@
 
 Steps:
 
-- [ ] Write failing tests for `MRT_SemaphoreCreateBinaryStatic`, `MRT_SemaphoreCreateCountingStatic`, and `MRT_SemaphoreGetCount`.
-- [ ] Implement `MRT_Semaphore` with `max_count`, `count`, `waiting_takers`, and `static_storage`.
-- [ ] Reject null storage/output, zero max count, and initial count greater than max count.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add static semaphore creation`.
+- [x] Write failing tests for `MRT_SemaphoreCreateBinaryStatic`, `MRT_SemaphoreCreateCountingStatic`, and `MRT_SemaphoreGetCount`.
+- [x] Implement `MRT_Semaphore` with `max_count`, `count`, `waiting_takers`, and `static_storage`.
+- [x] Reject null storage/output, zero max count, and initial count greater than max count.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add static semaphore creation`.
 
 ## Task 2: Semaphore Take and Give
 

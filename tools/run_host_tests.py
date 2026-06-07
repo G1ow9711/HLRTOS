@@ -24,6 +24,7 @@ TESTS = [
     ("test_queue_isr", ROOT / "tests" / "unit" / "test_queue_isr.c"),
     ("test_queue_task_timeout", ROOT / "tests" / "coupling" / "test_queue_task_timeout.c"),
     ("test_queue_send_wakes_receiver", ROOT / "tests" / "coupling" / "test_queue_send_wakes_receiver.c"),
+    ("test_semaphore_create_static", ROOT / "tests" / "unit" / "test_semaphore_create_static.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -31,6 +32,7 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_kernel.c",
     ROOT / "src" / "kernel" / "mrt_priority.c",
     ROOT / "src" / "kernel" / "mrt_queue.c",
+    ROOT / "src" / "kernel" / "mrt_semaphore.c",
     ROOT / "src" / "kernel" / "mrt_task.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
 ]
