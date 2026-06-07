@@ -58,6 +58,7 @@ TESTS = [
     ("test_memory_pool", ROOT / "tests" / "unit" / "test_memory_pool.c"),
     ("test_queue_dynamic_allocation", ROOT / "tests" / "coupling" / "test_queue_dynamic_allocation.c"),
     ("test_tickless_expected_idle", ROOT / "tests" / "unit" / "test_tickless_expected_idle.c"),
+    ("test_tickless_timer_compensation", ROOT / "tests" / "coupling" / "test_tickless_timer_compensation.c"),
 ]
 
 KERNEL_SOURCES = [

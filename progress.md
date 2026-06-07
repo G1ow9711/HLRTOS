@@ -10,6 +10,11 @@
 - Tickless Task 1 RED: `python tools\run_host_tests.py` failed on `test_tickless_expected_idle` because `myrtos/mrt_tickless.h` was missing.
 - Tickless Task 1 GREEN: added `MRT_TicklessGetExpectedIdleTicks`, task next-wake query, timer next-expiry query, CMake/runner entries, and `tests/unit/test_tickless_expected_idle.c`.
 - Tickless Task 1 verification: `python tools\run_host_tests.py` passed 51 test targets.
+- Tickless Task 2 RED: `python tools\run_host_tests.py` failed on `test_tickless_timer_compensation` because `MRT_TicklessEnterIdle` and mock port sleep APIs were undeclared.
+- Tickless Task 2 first GREEN attempt compiled but crashed with access violation. GDB showed `MRT_TimerKernelInitialize -> MRT_ListRemove`; root cause was the test leaving a stack-allocated active timer in the global active list before the next `MRT_KernelInitialize`.
+- Tickless Task 2 fix: stopped the still-active timer at the end of the max-sleep-limit test case.
+- Tickless Task 2 GREEN: added `MRT_TicklessEnterIdle`, `MRT_PortSuppressTicksAndSleep`, mock sleep controls/observers, and `tests/coupling/test_tickless_timer_compensation.c`.
+- Tickless Task 2 verification: `python tools\run_host_tests.py` passed 52 test targets.
 
 ### Phase 1: Requirements & Discovery
 - **Status:** in_progress

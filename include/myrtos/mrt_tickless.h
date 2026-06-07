@@ -24,4 +24,16 @@
  */
 MRT_Result MRT_TicklessGetExpectedIdleTicks(MRT_Tick *out_expected_idle_ticks);
 
+/**
+ * @brief 在允许范围内进入 tickless idle 并补偿实际睡眠 tick。
+ * @param max_sleep_ticks 调用方允许的最大睡眠 tick 数；为 0 时不调用端口睡眠。
+ * @param out_slept_ticks 输出端口层实际睡眠 tick 数，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示处理成功；参数为空时返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         端口层睡眠失败时返回端口层结果。
+ * @example
+ * MRT_Tick slept;
+ * MRT_TicklessEnterIdle(100u, &slept);
+ */
+MRT_Result MRT_TicklessEnterIdle(MRT_Tick max_sleep_ticks, MRT_Tick *out_slept_ticks);
+
 #endif

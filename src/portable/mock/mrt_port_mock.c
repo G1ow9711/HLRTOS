@@ -9,6 +9,15 @@ static bool g_yield_requested;
 /** @brief mock 当前临界区嵌套深度。 */
 static uint32_t g_critical_depth;
 
+/** @brief mock 下一次 tickless 睡眠实际经过的 tick 数。 */
+static MRT_Tick g_mock_suppressed_sleep_ticks;
+
+/** @brief mock 收到 tickless 睡眠请求的次数。 */
+static uint32_t g_mock_suppress_sleep_call_count;
+
+/** @brief mock 最近一次收到的预计可睡眠 tick 数。 */
+static MRT_Tick g_mock_last_expected_idle_ticks;
+
 /**
  * @brief 初始化端口层状态。
  * @param void 无输入参数。
@@ -26,6 +35,15 @@ void MRT_PortInitialize(void)
 
     /* 清空临界区嵌套深度。 */
     g_critical_depth = 0u;
+
+    /* 清空下一次模拟睡眠 tick 数。 */
+    g_mock_suppressed_sleep_ticks = 0u;
+
+    /* 清空 tickless 睡眠请求次数。 */
+    g_mock_suppress_sleep_call_count = 0u;
+
+    /* 清空最近一次预计可睡眠 tick 数。 */
+    g_mock_last_expected_idle_ticks = 0u;
 }
 
 /**
@@ -152,4 +170,82 @@ uint32_t MRT_PortMockGetCriticalDepth(void)
 {
     /* 返回当前 mock 临界区嵌套深度。 */
     return g_critical_depth;
+}
+
+/**
+ * @brief 抑制周期 tick 并进入低功耗睡眠。
+ * @param expected_idle_ticks 内核允许端口层连续睡眠的最大 tick 数。
+ * @param out_slept_ticks 输出端口层实际睡眠的 tick 数，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示端口睡眠过程完成；参数为空时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_Tick slept;
+ * MRT_PortSuppressTicksAndSleep(10u, &slept);
+ */
+MRT_Result MRT_PortSuppressTicksAndSleep(MRT_Tick expected_idle_ticks, MRT_Tick *out_slept_ticks)
+{
+    /* 输出指针不能为空，否则无法回报真实睡眠 tick 数。 */
+    if (out_slept_ticks == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 记录端口层收到了一次 tickless 睡眠请求。 */
+    g_mock_suppress_sleep_call_count++;
+
+    /* 保存本次内核允许的最大睡眠 tick 数，供测试断言。 */
+    g_mock_last_expected_idle_ticks = expected_idle_ticks;
+
+    /* 从 mock 配置读取真实睡眠 tick 数。 */
+    MRT_Tick slept_ticks = g_mock_suppressed_sleep_ticks;
+
+    /* 防御性裁剪，真实睡眠不应超过内核允许的最大值。 */
+    if (slept_ticks > expected_idle_ticks) {
+        /* 将回报值限制在 expected_idle_ticks 内。 */
+        slept_ticks = expected_idle_ticks;
+    }
+
+    /* 写出真实睡眠 tick 数。 */
+    *out_slept_ticks = slept_ticks;
+
+    /* mock 睡眠完成。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 设置 host mock 下一次 tickless 睡眠实际经过的 tick 数。
+ * @param slept_ticks 模拟端口层真实睡眠 tick 数。
+ * @return void 无返回值。
+ * @example
+ * MRT_PortMockSetSuppressedSleepTicks(4u);
+ */
+void MRT_PortMockSetSuppressedSleepTicks(MRT_Tick slept_ticks)
+{
+    /* 保存下一次端口睡眠要回报的真实 tick 数。 */
+    g_mock_suppressed_sleep_ticks = slept_ticks;
+}
+
+/**
+ * @brief 查询 host mock 收到 tickless 睡眠请求的次数。
+ * @param void 无输入参数。
+ * @return uint32_t 返回 tickless 睡眠请求次数。
+ * @example
+ * uint32_t calls = MRT_PortMockGetSuppressSleepCallCount();
+ */
+uint32_t MRT_PortMockGetSuppressSleepCallCount(void)
+{
+    /* 返回当前累计的睡眠请求次数。 */
+    return g_mock_suppress_sleep_call_count;
+}
+
+/**
+ * @brief 查询 host mock 最近一次收到的预计可睡眠 tick 数。
+ * @param void 无输入参数。
+ * @return MRT_Tick 返回最近一次 MRT_PortSuppressTicksAndSleep 的 expected_idle_ticks 参数。
+ * @example
+ * MRT_Tick requested = MRT_PortMockGetLastExpectedIdleTicks();
+ */
+MRT_Tick MRT_PortMockGetLastExpectedIdleTicks(void)
+{
+    /* 返回最近一次端口睡眠请求的 expected_idle_ticks。 */
+    return g_mock_last_expected_idle_ticks;
 }

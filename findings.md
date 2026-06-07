@@ -145,6 +145,8 @@
 - Tickless design will query the task delayed list and software timer active list for nearest deadlines, then compensate kernel time after port sleep instead of directly jumping observable module state.
 - Trace design uses a sink callback and compact event records so scheduler/queue paths remain backend-agnostic.
 - Assert design uses one hook dispatcher and `MRT_ASSERT(expr)` macro; existing API parameter validation is not bulk-rewritten in this branch.
+- Tickless sleep compensation uses repeated `MRT_KernelTick()` calls after the port reports actual slept ticks. This preserves existing task delay and software timer expiry order while keeping the implementation small.
+- During compensation testing, a crash was traced to a test leaving an active stack-allocated timer in the global timer list before reinitializing the kernel. The test now stops that timer before returning.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
