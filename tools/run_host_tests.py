@@ -51,12 +51,14 @@ TESTS = [
     ("test_message_buffer_create_static", ROOT / "tests" / "unit" / "test_message_buffer_create_static.c"),
     ("test_message_buffer_send_receive", ROOT / "tests" / "unit" / "test_message_buffer_send_receive.c"),
     ("test_message_buffer_isr", ROOT / "tests" / "unit" / "test_message_buffer_isr.c"),
+    ("test_heap_initialize", ROOT / "tests" / "unit" / "test_heap_initialize.c"),
 ]
 
 KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_event_group.c",
     ROOT / "src" / "kernel" / "mrt_list.c",
     ROOT / "src" / "kernel" / "mrt_kernel.c",
+    ROOT / "src" / "kernel" / "mrt_heap.c",
     ROOT / "src" / "kernel" / "mrt_message_buffer.c",
     ROOT / "src" / "kernel" / "mrt_mutex.c",
     ROOT / "src" / "kernel" / "mrt_priority.c",

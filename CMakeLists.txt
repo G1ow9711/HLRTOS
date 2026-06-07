@@ -10,6 +10,7 @@ option(MRT_BUILD_TESTS "Build MyRTOS host tests" ON)
 add_library(myrtos_kernel STATIC
     src/kernel/mrt_list.c
     src/kernel/mrt_kernel.c
+    src/kernel/mrt_heap.c
     src/kernel/mrt_message_buffer.c
     src/kernel/mrt_event_group.c
     src/kernel/mrt_mutex.c

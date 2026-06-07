@@ -399,6 +399,8 @@
 | Worktree creation | `git worktree add .worktrees\memory-management -b feature/memory-management feature/stream-message-buffers` | New branch from stream/message buffer baseline | Worktree created at `F:\My_RTOS\.worktrees\memory-management` | Pass |
 | Baseline | `python tools\run_host_tests.py` in `.worktrees\memory-management` | 44 test targets pass | `[summary] 44 test target(s) passed` | Pass |
 | Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-memory.md` | Plan 8 tasks defined | 7 tasks defined for heap initialization, linear heap, free-list heap, coalescing heap, fixed block pool, dynamic queue allocation, and verification matrix update | Pass |
+| Heap Task 1 RED | `python tools\run_host_tests.py` before heap header exists | Build fails due to missing header | `fatal error: myrtos/mrt_heap.h: No such file or directory` | Pass |
+| Heap Task 1 GREEN | `python tools\run_host_tests.py` after heap initialization/query implementation | 45 test targets pass | `[summary] 45 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

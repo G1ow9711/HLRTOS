@@ -130,6 +130,7 @@
 - Message Buffer Task 6 adds ISR send/receive APIs plus reader wake coupling. Empty task-context receive with nonzero timeout blocks on `waiting_readers`; task-context send and ISR send wake one reader only after a complete message record is present; ISR send reports `should_yield=true` without switching immediately.
 - Stream/Message Buffer Task 7 updates requirement evidence for `R-002`, `R-008`, `R-009`, and `R-010`, and marks coupling rows `C-020`, `C-021`, and `C-022` verified with 44 passing host test targets.
 - Plan 8 memory management starts from `feature/stream-message-buffers` with 44 passing host targets. The plan will add three heap modes, a fixed block memory pool, and dynamic queue allocation to verify `C-007`, `C-023`, and `C-024`.
+- Memory Task 1 adds heap initialization and query APIs. Heap regions are aligned to `MRT_CFG_HEAP_ALIGNMENT`, invalid modes and too-small regions are rejected, and repeated initialization resets free/minimum-free statistics.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

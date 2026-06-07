@@ -76,13 +76,13 @@ MRT_Result MRT_QueueDelete(MRT_QueueHandle queue);
 
 Steps:
 
-- [ ] Write failing tests for `MRT_HeapInitialize`, `MRT_HeapGetFreeSize`, `MRT_HeapGetMinimumEverFreeSize`, null heap buffer, too-small heap region, invalid heap mode, and repeated initialization resetting statistics.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_heap.h`.
-- [ ] Add `MRT_CFG_HEAP_ALIGNMENT` defaulting to 8 bytes in `mrt_config.h`.
-- [ ] Implement heap control state, pointer alignment helpers, mode validation, initialization, free-size query, and minimum-ever-free query.
-- [ ] Add heap source to CMake and the host test runner.
-- [ ] Run `python tools\run_host_tests.py`; expect 45 test targets pass.
-- [ ] Commit `feat: add heap initialization`.
+- [x] Write failing tests for `MRT_HeapInitialize`, `MRT_HeapGetFreeSize`, `MRT_HeapGetMinimumEverFreeSize`, null heap buffer, too-small heap region, invalid heap mode, and repeated initialization resetting statistics.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_heap.h`.
+- [x] Add `MRT_CFG_HEAP_ALIGNMENT` defaulting to 8 bytes in `mrt_config.h`.
+- [x] Implement heap control state, pointer alignment helpers, mode validation, initialization, free-size query, and minimum-ever-free query.
+- [x] Add heap source to CMake and the host test runner.
+- [x] Run `python tools\run_host_tests.py`; expect 45 test targets pass.
+- [x] Commit `feat: add heap initialization`.
 
 ## Task 2: Linear Heap Allocation
 

@@ -73,6 +73,16 @@
 #endif
 
 /**
+ * @brief 堆分配返回地址的最小对齐字节数。
+ *
+ * 默认 8 字节对齐，可覆盖常见 32/64 位 host、STM32 FPU 数据和 DSP 双字访问需求。
+ * 该值必须保持为 2 的幂，堆实现会用它执行地址和大小规整。
+ */
+#ifndef MRT_CFG_HEAP_ALIGNMENT
+#define MRT_CFG_HEAP_ALIGNMENT 8u
+#endif
+
+/**
  * @brief 是否启用 trace hook。
  *
  * 默认关闭，避免最小系统产生额外代码和运行开销。
