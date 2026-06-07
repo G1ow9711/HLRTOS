@@ -140,6 +140,7 @@
 - Memory Pool Task 5 implements static fixed-block pools without using the global heap. Blocks are aligned to at least pointer size, the free-list pointer is stored inside free blocks, allocation returns `MRT_RESULT_OBJECT_EMPTY` when empty, and release validates range, block boundary, and duplicate free before relinking the block.
 - Dynamic Queue Task 6 RED adds heap/queue coupling coverage and currently fails because `MRT_QueueCreate` and `MRT_QueueDelete` are not declared. The test requires successful dynamic creation/FIFO/delete, allocation failure returning `MRT_RESULT_NO_MEMORY`, unchanged heap free size on failed creation, static queue deletion rejection, and null-argument protection.
 - Dynamic Queue Task 6 implements heap-backed queue creation as one allocation containing an aligned `MRT_Queue` control block followed by item storage. Failed allocation returns `MRT_RESULT_NO_MEMORY` and leaves heap free size unchanged; `MRT_QueueDelete` returns dynamic queues through `MRT_Free` and rejects static queues with `MRT_RESULT_OBJECT_BUSY`.
+- Memory Task 7 updates requirement evidence for `R-002`, `R-008`, `R-009`, and `R-010`, and marks coupling rows `C-007`, `C-023`, and `C-024` verified with 50 passing host test targets.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

@@ -181,10 +181,10 @@ Steps:
 
 Steps:
 
-- [ ] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap, memory pool, and dynamic queue tests pass.
-- [ ] Update `R-002`, `R-008`, `R-009`, and `R-010` evidence with heap, memory pool, and dynamic queue source/tests.
-- [ ] Mark `C-007` verified for queue dynamic allocation failure.
-- [ ] Mark `C-023` verified for heap allocation failure and object creation failure state.
-- [ ] Mark `C-024` verified for adjacent free block coalescing.
-- [ ] Record commit hashes and final test output in `progress.md`.
-- [ ] Commit `docs: record memory management verification evidence`.
+- [x] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap, memory pool, and dynamic queue tests pass.
+- [x] Update `R-002`, `R-008`, `R-009`, and `R-010` evidence with heap, memory pool, and dynamic queue source/tests.
+- [x] Mark `C-007` verified for queue dynamic allocation failure.
+- [x] Mark `C-023` verified for heap allocation failure and object creation failure state.
+- [x] Mark `C-024` verified for adjacent free block coalescing.
+- [x] Record commit hashes and final test output in `progress.md`.
+- [x] Commit `docs: record memory management verification evidence`.

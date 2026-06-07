@@ -21,7 +21,7 @@
 | C-004 | 队列 + 任务阻塞 | 接收空队列并等待 | 任务阻塞，发送后唤醒 | host 单测 | 已验证：`test_queue_send_wakes_receiver` 验证高优先级接收任务阻塞后由低优先级发送唤醒并抢占 |
 | C-005 | 队列 + 超时 | 接收空队列直到超时 | 返回超时，任务恢复就绪 | host 单测 | 已验证：`test_queue_task_timeout` 验证 3 tick timeout、等待链表清理、任务恢复 running |
 | C-006 | 队列 + ISR | ISR 发送到空队列 | 等待任务唤醒，按需请求切换 | host/mock ISR | 已验证：`test_queue_isr` 覆盖 ISR 非阻塞收发；`test_queue_send_wakes_receiver` 覆盖 ISR 发送唤醒接收任务并设置 `should_yield=true` |
-| C-007 | 队列 + 内存 | 动态创建队列时堆不足 | 返回资源不足，不泄漏 | host 单测 | 未实现：当前队列阶段仅支持静态创建；动态 heap 路径等待内存管理模块实现后补测 |
+| C-007 | 队列 + 内存 | 动态创建队列时堆不足 | 返回资源不足，不泄漏 | host 单测 | 已验证：`test_queue_dynamic_allocation` 覆盖小堆上动态队列创建失败返回 `MRT_RESULT_NO_MEMORY`、输出句柄清空、`MRT_HeapGetFreeSize` 前后不变 |
 | C-008 | 二值信号量 + ISR | ISR give 信号量 | 等待任务唤醒 | host/mock ISR | 已验证：`test_semaphore_isr` 覆盖无等待者 give 后计数增加且不切换、满信号量返回 `MRT_RESULT_OBJECT_FULL`、任务上下文调用返回 `MRT_RESULT_INVALID_CONTEXT`、唤醒等待任务并设置 `should_yield=true` |
 | C-009 | 计数信号量 + 边界 | give 超过最大计数 | 返回对象状态错误或饱和策略结果 | host 单测 | 已验证：`test_semaphore_take_give` 覆盖计数信号量 give 成功增加计数和满计数返回 `MRT_RESULT_OBJECT_FULL`；`test_semaphore_create_static` 覆盖初始计数大于最大计数时拒绝创建 |
 | C-010 | 互斥锁 + 优先级继承 | 低优先级持锁，高优先级等待 | 持锁任务继承高优先级 | 调度仿真 | 已验证：`test_mutex_priority_inheritance` 覆盖低优先级持锁、高优先级等待、拥有者有效优先级提升、解锁后所有权转交和基础优先级恢复 |
@@ -37,8 +37,8 @@
 | C-020 | 流缓冲 + 环绕 | 写指针环绕后读取 | 数据顺序保持正确 | host 单测 | 已验证：`test_stream_buffer_send_receive` 覆盖写入、读取、再写入触发环形回绕后仍按 FIFO 顺序读出 |
 | C-021 | 流缓冲 + ISR | ISR 写入，任务阻塞读 | 任务被唤醒并读到数据 | host/mock ISR | 已验证：`test_stream_buffer_isr_wakes_reader` 覆盖高优先级读者阻塞、ISR 写入达到触发水位、读者回到 ready、`should_yield=true`；`test_stream_buffer_isr` 覆盖 ISR 非阻塞收发和非法上下文 |
 | C-022 | 消息缓冲 + 容量 | 剩余空间不足以放完整消息 | 写入失败，不产生半包 | host 单测 | 已验证：`test_message_buffer_send_receive` 覆盖整包边界、小输出不移除消息、剩余空间不足不写半包；`test_message_buffer_isr` 覆盖 ISR 容量拒绝、小输出保持消息和读者唤醒 |
-| C-023 | 内存堆 + 对象创建 | heap 分配失败 | API 返回资源不足，内部状态不变 | host 单测 | 待实现 |
-| C-024 | 内存堆 + 释放合并 | 释放相邻块 | 空闲块合并，碎片减少 | host 单测 | 待实现 |
+| C-023 | 内存堆 + 对象创建 | heap 分配失败 | API 返回资源不足，内部状态不变 | host 单测 | 已验证：`test_heap_linear` 覆盖堆耗尽分配返回 NULL；`test_queue_dynamic_allocation` 覆盖对象创建失败返回 `MRT_RESULT_NO_MEMORY` 且堆空闲水位不变 |
+| C-024 | 内存堆 + 释放合并 | 释放相邻块 | 空闲块合并，碎片减少 | host 单测 | 已验证：`test_heap_coalescing` 覆盖释放两个相邻块后分配大于任一单块的请求成功，并验证普通 free-list 模式仍不合并 |
 | C-025 | trace + 任务切换 | trace 开启 | hook 收到切换事件，不改变调度结果 | host 单测 | 待实现 |
 | C-026 | trace + 队列 | 队列 send/receive | hook 收到事件，不改变队列数据 | host 单测 | 待实现 |
 | C-027 | 断言 + 非法上下文 | ISR 调用禁止 API | 触发断言或返回非法上下文 | host/mock ISR | 部分验证：`test_semaphore_isr`、`test_event_group_isr`、`test_task_notify_isr` 覆盖任务上下文调用 FromISR API 返回 `MRT_RESULT_INVALID_CONTEXT`；`test_mutex_create_lock` 覆盖无当前任务调用互斥锁 API 返回 `MRT_RESULT_INVALID_CONTEXT`；统一断言 hook 和 ISR 调用非 ISR-safe API 的断言路径待 trace/assert 模块补测 |
