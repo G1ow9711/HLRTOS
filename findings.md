@@ -1,0 +1,77 @@
+# Findings & Decisions
+
+## Requirements
+- Build an embedded RTOS similar in spirit to FreeRTOS.
+- Support STM32 and DSP targets.
+- Code must include professional, detailed Chinese comments.
+- Required comment coverage:
+  - every function purpose
+  - input parameters
+  - return value
+  - call example
+  - function-internal line-by-line comments
+- Write a Chinese official-style user manual.
+- Manual should follow a FreeRTOS-like usage-manual structure, but must be original text and layout expression.
+- All features must be tested.
+- Coupling and interaction cases must be tested clearly.
+
+## Project Discovery
+- Project root: `F:\My_RTOS`
+- Existing contents: `.codex-local` only.
+- Git status: not a Git repository.
+- No existing source, docs, tests, build files, or FreeRTOS source found in project root.
+
+## Research Findings
+- Official FreeRTOS documentation groups public API material around task/scheduler, queues, semaphores/mutexes, software timers, event groups, direct task notifications, stream buffers, message buffers, and memory management.
+- Official FreeRTOS source organization is intentionally small at kernel core level: common kernel logic is centered around task scheduling, queues, and list management, with optional modules for timers, event groups, co-routines, stream/message buffers, and portable memory managers.
+- FreeRTOS-Kernel GitHub repository separates common source, public headers, portable CPU/compiler code, and memory-management implementations.
+- FreeRTOS-Kernel GitHub page showed latest release `V11.3.0` dated 2026-03-30 during this session.
+- FreeRTOS reference manual structure includes an "About this manual" section, API usage restrictions, chapterized API groups, prototypes, summaries, parameters, return values, notes, examples, and appendices for types/macros.
+- FreeRTOS may be used as architectural inspiration, but direct copying of source code or manual text is not acceptable.
+
+## Technical Decisions
+| Decision | Rationale |
+|----------|-----------|
+| Treat this as greenfield RTOS project | Workspace is empty except `.codex-local`. |
+| Use broad C scope | User selected C: implement a broad FreeRTOS-like feature set rather than a compact first release. |
+| Still require staged delivery inside C | Full kernel, ports, manual, and exhaustive coupling tests need module phases to keep verification meaningful. |
+| Use TDD for implementation | User requires all functions and coupling cases tested; TDD skill also requires failing tests before production code. |
+| Provisional target platform | No exact chip/toolchain answer yet; proceed with STM32 Cortex-M4/M7 + ARM GCC/CMake + TI C2000-style DSP abstraction as reasonable default. |
+| API prefix `MRT_` proposed | Avoid confusion with FreeRTOS symbols and preserve originality. |
+
+## Issues Encountered
+| Issue | Resolution |
+|-------|------------|
+| Not a Git repository | Skip worktree/commit requirements until user initializes Git or approves repo init. |
+| Scope very large | Decompose into approved releases before implementation. |
+
+## Resources
+- Local planning files:
+  - `task_plan.md`
+  - `findings.md`
+  - `progress.md`
+- Approved design:
+  - `docs/superpowers/specs/2026-06-07-myrtos-c-scope-design.md`
+- Verification specs:
+  - `docs/verification/requirements_traceability_matrix.md`
+  - `docs/verification/coupling_test_matrix.md`
+  - `docs/verification/test_suite_plan.md`
+- API specs:
+  - `docs/api/myrtos_api_catalog.md`
+- FreeRTOS official documentation overview: https://www.freertos.org/Documentation/00-Overview
+- FreeRTOS source organization: https://www.freertos.org/Documentation/02-Kernel/06-Coding-guidelines/01-Source-code-organization
+- FreeRTOS-Kernel GitHub repository: https://github.com/FreeRTOS/FreeRTOS-Kernel
+- FreeRTOS Reference Manual V10.0.0 PDF: https://www.freertos.org/media/2018/FreeRTOS_Reference_Manual_V10.0.0.pdf
+
+## Visual/Browser Findings
+- None yet.
+
+## Open Confirmations
+- User approved platform default, API prefix, manual originality constraint, and Git repository initialization.
+
+## Verification Findings
+- Requirement traceability now has 10 top-level requirements (`R-001` through `R-010`).
+- Coupling matrix now has 33 coverage rows (`C-001` through `C-033`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, and source comments.
+
+---
+*Update this file after every 2 view/browser/search operations.*

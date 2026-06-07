@@ -1,0 +1,27 @@
+# Build outputs
+build/
+cmake-build-*/
+out/
+
+# Local Codex/runtime storage
+.codex-local/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Editor/system files
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+
+# Test and coverage outputs
+Testing/
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
