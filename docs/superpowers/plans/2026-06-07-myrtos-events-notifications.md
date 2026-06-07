@@ -77,13 +77,13 @@ MRT_Result MRT_TaskNotifyValueClear(MRT_TaskHandle task, MRT_NotifyValue bits_to
 
 Steps:
 
-- [ ] Write failing tests for `MRT_EventGroupCreateStatic`, `MRT_EventGroupGetBits`, `MRT_EventGroupSetBits`, `MRT_EventGroupClearBits`, null storage/output, zero `bits_to_set`, and zero `bits_to_clear`.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_event_group.h`.
-- [ ] Implement `MRT_EventGroup` with `bits`, `waiting_tasks`, and `static_storage`.
-- [ ] Implement set/clear/get for task context without blocking or wake logic.
-- [ ] Add event group source to CMake and host runner.
-- [ ] Run `python tools\run_host_tests.py`; expect 26 test targets pass.
-- [ ] Commit `feat: add static event group bits`.
+- [x] Write failing tests for `MRT_EventGroupCreateStatic`, `MRT_EventGroupGetBits`, `MRT_EventGroupSetBits`, `MRT_EventGroupClearBits`, null storage/output, zero `bits_to_set`, and zero `bits_to_clear`.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_event_group.h`.
+- [x] Implement `MRT_EventGroup` with `bits`, `waiting_tasks`, and `static_storage`.
+- [x] Implement set/clear/get for task context without blocking or wake logic.
+- [x] Add event group source to CMake and host runner.
+- [x] Run `python tools\run_host_tests.py`; expect 26 test targets pass.
+- [x] Commit `feat: add static event group bits`.
 
 ## Task 2: Event Group Immediate Wait
 

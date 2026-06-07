@@ -32,9 +32,11 @@ TESTS = [
     ("test_mutex_create_lock", ROOT / "tests" / "unit" / "test_mutex_create_lock.c"),
     ("test_mutex_priority_inheritance", ROOT / "tests" / "coupling" / "test_mutex_priority_inheritance.c"),
     ("test_mutex_recursive", ROOT / "tests" / "unit" / "test_mutex_recursive.c"),
+    ("test_event_group_create_bits", ROOT / "tests" / "unit" / "test_event_group_create_bits.c"),
 ]
 
 KERNEL_SOURCES = [
+    ROOT / "src" / "kernel" / "mrt_event_group.c",
     ROOT / "src" / "kernel" / "mrt_list.c",
     ROOT / "src" / "kernel" / "mrt_kernel.c",
     ROOT / "src" / "kernel" / "mrt_mutex.c",

@@ -1,0 +1,76 @@
+#ifndef MYRTOS_MRT_EVENT_GROUP_H
+#define MYRTOS_MRT_EVENT_GROUP_H
+
+/**
+ * @file mrt_event_group.h
+ * @brief MyRTOS 事件组公共接口。
+ *
+ * 事件组用一个位集合表达多个事件条件，适合任务之间或 ISR 与任务之间传递
+ * “某些事件已经发生”的状态。本模块采用静态创建优先的嵌入式设计，调用方
+ * 提供控制块存储，内核只维护 bit 状态和等待任务链表。
+ */
+
+#include "myrtos/mrt_list.h"
+#include "myrtos/mrt_types.h"
+
+/**
+ * @brief MyRTOS 事件组控制块。
+ *
+ * 静态创建事件组时，调用方提供该结构体作为控制块存储。结构体公开是为了
+ * 支持无动态内存的嵌入式工程；应用代码不应直接修改字段。
+ */
+typedef struct MRT_EventGroup {
+    /** @brief 当前已经置位的事件 bit 集合。 */
+    MRT_EventBits bits;
+    /** @brief 等待该事件组条件满足的任务链表，后续阻塞 wait 会使用。 */
+    MRT_List waiting_tasks;
+    /** @brief 是否使用静态存储创建。 */
+    bool static_storage;
+} MRT_EventGroup;
+
+/**
+ * @brief 使用调用方提供的控制块静态创建事件组。
+ * @param storage 事件组控制块存储，不能为空。
+ * @param out_group 输出事件组句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * static MRT_EventGroup event_cb;
+ * MRT_EventGroupHandle events;
+ * MRT_EventGroupCreateStatic(&event_cb, &events);
+ */
+MRT_Result MRT_EventGroupCreateStatic(MRT_EventGroup *storage, MRT_EventGroupHandle *out_group);
+
+/**
+ * @brief 设置事件组中的一个或多个 bit。
+ * @param group 事件组句柄，不能为空。
+ * @param bits_to_set 需要置位的 bit 掩码，不能为 0。
+ * @param out_bits 输出设置后的完整 bit 集合，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示设置成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_EventBits bits;
+ * MRT_EventGroupSetBits(events, 0x01u, &bits);
+ */
+MRT_Result MRT_EventGroupSetBits(MRT_EventGroupHandle group, MRT_EventBits bits_to_set, MRT_EventBits *out_bits);
+
+/**
+ * @brief 清除事件组中的一个或多个 bit。
+ * @param group 事件组句柄，不能为空。
+ * @param bits_to_clear 需要清除的 bit 掩码，不能为 0。
+ * @param out_bits 输出清除后的完整 bit 集合，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示清除成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_EventBits bits;
+ * MRT_EventGroupClearBits(events, 0x01u, &bits);
+ */
+MRT_Result MRT_EventGroupClearBits(MRT_EventGroupHandle group, MRT_EventBits bits_to_clear, MRT_EventBits *out_bits);
+
+/**
+ * @brief 查询事件组当前 bit 集合。
+ * @param group 事件组句柄，不能为空。
+ * @return MRT_EventBits 返回当前 bit 集合；事件组句柄为空时返回 0。
+ * @example
+ * MRT_EventBits bits = MRT_EventGroupGetBits(events);
+ */
+MRT_EventBits MRT_EventGroupGetBits(MRT_EventGroupHandle group);
+
+#endif
