@@ -63,7 +63,9 @@ typedef enum MRT_TaskWaitReason {
     /** @brief 任务正在等待本任务通知到达。 */
     MRT_TASK_WAIT_REASON_NOTIFY_WAIT,
     /** @brief 任务正在等待流缓冲达到可读条件。 */
-    MRT_TASK_WAIT_REASON_STREAM_RECEIVE
+    MRT_TASK_WAIT_REASON_STREAM_RECEIVE,
+    /** @brief 任务正在等待消息缓冲出现一条完整消息。 */
+    MRT_TASK_WAIT_REASON_MESSAGE_RECEIVE
 } MRT_TaskWaitReason;
 
 /**

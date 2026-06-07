@@ -94,6 +94,42 @@ MRT_Result MRT_MessageBufferReceive(MRT_MessageBufferHandle message_buffer,
                                     size_t *out_received);
 
 /**
+ * @brief 在 ISR 上下文向消息缓冲写入一条完整消息。
+ * @param message_buffer 目标消息缓冲句柄，不能为 NULL。
+ * @param message 待写入消息地址，length 大于 0 时不能为 NULL。
+ * @param length 消息载荷字节数，必须大于 0。
+ * @param out_sent 输出实际写入的消息载荷字节数，允许为 NULL。
+ * @param should_yield 输出是否需要在 ISR 退出前请求调度切换，允许为 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示整条消息写入成功；空间不足返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_MessageBufferSendFromISR(message_buffer, data, len, &sent, &yield);
+ */
+MRT_Result MRT_MessageBufferSendFromISR(MRT_MessageBufferHandle message_buffer,
+                                        const void *message,
+                                        size_t length,
+                                        size_t *out_sent,
+                                        bool *should_yield);
+
+/**
+ * @brief 在 ISR 上下文从消息缓冲读取一条完整消息。
+ * @param message_buffer 源消息缓冲句柄，不能为 NULL。
+ * @param out_message 输出消息地址，不能为 NULL。
+ * @param output_capacity 输出缓冲容量，单位为字节。
+ * @param out_received 输出实际读取的消息载荷字节数，允许为 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取成功；无消息返回 MRT_RESULT_OBJECT_EMPTY；
+ *         输出缓冲太小返回 MRT_RESULT_OBJECT_FULL 且不移除消息；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         非 ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_MessageBufferReceiveFromISR(message_buffer, out, sizeof(out), &received);
+ */
+MRT_Result MRT_MessageBufferReceiveFromISR(MRT_MessageBufferHandle message_buffer,
+                                           void *out_message,
+                                           size_t output_capacity,
+                                           size_t *out_received);
+
+/**
  * @brief 查询消息缓冲当前已使用字节数。
  * @param message_buffer 消息缓冲句柄，不能为空。
  * @param out_bytes 输出已使用字节数，不能为空。

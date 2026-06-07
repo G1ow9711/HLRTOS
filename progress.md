@@ -207,6 +207,7 @@
 | 2026-06-07 | `cmake` command not found | 1 | Used GCC-backed project-local Python runner for host tests and kept CMake files for standard environments. |
 | 2026-06-07 | `apply_patch` targeted the main worktree instead of `.worktrees\queues` | 1 | Re-ran the patch using the queue worktree path. |
 | 2026-06-07 | `test_mutex_create_lock` invalid-context case reused current task from a previous test case | 1 | Added `MRT_KernelInitialize()` at the start of that test case to isolate scheduler state. |
+| 2026-06-07 | `python tools\run_host_tests.py` timed out at 124 seconds after adding `test_message_buffer_isr` | 1 | Avoided repeating the same failing command; compiled the new test target directly to capture the expected RED error, then used a 240-second timeout for full verification. |
 
 ## Foundation Kernel Test Results
 | Test | Input | Expected | Actual | Status |
@@ -371,6 +372,9 @@
 | Message Buffer Task 4 GREEN | `python tools\run_host_tests.py` after static message buffer creation | 42 test targets pass | `[summary] 42 test target(s) passed` | Pass |
 | Message Buffer Task 5 RED | `python tools\run_host_tests.py` before message send/receive/reset declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_MessageBufferSend'`, `MRT_MessageBufferReceive`, `MRT_MessageBufferReset` | Pass |
 | Message Buffer Task 5 GREEN | `python tools\run_host_tests.py` after packet send/receive/reset | 43 test targets pass | `[summary] 43 test target(s) passed` | Pass |
+| Message Buffer Task 6 RED | Single-target GCC compile for `tests\unit\test_message_buffer_isr.c` before ISR APIs and wait reason | Build fails due to missing declarations and wait reason | `implicit declaration of function 'MRT_MessageBufferSendFromISR'`, `MRT_MessageBufferReceiveFromISR`, `MRT_TASK_WAIT_REASON_MESSAGE_RECEIVE undeclared` | Pass |
+| Message Buffer Task 6 single-target GREEN | Compile and run `build\host-tests\test_message_buffer_isr.exe` after ISR implementation | New ISR test target passes | Exit code 0 | Pass |
+| Message Buffer Task 6 GREEN | `python tools\run_host_tests.py` after message ISR APIs and reader wake coupling | 44 test targets pass | `[summary] 44 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

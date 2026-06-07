@@ -202,14 +202,14 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_MessageBufferSendFromISR`, `MRT_MessageBufferReceiveFromISR`, ISR context validation, task-context misuse returning `MRT_RESULT_INVALID_CONTEXT`, packet integrity, capacity rejection, and `should_yield=true` when a reader is woken.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing ISR APIs and message wait reason.
-- [ ] Add `MRT_TASK_WAIT_REASON_MESSAGE_RECEIVE` to task wait reasons.
-- [ ] Implement message receive blocking on empty buffer with timeout using object-wait helper.
-- [ ] Implement task-context send and ISR send wake logic when at least one complete message is available.
-- [ ] Implement ISR receive with zero-timeout semantics.
-- [ ] Run `python tools\run_host_tests.py`; expect 44 test targets pass.
-- [ ] Commit `feat: add message buffer ISR APIs`.
+- [x] Write failing tests for `MRT_MessageBufferSendFromISR`, `MRT_MessageBufferReceiveFromISR`, ISR context validation, task-context misuse returning `MRT_RESULT_INVALID_CONTEXT`, packet integrity, capacity rejection, and `should_yield=true` when a reader is woken.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing ISR APIs and message wait reason.
+- [x] Add `MRT_TASK_WAIT_REASON_MESSAGE_RECEIVE` to task wait reasons.
+- [x] Implement message receive blocking on empty buffer with timeout using object-wait helper.
+- [x] Implement task-context send and ISR send wake logic when at least one complete message is available.
+- [x] Implement ISR receive with zero-timeout semantics.
+- [x] Run `python tools\run_host_tests.py`; expect 44 test targets pass.
+- [x] Commit `feat: add message buffer ISR APIs`.
 
 ## Task 7: Verification Matrix Update
 

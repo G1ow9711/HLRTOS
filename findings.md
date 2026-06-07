@@ -127,6 +127,7 @@
 - Stream Buffer Task 3 adds ISR send/receive and reader wake coupling. Empty receive with nonzero timeout blocks the current task on `waiting_readers`; task-context send and ISR send wake a reader when `bytes_used >= trigger_level`. ISR send never switches immediately and reports `should_yield=true` when it wakes a reader.
 - Message Buffer Task 4 adds static message buffer creation with caller-provided control block and byte storage. Capacity must hold a 4-byte length header plus at least one payload byte; query APIs report used bytes and free spaces.
 - Message Buffer Task 5 adds packet-preserving send/receive with a 32-bit little-endian length header. Sends require enough free space for both header and payload, receives reject undersized output buffers without removing the pending message, and reset clears read/write indexes plus used-byte state.
+- Message Buffer Task 6 adds ISR send/receive APIs plus reader wake coupling. Empty task-context receive with nonzero timeout blocks on `waiting_readers`; task-context send and ISR send wake one reader only after a complete message record is present; ISR send reports `should_yield=true` without switching immediately.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

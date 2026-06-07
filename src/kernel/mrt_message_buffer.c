@@ -1,4 +1,6 @@
 #include "myrtos/mrt_message_buffer.h"
+#include "myrtos/mrt_port.h"
+#include "mrt_task_internal.h"
 
 /** @brief 消息缓冲中每条消息前置长度字段字节数。 */
 #define MRT_MESSAGE_BUFFER_LENGTH_FIELD_SIZE 4u
@@ -162,6 +164,44 @@ static void MRT_MessageDiscardLength(MRT_MessageBufferHandle message_buffer)
 
     /* 读取并丢弃长度头第 3 字节。 */
     (void)MRT_MessageReadByte(message_buffer);
+}
+
+/**
+ * @brief 在缓冲内存在完整消息时唤醒一个等待读者。
+ * @param message_buffer 消息缓冲句柄，不能为 NULL。
+ * @param switch_now true 表示任务上下文立即重选调度，false 表示 ISR 延后切换。
+ * @return bool 返回 true 表示唤醒了一个读者，返回 false 表示没有任务被唤醒。
+ * @example
+ * bool woke = MRT_MessageWakeReaderIfAvailable(message_buffer, false);
+ */
+static bool MRT_MessageWakeReaderIfAvailable(MRT_MessageBufferHandle message_buffer, bool switch_now)
+{
+    /* 至少需要长度头才可能判断下一条消息是否完整。 */
+    if (message_buffer->bytes_used < MRT_MESSAGE_BUFFER_LENGTH_FIELD_SIZE) {
+        /* 当前没有可唤醒读者的完整消息。 */
+        return false;
+    }
+
+    /* 窥视下一条消息的载荷长度，但不移动读索引。 */
+    uint32_t message_length = MRT_MessagePeekLength(message_buffer);
+
+    /* 计算完整记录所需字节数。 */
+    size_t required = MRT_MESSAGE_BUFFER_LENGTH_FIELD_SIZE + (size_t)message_length;
+
+    /* 防御性检查：只有完整记录已经写入时才允许唤醒读者。 */
+    if (required > message_buffer->bytes_used) {
+        /* 消息尚不完整，不唤醒读者。 */
+        return false;
+    }
+
+    /* 没有读者等待时无需唤醒。 */
+    if (MRT_ListIsEmpty(&message_buffer->waiting_readers)) {
+        /* 没有任务在等待该消息缓冲。 */
+        return false;
+    }
+
+    /* 唤醒优先级最高的等待读者。 */
+    return MRT_TaskKernelWakeFirstObjectWaiter(&message_buffer->waiting_readers, MRT_RESULT_OK, switch_now);
 }
 
 /**
@@ -346,6 +386,9 @@ MRT_Result MRT_MessageBufferSend(MRT_MessageBufferHandle message_buffer,
         MRT_MessageWriteByte(message_buffer, bytes[index]);
     }
 
+    /* 写入完整消息后，唤醒正在等待完整消息的读者。 */
+    (void)MRT_MessageWakeReaderIfAvailable(message_buffer, true);
+
     /* 写回实际写入载荷长度。 */
     if (out_sent != 0) {
         /* 告诉调用方整条消息载荷已写入。 */
@@ -381,9 +424,6 @@ MRT_Result MRT_MessageBufferReceive(MRT_MessageBufferHandle message_buffer,
         *out_received = 0u;
     }
 
-    /* 当前阶段未接入读者阻塞，timeout 暂不参与等待。 */
-    (void)timeout;
-
     /* 消息缓冲句柄不能为空。 */
     if (message_buffer == 0) {
         /* 返回参数错误。 */
@@ -398,8 +438,17 @@ MRT_Result MRT_MessageBufferReceive(MRT_MessageBufferHandle message_buffer,
 
     /* 没有任何消息时返回对象空。 */
     if (message_buffer->bytes_used == 0u) {
-        /* 告诉调用方当前无完整消息。 */
-        return MRT_RESULT_OBJECT_EMPTY;
+        /* 非阻塞接收直接返回对象空。 */
+        if (timeout == 0u) {
+            /* 告诉调用方当前无完整消息。 */
+            return MRT_RESULT_OBJECT_EMPTY;
+        }
+
+        /* 非零 timeout 时，将当前任务加入消息缓冲读等待链表。 */
+        return MRT_TaskKernelBlockCurrentOnObject(&message_buffer->waiting_readers,
+                                                  timeout,
+                                                  MRT_TASK_WAIT_REASON_MESSAGE_RECEIVE,
+                                                  MRT_RESULT_TIMEOUT);
     }
 
     /* 防御性检查：已使用字节不足长度头表示内部状态异常。 */
@@ -445,6 +494,206 @@ MRT_Result MRT_MessageBufferReceive(MRT_MessageBufferHandle message_buffer,
     }
 
     /* 接收成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文向消息缓冲写入一条完整消息。
+ * @param message_buffer 目标消息缓冲句柄，不能为 NULL。
+ * @param message 待写入消息地址，length 大于 0 时不能为 NULL。
+ * @param length 消息载荷字节数，必须大于 0。
+ * @param out_sent 输出实际写入的消息载荷字节数，允许为 NULL。
+ * @param should_yield 输出是否需要在 ISR 退出前请求调度切换，允许为 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示整条消息写入成功；空间不足返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_MessageBufferSendFromISR(message_buffer, data, len, &sent, &yield);
+ */
+MRT_Result MRT_MessageBufferSendFromISR(MRT_MessageBufferHandle message_buffer,
+                                        const void *message,
+                                        size_t length,
+                                        size_t *out_sent,
+                                        bool *should_yield)
+{
+    /* 如果调用方提供输出指针，先清零，保证失败路径结果确定。 */
+    if (out_sent != 0) {
+        /* 默认没有写入任何载荷字节。 */
+        *out_sent = 0u;
+    }
+
+    /* 如果调用方提供 yield 输出，先清零。 */
+    if (should_yield != 0) {
+        /* 默认不请求 ISR 退出后切换。 */
+        *should_yield = false;
+    }
+
+    /* FromISR API 只能在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 消息缓冲句柄不能为空。 */
+    if (message_buffer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 消息长度必须大于 0，避免只有长度头的空记录。 */
+    if (length == 0u) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 消息指针不能为空。 */
+    if (message == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 当前长度字段为 32 位，超过范围的消息无法编码。 */
+    if (length > UINT32_MAX) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 计算整条记录所需空间：长度头加消息载荷。 */
+    size_t required = MRT_MESSAGE_BUFFER_LENGTH_FIELD_SIZE + length;
+
+    /* 单条消息超过总容量时，永远无法写入。 */
+    if (required > message_buffer->capacity) {
+        /* 返回对象满，表示目标缓冲无法容纳该消息。 */
+        return MRT_RESULT_OBJECT_FULL;
+    }
+
+    /* 当前空闲空间不足时，不写入任何半条消息。 */
+    if ((message_buffer->capacity - message_buffer->bytes_used) < required) {
+        /* 返回对象满，保持已有消息不变。 */
+        return MRT_RESULT_OBJECT_FULL;
+    }
+
+    /* 写入 32 位小端消息长度。 */
+    MRT_MessageWriteLength(message_buffer, (uint32_t)length);
+
+    /* 将待写入消息转换为字节指针。 */
+    const uint8_t *bytes = (const uint8_t *)message;
+
+    /* 逐字节写入消息载荷。 */
+    for (size_t index = 0u; index < length; index++) {
+        /* 写入当前载荷字节。 */
+        MRT_MessageWriteByte(message_buffer, bytes[index]);
+    }
+
+    /* 写回实际写入载荷长度。 */
+    if (out_sent != 0) {
+        /* 告诉调用方整条消息载荷已写入。 */
+        *out_sent = length;
+    }
+
+    /* 如果写入完整消息后唤醒了读者，则请求 ISR 退出后调度。 */
+    if (MRT_MessageWakeReaderIfAvailable(message_buffer, false)) {
+        /* 调用方提供 yield 输出时写回 true。 */
+        if (should_yield != 0) {
+            /* 提示端口层在 ISR 末尾请求调度。 */
+            *should_yield = true;
+        }
+    }
+
+    /* ISR 发送成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文从消息缓冲读取一条完整消息。
+ * @param message_buffer 源消息缓冲句柄，不能为 NULL。
+ * @param out_message 输出消息地址，不能为 NULL。
+ * @param output_capacity 输出缓冲容量，单位为字节。
+ * @param out_received 输出实际读取的消息载荷字节数，允许为 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取成功；无消息返回 MRT_RESULT_OBJECT_EMPTY；
+ *         输出缓冲太小返回 MRT_RESULT_OBJECT_FULL 且不移除消息；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         非 ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_MessageBufferReceiveFromISR(message_buffer, out, sizeof(out), &received);
+ */
+MRT_Result MRT_MessageBufferReceiveFromISR(MRT_MessageBufferHandle message_buffer,
+                                           void *out_message,
+                                           size_t output_capacity,
+                                           size_t *out_received)
+{
+    /* 如果调用方提供输出指针，先清零，保证失败路径结果确定。 */
+    if (out_received != 0) {
+        /* 默认没有读取任何载荷字节。 */
+        *out_received = 0u;
+    }
+
+    /* FromISR API 只能在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 消息缓冲句柄不能为空。 */
+    if (message_buffer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 输出消息指针不能为空。 */
+    if (out_message == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* ISR 中没有可读消息时不能阻塞等待。 */
+    if (message_buffer->bytes_used == 0u) {
+        /* 告诉调用方当前无完整消息。 */
+        return MRT_RESULT_OBJECT_EMPTY;
+    }
+
+    /* 防御性检查：已使用字节不足长度头表示内部状态异常。 */
+    if (message_buffer->bytes_used < MRT_MESSAGE_BUFFER_LENGTH_FIELD_SIZE) {
+        /* 返回内部错误。 */
+        return MRT_RESULT_INTERNAL_ERROR;
+    }
+
+    /* 窥视下一条消息长度但不移除消息。 */
+    uint32_t message_length = MRT_MessagePeekLength(message_buffer);
+
+    /* 计算完整记录长度。 */
+    size_t required = MRT_MESSAGE_BUFFER_LENGTH_FIELD_SIZE + (size_t)message_length;
+
+    /* 防御性检查：记录长度超过已使用字节表示内部状态异常。 */
+    if (required > message_buffer->bytes_used) {
+        /* 返回内部错误。 */
+        return MRT_RESULT_INTERNAL_ERROR;
+    }
+
+    /* 输出缓冲太小时不移除消息，避免产生半包。 */
+    if (output_capacity < (size_t)message_length) {
+        /* 返回对象满，表示调用方输出空间不足。 */
+        return MRT_RESULT_OBJECT_FULL;
+    }
+
+    /* 丢弃长度头，准备读取载荷。 */
+    MRT_MessageDiscardLength(message_buffer);
+
+    /* 将输出地址转换为字节指针。 */
+    uint8_t *out = (uint8_t *)out_message;
+
+    /* 逐字节读取完整载荷。 */
+    for (size_t index = 0u; index < (size_t)message_length; index++) {
+        /* 读取当前载荷字节。 */
+        out[index] = MRT_MessageReadByte(message_buffer);
+    }
+
+    /* 写回实际读取载荷长度。 */
+    if (out_received != 0) {
+        /* 告诉调用方读取了完整消息长度。 */
+        *out_received = (size_t)message_length;
+    }
+
+    /* ISR 接收成功。 */
     return MRT_RESULT_OK;
 }
 
