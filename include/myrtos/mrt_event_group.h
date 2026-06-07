@@ -53,6 +53,19 @@ MRT_Result MRT_EventGroupCreateStatic(MRT_EventGroup *storage, MRT_EventGroupHan
 MRT_Result MRT_EventGroupSetBits(MRT_EventGroupHandle group, MRT_EventBits bits_to_set, MRT_EventBits *out_bits);
 
 /**
+ * @brief 在 ISR 上下文设置事件组中的一个或多个 bit。
+ * @param group 事件组句柄，不能为空。
+ * @param bits_to_set 需要置位的 bit 掩码，不能为 0。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示设置成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         非 ISR 上下文返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_EventGroupSetBitsFromISR(events, 0x01u, &yield);
+ */
+MRT_Result MRT_EventGroupSetBitsFromISR(MRT_EventGroupHandle group, MRT_EventBits bits_to_set, bool *should_yield);
+
+/**
  * @brief 清除事件组中的一个或多个 bit。
  * @param group 事件组句柄，不能为空。
  * @param bits_to_clear 需要清除的 bit 掩码，不能为 0。

@@ -294,6 +294,8 @@
 | Event Group Task 3 GREEN | `python tools\run_host_tests.py` after event wait timeout coupling | 28 test targets pass | `[summary] 28 test target(s) passed` | Pass |
 | Event Group Task 4 RED | `python tools\run_host_tests.py` before set-wake coupling | Coupling test fails because set bits does not wake waiters | `assertion failed: MRT_TaskGetCurrent() == high_task` | Pass |
 | Event Group Task 4 GREEN | `python tools\run_host_tests.py` after set-wake coupling | 29 test targets pass | `[summary] 29 test target(s) passed` | Pass |
+| Event Group Task 5 RED | `python tools\run_host_tests.py` before ISR set declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_EventGroupSetBitsFromISR'` | Pass |
+| Event Group Task 5 GREEN | `python tools\run_host_tests.py` after ISR set implementation | 30 test targets pass | `[summary] 30 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

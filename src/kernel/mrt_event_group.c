@@ -1,4 +1,5 @@
 #include "myrtos/mrt_event_group.h"
+#include "myrtos/mrt_port.h"
 #include "myrtos/mrt_task.h"
 #include "mrt_task_internal.h"
 
@@ -184,6 +185,62 @@ MRT_Result MRT_EventGroupSetBits(MRT_EventGroupHandle group, MRT_EventBits bits_
     (void)MRT_EventGroupWakeMatchingTasks(group, snapshot, true);
 
     /* bit 设置成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文设置事件组中的一个或多个 bit。
+ * @param group 事件组句柄，不能为空。
+ * @param bits_to_set 需要置位的 bit 掩码，不能为 0。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示设置成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         非 ISR 上下文返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_EventGroupSetBitsFromISR(events, 0x01u, &yield);
+ */
+MRT_Result MRT_EventGroupSetBitsFromISR(MRT_EventGroupHandle group, MRT_EventBits bits_to_set, bool *should_yield)
+{
+    /* 默认不请求 ISR 退出后切换，所有失败路径保持该状态。 */
+    if (should_yield != 0) {
+        /* 写回 false，避免调用方沿用旧值。 */
+        *should_yield = false;
+    }
+
+    /* 事件组句柄不能为空，否则无法修改 bit 集合。 */
+    if (group == 0) {
+        /* 返回参数错误，提示调用方传入有效事件组。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 设置 0 bit 不会产生任何事件语义，因此直接拒绝。 */
+    if (bits_to_set == 0u) {
+        /* 返回参数错误，提示调用方提供非零 bit 掩码。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* FromISR API 只能在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文，提示调用方使用任务上下文 API。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 将请求 bit 按位或到当前事件集合。 */
+    group->bits |= bits_to_set;
+
+    /* 保存清位前快照，等待者判定基于同一个事件状态。 */
+    MRT_EventBits snapshot = group->bits;
+
+    /* ISR 中只把匹配等待者置为 ready，不立即修改当前任务。 */
+    bool woke_task = MRT_EventGroupWakeMatchingTasks(group, snapshot, false);
+
+    /* 如果唤醒了任务，则请求端口层在 ISR 退出前执行延迟切换。 */
+    if ((should_yield != 0) && woke_task) {
+        /* 写回需要 yield。 */
+        *should_yield = true;
+    }
+
+    /* ISR set bits 成功。 */
     return MRT_RESULT_OK;
 }
 

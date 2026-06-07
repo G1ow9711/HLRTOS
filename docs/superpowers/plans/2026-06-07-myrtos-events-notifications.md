@@ -156,11 +156,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_EventGroupSetBitsFromISR`: no waiter keeps `should_yield=false`, matching waiter sets `should_yield=true`, task context returns `MRT_RESULT_INVALID_CONTEXT`, null group returns `MRT_RESULT_INVALID_ARGUMENT`, zero bits returns `MRT_RESULT_INVALID_ARGUMENT`.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing ISR API declaration.
-- [ ] Implement ISR set without immediate task switch and with deferred yield flag.
-- [ ] Run `python tools\run_host_tests.py`; expect 30 test targets pass.
-- [ ] Commit `feat: add event group ISR set`.
+- [x] Write failing tests for `MRT_EventGroupSetBitsFromISR`: no waiter keeps `should_yield=false`, matching waiter sets `should_yield=true`, task context returns `MRT_RESULT_INVALID_CONTEXT`, null group returns `MRT_RESULT_INVALID_ARGUMENT`, zero bits returns `MRT_RESULT_INVALID_ARGUMENT`.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing ISR API declaration.
+- [x] Implement ISR set without immediate task switch and with deferred yield flag.
+- [x] Run `python tools\run_host_tests.py`; expect 30 test targets pass.
+- [x] Commit `feat: add event group ISR set`.
 
 ## Task 6: Task Notification Actions
 

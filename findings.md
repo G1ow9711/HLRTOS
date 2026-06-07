@@ -110,6 +110,7 @@
 - Event Group Task 2 defines `MRT_EventGroupWaitBits` immediate semantics: wait-all requires all requested bits, wait-any requires at least one requested bit, `out_bits` receives the pre-clear event snapshot, and clear-on-exit removes matched requested bits after a successful wait.
 - Event Group Task 3 adds `MRT_TASK_WAIT_REASON_EVENT_BITS` and stores event wait metadata inside `MRT_Task`. Timeout waits now use the existing object wait helper, so tick expiry removes the task from both the delay list and the event group's `waiting_tasks` list.
 - Event Group Task 4 adds `MRT_TaskKernelWakeTask` so event groups can wake multiple specific waiters in one set operation. Matching uses the post-set, pre-clear snapshot; clear-on-exit is applied once after all eligible waiters have been selected.
+- Event Group Task 5 adds `MRT_EventGroupSetBitsFromISR`. It validates ISR context through the port mock, never switches immediately, and reports `should_yield=true` when a waiting task is moved to ready.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
