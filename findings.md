@@ -58,6 +58,9 @@
   - `docs/verification/test_suite_plan.md`
 - API specs:
   - `docs/api/myrtos_api_catalog.md`
+- Implementation plans:
+  - `docs/superpowers/plans/2026-06-07-myrtos-master-implementation.md`
+  - `docs/superpowers/plans/2026-06-07-myrtos-foundation-kernel.md`
 - FreeRTOS official documentation overview: https://www.freertos.org/Documentation/00-Overview
 - FreeRTOS source organization: https://www.freertos.org/Documentation/02-Kernel/06-Coding-guidelines/01-Source-code-organization
 - FreeRTOS-Kernel GitHub repository: https://github.com/FreeRTOS/FreeRTOS-Kernel
@@ -72,6 +75,7 @@
 ## Verification Findings
 - Requirement traceability now has 10 top-level requirements (`R-001` through `R-010`).
 - Coupling matrix now has 33 coverage rows (`C-001` through `C-033`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, and source comments.
+- Implementation plan self-review placeholder scan found no `TBD`, `TODO`, `implement later`, `fill in details`, or stale draft-design path strings.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

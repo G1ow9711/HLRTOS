@@ -24,8 +24,8 @@ Phase 3: Implementation Plan
 - **Status:** complete
 
 ### Phase 3: Implementation Plan
-- [ ] Create detailed TDD implementation plan
-- [ ] Define exact files, APIs, and test cases
+- [x] Create detailed TDD implementation plan
+- [x] Define exact files, APIs, and test cases
 - [ ] Confirm user approval before implementation
 - **Status:** in_progress
 
@@ -66,6 +66,7 @@ Phase 3: Implementation Plan
 | Provisional platform | Until user gives exact hardware, use STM32 Cortex-M4/M7 + ARM GCC/CMake + TI C2000-style DSP abstraction. |
 | Add verification matrices before code | User requires all features and coupling cases tested; matrices make completion auditable. |
 | User approved design | User replied "批准"; proceed to implementation planning and Git baseline. |
+| Split C implementation into plan series | Full C scope covers many subsystems; master plan plus subsystem plans keeps verification auditable. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
