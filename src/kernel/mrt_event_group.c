@@ -1,6 +1,30 @@
 #include "myrtos/mrt_event_group.h"
 
 /**
+ * @brief 判断当前事件 bit 是否满足等待条件。
+ * @param current_bits 当前事件组 bit 快照。
+ * @param bits_to_wait 调用方请求等待的 bit 掩码，不能为 0。
+ * @param wait_all true 表示等待全部请求 bit；false 表示等待任意请求 bit。
+ * @return bool 返回 true 表示条件满足，返回 false 表示条件未满足。
+ * @example
+ * if (MRT_EventGroupBitsMatch(group->bits, 0x03u, false)) { ... }
+ */
+static bool MRT_EventGroupBitsMatch(MRT_EventBits current_bits, MRT_EventBits bits_to_wait, bool wait_all)
+{
+    /* 计算当前已经命中的请求 bit。 */
+    MRT_EventBits matched_bits = current_bits & bits_to_wait;
+
+    /* wait-all 要求命中的 bit 与请求 bit 完全一致。 */
+    if (wait_all) {
+        /* 所有请求 bit 都已置位时条件满足。 */
+        return matched_bits == bits_to_wait;
+    }
+
+    /* wait-any 只要求至少一个请求 bit 已置位。 */
+    return matched_bits != 0u;
+}
+
+/**
  * @brief 使用调用方提供的控制块静态创建事件组。
  * @param storage 事件组控制块存储，不能为空。
  * @param out_group 输出事件组句柄，不能为空。
@@ -112,6 +136,70 @@ MRT_Result MRT_EventGroupClearBits(MRT_EventGroupHandle group, MRT_EventBits bit
 
     /* bit 清除成功。 */
     return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 等待事件组中的指定 bit 条件。
+ * @param group 事件组句柄，不能为空。
+ * @param bits_to_wait 需要等待的 bit 掩码，不能为 0。
+ * @param wait_all true 表示所有请求 bit 均置位才满足；false 表示任意请求 bit 置位即满足。
+ * @param clear_on_exit true 表示成功满足后清除请求范围内已经匹配的 bit。
+ * @param timeout 等待条件满足的 tick 数；为 0 时只检查一次并立即返回。
+ * @param out_bits 输出等待完成时的事件组 bit 快照，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示条件满足；非阻塞未满足返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT；等待未完成返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * MRT_EventBits bits;
+ * MRT_EventGroupWaitBits(events, 0x03u, false, true, 10u, &bits);
+ */
+MRT_Result MRT_EventGroupWaitBits(MRT_EventGroupHandle group,
+                                  MRT_EventBits bits_to_wait,
+                                  bool wait_all,
+                                  bool clear_on_exit,
+                                  MRT_Timeout timeout,
+                                  MRT_EventBits *out_bits)
+{
+    /* 事件组句柄不能为空，否则无法读取 bit 状态或挂起任务。 */
+    if (group == 0) {
+        /* 返回参数错误，提示调用方传入有效事件组。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 等待 0 bit 永远无法表达有效条件，因此直接拒绝。 */
+    if (bits_to_wait == 0u) {
+        /* 返回参数错误，提示调用方提供非零等待掩码。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 读取当前事件组快照，保证输出值与清位前状态一致。 */
+    MRT_EventBits snapshot = group->bits;
+
+    /* 如果调用方需要观察状态，先写回当前快照。 */
+    if (out_bits != 0) {
+        /* 写回等待完成或失败时看到的 bit 集合。 */
+        *out_bits = snapshot;
+    }
+
+    /* 当前 bit 已经满足等待条件时走即时成功路径。 */
+    if (MRT_EventGroupBitsMatch(snapshot, bits_to_wait, wait_all)) {
+        /* 如果调用方请求退出时清位，则只清除请求范围内已经置位的 bit。 */
+        if (clear_on_exit) {
+            /* 清除匹配 bit，未请求的 bit 保持不变。 */
+            group->bits &= ~(snapshot & bits_to_wait);
+        }
+
+        /* 条件已经满足，返回成功。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 非阻塞等待不满足时立即返回对象为空。 */
+    if (timeout == 0u) {
+        /* 告诉调用方当前没有可消费的事件条件。 */
+        return MRT_RESULT_OBJECT_EMPTY;
+    }
+
+    /* 调度耦合尚未启用时，非零等待先按超时返回；后续任务会接入阻塞链表。 */
+    return MRT_RESULT_TIMEOUT;
 }
 
 /**

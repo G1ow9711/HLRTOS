@@ -107,6 +107,7 @@
 - Task notifications need per-task state fields and a block-current helper without an object wait list because notification waits are attached to the current task rather than a separate kernel object.
 - Final manual requirement remains unchanged: STM32 and DSP sections must include detailed migration steps for toolchain, startup/vector table, tick, context switch, stack layout, critical sections, low power, examples, and troubleshooting.
 - Event Group Task 1 implements only static creation plus task-context set/clear/get bit operations. Wait matching, blocking, multi-waiter wake, and ISR set are intentionally separated into later Plan 5 tasks.
+- Event Group Task 2 defines `MRT_EventGroupWaitBits` immediate semantics: wait-all requires all requested bits, wait-any requires at least one requested bit, `out_bits` receives the pre-clear event snapshot, and clear-on-exit removes matched requested bits after a successful wait.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

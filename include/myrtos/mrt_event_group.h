@@ -65,6 +65,27 @@ MRT_Result MRT_EventGroupSetBits(MRT_EventGroupHandle group, MRT_EventBits bits_
 MRT_Result MRT_EventGroupClearBits(MRT_EventGroupHandle group, MRT_EventBits bits_to_clear, MRT_EventBits *out_bits);
 
 /**
+ * @brief 等待事件组中的指定 bit 条件。
+ * @param group 事件组句柄，不能为空。
+ * @param bits_to_wait 需要等待的 bit 掩码，不能为 0。
+ * @param wait_all true 表示所有请求 bit 均置位才满足；false 表示任意请求 bit 置位即满足。
+ * @param clear_on_exit true 表示成功满足后清除请求范围内已经匹配的 bit。
+ * @param timeout 等待条件满足的 tick 数；为 0 时只检查一次并立即返回。
+ * @param out_bits 输出等待完成时的事件组 bit 快照，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示条件满足；非阻塞未满足返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT；等待未完成返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * MRT_EventBits bits;
+ * MRT_EventGroupWaitBits(events, 0x03u, false, true, 10u, &bits);
+ */
+MRT_Result MRT_EventGroupWaitBits(MRT_EventGroupHandle group,
+                                  MRT_EventBits bits_to_wait,
+                                  bool wait_all,
+                                  bool clear_on_exit,
+                                  MRT_Timeout timeout,
+                                  MRT_EventBits *out_bits);
+
+/**
  * @brief 查询事件组当前 bit 集合。
  * @param group 事件组句柄，不能为空。
  * @return MRT_EventBits 返回当前 bit 集合；事件组句柄为空时返回 0。

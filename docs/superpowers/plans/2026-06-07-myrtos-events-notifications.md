@@ -96,12 +96,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for wait-any immediate success, wait-all immediate success, clear-on-exit clearing only matched bits, no clear preserving bits, zero wait mask rejection, and no-match `timeout == 0` returning `MRT_RESULT_OBJECT_EMPTY`.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `MRT_EventGroupWaitBits`.
-- [ ] Implement bit matching helper: wait-all requires every requested bit, wait-any requires at least one requested bit.
-- [ ] Implement immediate wait path and `out_bits` writeback.
-- [ ] Run `python tools\run_host_tests.py`; expect 27 test targets pass.
-- [ ] Commit `feat: add event group immediate wait`.
+- [x] Write failing tests for wait-any immediate success, wait-all immediate success, clear-on-exit clearing only matched bits, no clear preserving bits, zero wait mask rejection, and no-match `timeout == 0` returning `MRT_RESULT_OBJECT_EMPTY`.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `MRT_EventGroupWaitBits`.
+- [x] Implement bit matching helper: wait-all requires every requested bit, wait-any requires at least one requested bit.
+- [x] Implement immediate wait path and `out_bits` writeback.
+- [x] Run `python tools\run_host_tests.py`; expect 27 test targets pass.
+- [x] Commit `feat: add event group immediate wait`.
 
 ## Task 3: Event Group Timeout Coupling
 

@@ -288,6 +288,8 @@
 | Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-events-notifications.md` | Plan 5 tasks defined | 9 tasks defined for event groups, task notifications, and verification matrix update | Pass |
 | Event Group Task 1 RED | `python tools\run_host_tests.py` before event group header | Build fails due to missing header | `fatal error: myrtos/mrt_event_group.h: No such file or directory` | Pass |
 | Event Group Task 1 GREEN | `python tools\run_host_tests.py` after static event group bit APIs | 26 test targets pass | `[summary] 26 test target(s) passed` | Pass |
+| Event Group Task 2 RED | `python tools\run_host_tests.py` before wait bits declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_EventGroupWaitBits'` | Pass |
+| Event Group Task 2 GREEN | `python tools\run_host_tests.py` after immediate wait implementation | 27 test targets pass | `[summary] 27 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
