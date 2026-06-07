@@ -22,12 +22,12 @@
 
 Steps:
 
-- [ ] Write failing test including `myrtos/mrt_queue.h`; expect missing header.
-- [ ] Implement `MRT_Queue` and `MRT_QueueCreateStatic`.
-- [ ] Reject null queue storage, null buffer when capacity > 0, zero item size, zero capacity, and null output handle.
-- [ ] Verify created queue has zero messages and full free space.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add static queue creation`.
+- [x] Write failing test including `myrtos/mrt_queue.h`; expect missing header.
+- [x] Implement `MRT_Queue` and `MRT_QueueCreateStatic`.
+- [x] Reject null queue storage, null buffer when capacity > 0, zero item size, zero capacity, and null output handle.
+- [x] Verify created queue has zero messages and full free space.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add static queue creation`.
 
 ## Task 2: Non-Blocking Send and Receive
 
@@ -40,11 +40,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for FIFO send/receive, full queue send, empty queue receive.
-- [ ] Implement `MRT_QueueSend`, `MRT_QueueReceive`, `MRT_QueueMessagesWaiting`, and `MRT_QueueSpacesAvailable`.
-- [ ] Keep timeout parameter accepted but only support `timeout == 0` in this task; nonzero timeout returns `MRT_RESULT_TIMEOUT` until blocking task is implemented.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add nonblocking queue send receive`.
+- [x] Write failing tests for FIFO send/receive, full queue send, empty queue receive.
+- [x] Implement `MRT_QueueSend`, `MRT_QueueReceive`, `MRT_QueueMessagesWaiting`, and `MRT_QueueSpacesAvailable`.
+- [x] Keep timeout parameter accepted but only support `timeout == 0` in this task; nonzero timeout returns `MRT_RESULT_TIMEOUT` until blocking task is implemented.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add nonblocking queue send receive`.
 
 ## Task 3: Peek, Send Front, Overwrite, Reset
 
@@ -130,4 +130,3 @@ Steps:
 - [ ] Update `R-002`, `R-008`, and `R-009` evidence with queue source and tests.
 - [ ] Record commit hashes and test output in `progress.md`.
 - [ ] Commit `docs: record queue verification evidence`.
-

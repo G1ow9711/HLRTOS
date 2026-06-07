@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 3: Implementation Plan
+Phase 4: TDD Implementation
 
 ## Phases
 
@@ -26,8 +26,8 @@ Phase 3: Implementation Plan
 ### Phase 3: Implementation Plan
 - [x] Create detailed TDD implementation plan
 - [x] Define exact files, APIs, and test cases
-- [ ] Confirm user approval before implementation
-- **Status:** in_progress
+- [x] Confirm user approval before implementation
+- **Status:** complete
 
 ### Phase 4: TDD Implementation
 - [x] Write failing tests before production code
@@ -35,11 +35,11 @@ Phase 3: Implementation Plan
 - [x] Implement task scheduler core incrementally
 - [ ] Implement portable layers and demos
 - [ ] Add detailed Chinese comments to every public and internal function
-- **Status:** pending
+- **Status:** in_progress
 
 ### Phase 5: Documentation
 - [ ] Write original Chinese user manual in FreeRTOS-like structure
-- [ ] Document API, examples, porting guide, configuration, troubleshooting
+- [ ] Document API, examples, detailed STM32/DSP porting steps, configuration, troubleshooting
 - [ ] Avoid verbatim FreeRTOS manual/template copying
 - **Status:** pending
 

@@ -19,6 +19,7 @@ TESTS = [
     ("test_task_delay", ROOT / "tests" / "sim" / "test_task_delay.c"),
     ("test_task_delay_overflow", ROOT / "tests" / "sim" / "test_task_delay_overflow.c"),
     ("test_queue_create_static", ROOT / "tests" / "unit" / "test_queue_create_static.c"),
+    ("test_queue_send_receive", ROOT / "tests" / "unit" / "test_queue_send_receive.c"),
 ]
 
 KERNEL_SOURCES = [

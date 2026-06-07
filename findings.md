@@ -86,6 +86,7 @@
 - Requirement traceability now has 10 top-level requirements (`R-001` through `R-010`).
 - Coupling matrix now has 33 coverage rows (`C-001` through `C-033`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, and source comments.
 - Implementation plan self-review placeholder scan found no `TBD`, `TODO`, `implement later`, `fill in details`, or stale draft-design path strings.
+- Queue Task 2 non-blocking FIFO send/receive is implemented with caller-provided storage, circular byte-copy semantics, empty/full status returns, and temporary nonzero-timeout handling through `MRT_RESULT_TIMEOUT` until queue blocking coupling is implemented.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

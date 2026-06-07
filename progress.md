@@ -84,6 +84,10 @@
   - Consulted FreeRTOS `queue.c` for concepts: fixed-size copy queue, circular storage, separate sender/receiver wait lists; MyRTOS keeps original APIs and implementation.
   - Queue Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_queue.h` was missing.
   - Queue Task 1 GREEN: added `include/myrtos/mrt_queue.h` and `src/kernel/mrt_queue.c`; same command passed 12 test targets.
+  - Committed Queue Task 1 as `8d7ff8c`.
+  - Queue Task 2 RED: `python tools\run_host_tests.py` failed because `MRT_QueueSend` and `MRT_QueueReceive` were not declared.
+  - Queue Task 2 GREEN: implemented FIFO non-blocking `MRT_QueueSend` and `MRT_QueueReceive`; same command passed 13 test targets.
+  - Committed Queue Task 2 with message `feat: add nonblocking queue send receive`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -129,6 +133,9 @@
   - `tests/unit/test_queue_create_static.c` created.
   - `include/myrtos/mrt_queue.h` created.
   - `src/kernel/mrt_queue.c` created.
+  - `tests/unit/test_queue_send_receive.c` created.
+  - `tests/CMakeLists.txt` updated for queue send/receive test.
+  - `tools/run_host_tests.py` updated for queue send/receive test.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -143,6 +150,7 @@
 | 2026-06-07 | `git log` failed: not a Git repository | 1 | Logged state; continue without commit history. |
 | 2026-06-07 | PowerShell rejected `&&` command separator | 1 | Switched to separate git commands. |
 | 2026-06-07 | `cmake` command not found | 1 | Used GCC-backed project-local Python runner for host tests and kept CMake files for standard environments. |
+| 2026-06-07 | `apply_patch` targeted the main worktree instead of `.worktrees\queues` | 1 | Re-ran the patch using the queue worktree path. |
 
 ## Foundation Kernel Test Results
 | Test | Input | Expected | Actual | Status |
@@ -173,6 +181,8 @@
 | Scheduler full verification | `python tools\run_host_tests.py` | 11 test targets pass | `[summary] 11 test target(s) passed` | Pass |
 | Queue Task 1 RED | `python tools\run_host_tests.py` before `mrt_queue.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_queue.h: No such file or directory` | Pass |
 | Queue Task 1 GREEN | `python tools\run_host_tests.py` after static queue creation | 12 test targets pass | `[summary] 12 test target(s) passed` | Pass |
+| Queue Task 2 RED | `python tools\run_host_tests.py` before send/receive declarations | Build fails due to missing function declarations | `implicit declaration of function 'MRT_QueueSend'`, `implicit declaration of function 'MRT_QueueReceive'` | Pass |
+| Queue Task 2 GREEN | `python tools\run_host_tests.py` after FIFO non-blocking send/receive | 13 test targets pass | `[summary] 13 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

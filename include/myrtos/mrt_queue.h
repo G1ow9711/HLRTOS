@@ -69,6 +69,32 @@ MRT_Result MRT_QueueCreateStatic(size_t capacity,
 size_t MRT_QueueMessagesWaiting(MRT_QueueHandle queue);
 
 /**
+ * @brief 将一个元素复制发送到队列尾部。
+ * @param queue 目标队列句柄，不能为空。
+ * @param item 待发送元素地址，指向的数据大小必须至少为创建队列时的 item_size。
+ * @param timeout 等待空位的 tick 数；当前阶段仅支持 0，非 0 会返回 MRT_RESULT_TIMEOUT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示发送成功；队列满且 timeout 为 0 时返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 0 timeout 暂未接入阻塞等待时返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * uint32_t value = 0x12345678u;
+ * MRT_QueueSend(queue, &value, 0);
+ */
+MRT_Result MRT_QueueSend(MRT_QueueHandle queue, const void *item, MRT_Timeout timeout);
+
+/**
+ * @brief 从队列头部复制接收一个元素。
+ * @param queue 源队列句柄，不能为空。
+ * @param out_item 接收缓冲区地址，大小必须至少为创建队列时的 item_size。
+ * @param timeout 等待数据的 tick 数；当前阶段仅支持 0，非 0 会返回 MRT_RESULT_TIMEOUT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示接收成功；队列空且 timeout 为 0 时返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 0 timeout 暂未接入阻塞等待时返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * uint32_t value;
+ * MRT_QueueReceive(queue, &value, 0);
+ */
+MRT_Result MRT_QueueReceive(MRT_QueueHandle queue, void *out_item, MRT_Timeout timeout);
+
+/**
  * @brief 查询队列剩余可写空间。
  * @param queue 待查询队列句柄，不能为空。
  * @return size_t 返回剩余可写元素数量；队列为空指针时返回 0。
