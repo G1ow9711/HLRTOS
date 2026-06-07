@@ -48,12 +48,14 @@ TESTS = [
     ("test_stream_buffer_send_receive", ROOT / "tests" / "unit" / "test_stream_buffer_send_receive.c"),
     ("test_stream_buffer_isr", ROOT / "tests" / "unit" / "test_stream_buffer_isr.c"),
     ("test_stream_buffer_isr_wakes_reader", ROOT / "tests" / "coupling" / "test_stream_buffer_isr_wakes_reader.c"),
+    ("test_message_buffer_create_static", ROOT / "tests" / "unit" / "test_message_buffer_create_static.c"),
 ]
 
 KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_event_group.c",
     ROOT / "src" / "kernel" / "mrt_list.c",
     ROOT / "src" / "kernel" / "mrt_kernel.c",
+    ROOT / "src" / "kernel" / "mrt_message_buffer.c",
     ROOT / "src" / "kernel" / "mrt_mutex.c",
     ROOT / "src" / "kernel" / "mrt_priority.c",
     ROOT / "src" / "kernel" / "mrt_queue.c",

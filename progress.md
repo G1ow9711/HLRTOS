@@ -367,6 +367,8 @@
 | Stream Buffer Task 2 GREEN | `python tools\run_host_tests.py` after stream send/receive/reset | 39 test targets pass | `[summary] 39 test target(s) passed` | Pass |
 | Stream Buffer Task 3 RED | `python tools\run_host_tests.py` before stream ISR API declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_StreamBufferSendFromISR'`, `MRT_StreamBufferReceiveFromISR` | Pass |
 | Stream Buffer Task 3 GREEN | `python tools\run_host_tests.py` after stream ISR and reader wake coupling | 41 test targets pass | `[summary] 41 test target(s) passed` | Pass |
+| Message Buffer Task 4 RED | `python tools\run_host_tests.py` before message buffer header | Build fails due to missing header | `fatal error: myrtos/mrt_message_buffer.h: No such file or directory` | Pass |
+| Message Buffer Task 4 GREEN | `python tools\run_host_tests.py` after static message buffer creation | 42 test targets pass | `[summary] 42 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

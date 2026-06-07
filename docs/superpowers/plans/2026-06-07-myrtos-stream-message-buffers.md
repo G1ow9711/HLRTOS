@@ -162,13 +162,13 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_MessageBufferCreateStatic`, bytes/spaces queries, null storage, null byte buffer, null output handle, and capacity smaller than one length header plus one byte.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_message_buffer.h`.
-- [ ] Implement `MRT_MessageBuffer` with byte storage pointer, capacity, read index, write index, used bytes, waiting reader list, waiting writer list, and static-storage flag.
-- [ ] Implement static creation and query APIs.
-- [ ] Add message buffer source to CMake and host runner.
-- [ ] Run `python tools\run_host_tests.py`; expect 42 test targets pass.
-- [ ] Commit `feat: add static message buffer creation`.
+- [x] Write failing tests for `MRT_MessageBufferCreateStatic`, bytes/spaces queries, null storage, null byte buffer, null output handle, and capacity smaller than one length header plus one byte.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_message_buffer.h`.
+- [x] Implement `MRT_MessageBuffer` with byte storage pointer, capacity, read index, write index, used bytes, waiting reader list, waiting writer list, and static-storage flag.
+- [x] Implement static creation and query APIs.
+- [x] Add message buffer source to CMake and host runner.
+- [x] Run `python tools\run_host_tests.py`; expect 42 test targets pass.
+- [x] Commit `feat: add static message buffer creation`.
 
 ## Task 5: Message Buffer Send/Receive
 
