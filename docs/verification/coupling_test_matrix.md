@@ -22,12 +22,12 @@
 | C-005 | 队列 + 超时 | 接收空队列直到超时 | 返回超时，任务恢复就绪 | host 单测 | 已验证：`test_queue_task_timeout` 验证 3 tick timeout、等待链表清理、任务恢复 running |
 | C-006 | 队列 + ISR | ISR 发送到空队列 | 等待任务唤醒，按需请求切换 | host/mock ISR | 已验证：`test_queue_isr` 覆盖 ISR 非阻塞收发；`test_queue_send_wakes_receiver` 覆盖 ISR 发送唤醒接收任务并设置 `should_yield=true` |
 | C-007 | 队列 + 内存 | 动态创建队列时堆不足 | 返回资源不足，不泄漏 | host 单测 | 未实现：当前队列阶段仅支持静态创建；动态 heap 路径等待内存管理模块实现后补测 |
-| C-008 | 二值信号量 + ISR | ISR give 信号量 | 等待任务唤醒 | host/mock ISR | 待实现 |
-| C-009 | 计数信号量 + 边界 | give 超过最大计数 | 返回对象状态错误或饱和策略结果 | host 单测 | 待实现 |
-| C-010 | 互斥锁 + 优先级继承 | 低优先级持锁，高优先级等待 | 持锁任务继承高优先级 | 调度仿真 | 待实现 |
-| C-011 | 互斥锁 + 超时 | 高优先级等待互斥锁超时 | 持锁任务优先级正确回滚 | 调度仿真 | 待实现 |
-| C-012 | 互斥锁 + 任务删除 | 删除持锁任务 | 互斥锁状态和等待任务处理符合规则 | 调度仿真 | 待实现 |
-| C-013 | 递归互斥锁 + 所有权 | 非拥有者释放 | 返回非法状态，不改变计数 | host 单测 | 待实现 |
+| C-008 | 二值信号量 + ISR | ISR give 信号量 | 等待任务唤醒 | host/mock ISR | 已验证：`test_semaphore_isr` 覆盖无等待者 give 后计数增加且不切换、满信号量返回 `MRT_RESULT_OBJECT_FULL`、任务上下文调用返回 `MRT_RESULT_INVALID_CONTEXT`、唤醒等待任务并设置 `should_yield=true` |
+| C-009 | 计数信号量 + 边界 | give 超过最大计数 | 返回对象状态错误或饱和策略结果 | host 单测 | 已验证：`test_semaphore_take_give` 覆盖计数信号量 give 成功增加计数和满计数返回 `MRT_RESULT_OBJECT_FULL`；`test_semaphore_create_static` 覆盖初始计数大于最大计数时拒绝创建 |
+| C-010 | 互斥锁 + 优先级继承 | 低优先级持锁，高优先级等待 | 持锁任务继承高优先级 | 调度仿真 | 已验证：`test_mutex_priority_inheritance` 覆盖低优先级持锁、高优先级等待、拥有者有效优先级提升、解锁后所有权转交和基础优先级恢复 |
+| C-011 | 互斥锁 + 超时 | 高优先级等待互斥锁超时 | 持锁任务优先级正确回滚 | 调度仿真 | 部分覆盖：`test_mutex_priority_inheritance` 覆盖等待者阻塞和解锁恢复；等待者 tick 超时后拥有者优先级回滚尚未实现，后续需补 `mutex timeout rollback` 测试 |
+| C-012 | 互斥锁 + 任务删除 | 删除持锁任务 | 互斥锁状态和等待任务处理符合规则 | 调度仿真 | 未实现：任务删除 API 尚未实现；持锁任务删除时互斥锁释放、等待者处理和优先级恢复规则待任务生命周期模块补测 |
+| C-013 | 递归互斥锁 + 所有权 | 非拥有者释放 | 返回非法状态，不改变计数 | host 单测 | 已验证：`test_mutex_recursive` 覆盖递归互斥锁非拥有者释放返回 `MRT_RESULT_OWNER_ERROR`，拥有者保持不变，递归深度保持 2 |
 | C-014 | 事件组 + 多等待者 | set bits 满足多个任务条件 | 所有满足条件任务被唤醒 | host 单测 | 待实现 |
 | C-015 | 事件组 + 清位 | wait-any 且退出清位 | 返回原始事件值后清除指定 bit | host 单测 | 待实现 |
 | C-016 | 任务通知 + 覆盖策略 | no-overwrite 遇到未读通知 | 返回对象忙，不覆盖旧值 | host 单测 | 待实现 |
@@ -41,7 +41,7 @@
 | C-024 | 内存堆 + 释放合并 | 释放相邻块 | 空闲块合并，碎片减少 | host 单测 | 待实现 |
 | C-025 | trace + 任务切换 | trace 开启 | hook 收到切换事件，不改变调度结果 | host 单测 | 待实现 |
 | C-026 | trace + 队列 | 队列 send/receive | hook 收到事件，不改变队列数据 | host 单测 | 待实现 |
-| C-027 | 断言 + 非法上下文 | ISR 调用禁止 API | 触发断言或返回非法上下文 | host/mock ISR | 待实现 |
+| C-027 | 断言 + 非法上下文 | ISR 调用禁止 API | 触发断言或返回非法上下文 | host/mock ISR | 部分验证：`test_semaphore_isr` 覆盖任务上下文调用 FromISR API 返回 `MRT_RESULT_INVALID_CONTEXT`；`test_mutex_create_lock` 覆盖无当前任务调用互斥锁 API 返回 `MRT_RESULT_INVALID_CONTEXT`；统一断言 hook 和 ISR 调用非 ISR-safe API 的断言路径待 trace/assert 模块补测 |
 | C-028 | STM32 端口 + tick | SysTick 调用内核 tick | tick 推进并按需触发 PendSV | 端口 mock/smoke | 部分验证：`test_kernel_tick` 已验证 tick 推进与 kernel yield 转发；真实 SysTick/PendSV 待 STM32 端口计划 |
 | C-029 | STM32 端口 + 临界区 | 嵌套进入临界区 | 中断屏蔽状态可恢复 | 端口 mock | 部分验证：`test_port_mock` 已验证 mock 临界区嵌套恢复；真实 PRIMASK/BASEPRI 待 STM32 端口计划 |
 | C-030 | DSP 端口 + 栈初始化 | 创建任务栈帧 | 栈顶满足对齐和入口参数规则 | 端口 mock | 待实现 |

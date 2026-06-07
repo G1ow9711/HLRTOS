@@ -83,7 +83,7 @@
 - User requires detailed STM32/DSP porting steps in the final Chinese manual.
 
 ## Verification Findings
-- Requirement traceability now has 10 top-level requirements (`R-001` through `R-010`).
+- Requirement traceability now has 11 top-level requirements (`R-001` through `R-011`); `R-011` requires the final manual to include detailed STM32 and DSP porting steps.
 - Coupling matrix now has 33 coverage rows (`C-001` through `C-033`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, and source comments.
 - Implementation plan self-review placeholder scan found no `TBD`, `TODO`, `implement later`, `fill in details`, or stale draft-design path strings.
 - Queue Task 2 non-blocking FIFO send/receive is implemented with caller-provided storage, circular byte-copy semantics, empty/full status returns, and temporary nonzero-timeout handling through `MRT_RESULT_TIMEOUT` until queue blocking coupling is implemented.
@@ -100,6 +100,8 @@
 - Mutex Task 5 implements ownership-only mutex behavior. Lock/unlock require a running task; non-owner unlock returns `MRT_RESULT_OWNER_ERROR`; contention blocking and priority inheritance remain for Task 6.
 - Mutex Task 6 implements priority inheritance by adjusting the owner's effective priority while preserving `base_priority`. Unlock restores the old owner and transfers ownership directly to the highest-priority waiter when one exists.
 - Mutex Task 7 adds recursive mutex creation. The existing lock-depth path now has coverage: recursive owners can relock, partial unlock keeps ownership, and final unlock clears ownership.
+- Synchronization Task 8 adds direct recursive mutex non-owner release coverage. `test_mutex_recursive` now checks `MRT_RESULT_OWNER_ERROR`, unchanged owner, and unchanged recursive depth when a non-owner attempts to unlock.
+- Synchronization matrix update marks semaphore ISR, counting semaphore full, mutex priority inheritance, and recursive mutex ownership verified. Mutex timeout priority rollback, task deletion while holding a mutex, and unified assertion-hook behavior remain intentionally marked partial or pending.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

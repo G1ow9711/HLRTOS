@@ -262,6 +262,23 @@
 | Mutex Task 6 GREEN | `python tools\run_host_tests.py` after priority inheritance | 24 test targets pass | `[summary] 24 test target(s) passed` | Pass |
 | Mutex Task 7 RED | `python tools\run_host_tests.py` before recursive mutex declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_MutexCreateRecursiveStatic'` | Pass |
 | Mutex Task 7 GREEN | `python tools\run_host_tests.py` after recursive mutex | 25 test targets pass | `[summary] 25 test target(s) passed` | Pass |
+| Sync Task 8 coverage add | `python tools\run_host_tests.py` after recursive non-owner release test | 25 test targets pass | `[summary] 25 test target(s) passed` | Pass |
+
+## Semaphore/Mutex Commit Evidence
+| Commit | Scope |
+|--------|-------|
+| `fc72b2e` | Static binary/counting semaphore creation |
+| `451357c` | Semaphore take/give |
+| `be339bb` | Semaphore scheduler timeout/wake coupling |
+| `b9bb2c1` | Semaphore ISR give |
+| `2632175` | Mutex ownership |
+| `32b38f8` | Mutex priority inheritance |
+| `06aad08` | Recursive mutex |
+
+## Synchronization Verification Notes
+- `docs/verification/requirements_traceability_matrix.md` now records semaphore/mutex implementation evidence for `R-002`, `R-008`, and `R-009`.
+- `docs/verification/coupling_test_matrix.md` now marks `C-008`, `C-009`, `C-010`, and `C-013` verified; `C-011`, `C-012`, and `C-027` remain explicitly partial or pending where implementation is incomplete.
+- User requirement that the final manual include detailed STM32/DSP porting steps remains captured as `R-011`.
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
@@ -272,11 +289,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Phase 1: Requirements & Discovery |
-| Where am I going? | Architecture spec, implementation plan, TDD implementation, docs, verification |
+| Where am I? | Plan 4 Task 8: semaphore/mutex verification evidence |
+| Where am I going? | Commit synchronization verification evidence, then continue with event groups and task notifications |
 | What's the goal? | Build original STM32/DSP-capable RTOS with detailed Chinese comments, manual, and tests |
-| What have I learned? | Project empty, not Git repo, scope needs staged design |
-| What have I done? | Loaded workflows, inspected project, created planning files |
+| What have I learned? | Synchronization APIs now pass 25 host targets; mutex timeout rollback and task deletion coupling remain future work |
+| What have I done? | Implemented and verified semaphores, mutexes, recursive mutex ownership coverage, and updated verification matrices |
 
 ---
 *Update after completing each phase or encountering errors.*

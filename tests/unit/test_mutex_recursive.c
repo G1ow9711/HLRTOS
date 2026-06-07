@@ -132,6 +132,79 @@ static void assert_plain_mutex_relock_returns_busy(void)
 }
 
 /**
+ * @brief 验证递归互斥锁拒绝非拥有者释放且保持递归深度不变。
+ * @param void 无输入参数。
+ * @return void 断言失败时测试进程直接退出。
+ * @example
+ * assert_recursive_mutex_rejects_non_owner_unlock();
+ */
+static void assert_recursive_mutex_rejects_non_owner_unlock(void)
+{
+    /* 定义低优先级拥有者任务控制块。 */
+    MRT_Task low_storage;
+
+    /* 定义高优先级非拥有者任务控制块。 */
+    MRT_Task high_storage;
+
+    /* 定义低优先级任务栈。 */
+    MRT_StackType low_stack[128];
+
+    /* 定义高优先级任务栈。 */
+    MRT_StackType high_stack[128];
+
+    /* 定义低优先级任务句柄。 */
+    MRT_TaskHandle low_task = 0;
+
+    /* 定义高优先级任务句柄。 */
+    MRT_TaskHandle high_task = 0;
+
+    /* 定义递归互斥锁控制块。 */
+    MRT_Mutex mutex_storage;
+
+    /* 定义递归互斥锁句柄。 */
+    MRT_MutexHandle mutex = 0;
+
+    /* 初始化内核。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_KernelInitialize());
+
+    /* 创建低优先级任务。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_TaskCreateStatic("low", DummyTask, 0, 1u, low_stack, 128u, &low_storage, &low_task));
+
+    /* 创建递归互斥锁。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_MutexCreateRecursiveStatic(&mutex_storage, &mutex));
+
+    /* 启动调度器，让低优先级任务成为当前任务。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_KernelStart());
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == low_task);
+
+    /* 低优先级任务第一次获得递归互斥锁。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_MutexLock(mutex, 0u));
+
+    /* 低优先级任务第二次递归获得同一把锁。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_MutexLock(mutex, 0u));
+
+    /* 运行中创建高优先级任务。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_TaskCreateStatic("high", DummyTask, 0, 5u, high_stack, 128u, &high_storage, &high_task));
+
+    /* 主动 yield，让高优先级非拥有者成为当前任务。 */
+    MRT_KernelYield();
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == high_task);
+
+    /* 非拥有者释放递归互斥锁应返回所有权错误。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OWNER_ERROR, (unsigned)MRT_MutexUnlock(mutex));
+
+    /* 查询拥有者，应仍然是低优先级任务。 */
+    MRT_TaskHandle owner = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_MutexGetOwner(mutex, &owner));
+    MRT_TEST_ASSERT_TRUE(owner == low_task);
+
+    /* 递归深度应保持 2，不被错误释放路径修改。 */
+    MRT_TEST_ASSERT_EQ_U32(2u, (unsigned)mutex_storage.lock_count);
+}
+
+/**
  * @brief 验证递归互斥锁创建参数校验。
  * @param void 无输入参数。
  * @return void 断言失败时测试进程直接退出。
@@ -169,6 +242,9 @@ int main(void)
 
     /* 验证普通互斥锁拒绝重入。 */
     assert_plain_mutex_relock_returns_busy();
+
+    /* 验证递归互斥锁拒绝非拥有者释放且不改变状态。 */
+    assert_recursive_mutex_rejects_non_owner_unlock();
 
     /* 验证递归互斥锁创建参数校验。 */
     assert_recursive_mutex_create_rejects_invalid_arguments();

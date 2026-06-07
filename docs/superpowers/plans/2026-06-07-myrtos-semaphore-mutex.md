@@ -138,6 +138,7 @@ Steps:
 ## Task 8: Synchronization Verification Matrix Update
 
 **Files:**
+- Modify: `tests/unit/test_mutex_recursive.c`
 - Modify: `docs/verification/requirements_traceability_matrix.md`
 - Modify: `docs/verification/coupling_test_matrix.md`
 - Modify: `progress.md`
@@ -145,8 +146,9 @@ Steps:
 
 Steps:
 
-- [ ] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, and mutex tests pass.
-- [ ] Mark `C-008` through `C-013` and `C-027` according to implemented coverage.
-- [ ] Update `R-002`, `R-008`, and `R-009` evidence with synchronization source and tests.
-- [ ] Record commit hashes and final test output in `progress.md`.
-- [ ] Commit `docs: record synchronization verification evidence`.
+- [x] Add recursive mutex non-owner release coverage so `C-013` is directly verified.
+- [x] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, and mutex tests pass.
+- [x] Mark `C-008` through `C-013` and `C-027` according to implemented coverage.
+- [x] Update `R-002`, `R-008`, and `R-009` evidence with synchronization source and tests.
+- [x] Record commit hashes and final test output in `progress.md`.
+- [x] Commit `docs: record synchronization verification evidence`.
