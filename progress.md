@@ -52,6 +52,9 @@
   - Committed Task 4 as `dbd0f92`.
   - Task 5 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_port.h` was missing.
   - Task 5 GREEN: added `include/myrtos/mrt_port.h` and `src/portable/mock/mrt_port_mock.c`; same command passed 5 test targets.
+  - Committed Task 5 as `3be37e7`.
+  - Task 6 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_kernel.h` was missing.
+  - Task 6 GREEN: added `include/myrtos/mrt_kernel.h` and `src/kernel/mrt_kernel.c`; same command passed 6 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -81,6 +84,9 @@
   - `tests/port_mock/test_port_mock.c` created.
   - `include/myrtos/mrt_port.h` created.
   - `src/portable/mock/mrt_port_mock.c` created.
+  - `tests/unit/test_kernel_tick.c` created.
+  - `include/myrtos/mrt_kernel.h` created.
+  - `src/kernel/mrt_kernel.c` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -109,6 +115,8 @@
 | Task 4 GREEN | `python tools\run_host_tests.py` after adding priority bitmap module | 4 test targets pass | `[summary] 4 test target(s) passed` | Pass |
 | Task 5 RED | `python tools\run_host_tests.py` before `mrt_port.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_port.h: No such file or directory` | Pass |
 | Task 5 GREEN | `python tools\run_host_tests.py` after adding host mock port | 5 test targets pass | `[summary] 5 test target(s) passed` | Pass |
+| Task 6 RED | `python tools\run_host_tests.py` before `mrt_kernel.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_kernel.h: No such file or directory` | Pass |
+| Task 6 GREEN | `python tools\run_host_tests.py` after adding kernel tick shell | 6 test targets pass | `[summary] 6 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

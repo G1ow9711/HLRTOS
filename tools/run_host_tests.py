@@ -12,10 +12,12 @@ TESTS = [
     ("test_list", ROOT / "tests" / "unit" / "test_list.c"),
     ("test_priority_bitmap", ROOT / "tests" / "unit" / "test_priority_bitmap.c"),
     ("test_port_mock", ROOT / "tests" / "port_mock" / "test_port_mock.c"),
+    ("test_kernel_tick", ROOT / "tests" / "unit" / "test_kernel_tick.c"),
 ]
 
 KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_list.c",
+    ROOT / "src" / "kernel" / "mrt_kernel.c",
     ROOT / "src" / "kernel" / "mrt_priority.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
 ]

@@ -9,6 +9,7 @@ option(MRT_BUILD_TESTS "Build MyRTOS host tests" ON)
 
 add_library(myrtos_kernel STATIC
     src/kernel/mrt_list.c
+    src/kernel/mrt_kernel.c
     src/kernel/mrt_priority.c
     src/portable/mock/mrt_port_mock.c
 )
