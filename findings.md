@@ -122,6 +122,7 @@
 - Timer Task 4 adds pending function support through a fixed-size ring buffer controlled by `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH` (default 8). `MRT_TimerPendFunctionCall` validates null functions and reports `MRT_RESULT_OBJECT_FULL` on capacity exhaustion; `MRT_TimerServiceRunPending` drains FIFO entries outside the critical section.
 - Timer Task 5 updates verification evidence. `R-002`, `R-008`, and `R-009` now include timer sources and tests; `C-018` is verified for host tick expiry callbacks; `C-017` is partial because deterministic service-shim behavior is implemented but a dedicated service task and asynchronous command queue remain future work; `C-019` stays pending for tickless idle.
 - Plan 7 stream/message buffer reference check: FreeRTOS `stream_buffer.c` uses one shared byte-buffer engine for stream buffers and message buffers; message buffers preserve packet boundaries by storing a length field before each message, while stream buffers expose raw byte FIFO semantics. MyRTOS will borrow these concepts only, keeping original `MRT_` APIs, original data structures, explicit `MRT_Result` returns, and Chinese comments.
+- Stream Buffer Task 1 adds static stream buffer creation with caller-provided control block and byte storage. Creation rejects zero capacity, zero trigger level, trigger level greater than capacity, null byte storage, null control block, and null output handle. Query APIs report bytes used and free spaces through `MRT_Result`-based calls.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

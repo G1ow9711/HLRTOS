@@ -361,6 +361,8 @@
 | Baseline | `python tools\run_host_tests.py` in `.worktrees\stream-message-buffers` | 37 test targets pass | `[summary] 37 test target(s) passed` | Pass |
 | Plan placeholder scan | `rg -n "TBD|TODO|implement later|fill in details|appropriate error handling|add validation|Similar to Task|待定" docs\superpowers\plans\2026-06-07-myrtos-stream-message-buffers.md` | No matches | No matches, exit code 1 | Pass |
 | Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-stream-message-buffers.md` | Plan 7 tasks defined | 7 tasks defined for stream creation, stream FIFO, stream ISR coupling, message creation, message packet IO, message ISR, and matrix update | Pass |
+| Stream Buffer Task 1 RED | `python tools\run_host_tests.py` before stream buffer header | Build fails due to missing header | `fatal error: myrtos/mrt_stream_buffer.h: No such file or directory` | Pass |
+| Stream Buffer Task 1 GREEN | `python tools\run_host_tests.py` after static stream buffer creation | 38 test targets pass | `[summary] 38 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

@@ -101,13 +101,13 @@ MRT_Result MRT_MessageBufferReset(MRT_MessageBufferHandle message_buffer);
 
 Steps:
 
-- [ ] Write failing tests for `MRT_StreamBufferCreateStatic`, `MRT_StreamBufferBytesAvailable`, `MRT_StreamBufferSpacesAvailable`, null storage, null byte buffer, null output handle, zero capacity, zero trigger level, and trigger level greater than capacity.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_stream_buffer.h`.
-- [ ] Implement `MRT_StreamBuffer` with byte storage pointer, capacity, read index, write index, byte count, trigger level, waiting reader list, waiting writer list, and static-storage flag.
-- [ ] Implement static creation and query APIs.
-- [ ] Add stream buffer source to CMake and host runner.
-- [ ] Run `python tools\run_host_tests.py`; expect 38 test targets pass.
-- [ ] Commit `feat: add static stream buffer creation`.
+- [x] Write failing tests for `MRT_StreamBufferCreateStatic`, `MRT_StreamBufferBytesAvailable`, `MRT_StreamBufferSpacesAvailable`, null storage, null byte buffer, null output handle, zero capacity, zero trigger level, and trigger level greater than capacity.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_stream_buffer.h`.
+- [x] Implement `MRT_StreamBuffer` with byte storage pointer, capacity, read index, write index, byte count, trigger level, waiting reader list, waiting writer list, and static-storage flag.
+- [x] Implement static creation and query APIs.
+- [x] Add stream buffer source to CMake and host runner.
+- [x] Run `python tools\run_host_tests.py`; expect 38 test targets pass.
+- [x] Commit `feat: add static stream buffer creation`.
 
 ## Task 2: Stream Buffer Send/Receive
 

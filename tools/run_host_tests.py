@@ -44,6 +44,7 @@ TESTS = [
     ("test_timer_control", ROOT / "tests" / "unit" / "test_timer_control.c"),
     ("test_timer_tick_expiry", ROOT / "tests" / "coupling" / "test_timer_tick_expiry.c"),
     ("test_timer_pending_function", ROOT / "tests" / "unit" / "test_timer_pending_function.c"),
+    ("test_stream_buffer_create_static", ROOT / "tests" / "unit" / "test_stream_buffer_create_static.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -54,6 +55,7 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_priority.c",
     ROOT / "src" / "kernel" / "mrt_queue.c",
     ROOT / "src" / "kernel" / "mrt_semaphore.c",
+    ROOT / "src" / "kernel" / "mrt_stream_buffer.c",
     ROOT / "src" / "kernel" / "mrt_task.c",
     ROOT / "src" / "kernel" / "mrt_timer.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
