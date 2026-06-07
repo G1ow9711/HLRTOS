@@ -18,6 +18,9 @@
 - Trace Task 3 RED: `python tools\run_host_tests.py` failed on `test_trace_task_switch` and `test_trace_queue` because `myrtos/mrt_trace.h` was missing.
 - Trace Task 3 GREEN: added `MRT_TraceSetSink`, `MRT_TraceEmit`, trace event structures, task-switch hooks, and queue send/receive hooks.
 - Trace Task 3 verification: `python tools\run_host_tests.py` passed 54 test targets.
+- Assert Task 4 RED: `python tools\run_host_tests.py` failed on `test_assert_hook` because `myrtos/mrt_assert.h` was missing.
+- Assert Task 4 GREEN: added `MRT_AssertSetHook`, `MRT_AssertFailed`, `MRT_ASSERT(expr)`, and `tests/unit/test_assert_hook.c`.
+- Assert Task 4 verification: `python tools\run_host_tests.py` passed 55 test targets.
 
 ### Phase 1: Requirements & Discovery
 - **Status:** in_progress

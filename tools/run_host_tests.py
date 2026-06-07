@@ -56,6 +56,7 @@ TESTS = [
     ("test_heap_free_list", ROOT / "tests" / "unit" / "test_heap_free_list.c"),
     ("test_heap_coalescing", ROOT / "tests" / "unit" / "test_heap_coalescing.c"),
     ("test_memory_pool", ROOT / "tests" / "unit" / "test_memory_pool.c"),
+    ("test_assert_hook", ROOT / "tests" / "unit" / "test_assert_hook.c"),
     ("test_queue_dynamic_allocation", ROOT / "tests" / "coupling" / "test_queue_dynamic_allocation.c"),
     ("test_tickless_expected_idle", ROOT / "tests" / "unit" / "test_tickless_expected_idle.c"),
     ("test_tickless_timer_compensation", ROOT / "tests" / "coupling" / "test_tickless_timer_compensation.c"),
@@ -64,6 +65,7 @@ TESTS = [
 ]
 
 KERNEL_SOURCES = [
+    ROOT / "src" / "kernel" / "mrt_assert.c",
     ROOT / "src" / "kernel" / "mrt_event_group.c",
     ROOT / "src" / "kernel" / "mrt_list.c",
     ROOT / "src" / "kernel" / "mrt_kernel.c",

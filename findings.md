@@ -150,6 +150,7 @@
 - Trace module stores one optional sink callback and user pointer. Events are dropped when no sink is set, so enabled trace APIs do not force a logging backend.
 - Task switch trace needs special handling for blocking paths because the scheduler clears `g_current_task` before choosing the next task. Blocking helpers explicitly publish `blocked_task -> new_current` after selection.
 - Queue trace records successful send/receive only, with `value` set to the queue element count after the operation.
+- Assert hook module stores one optional failure callback and user pointer. `MRT_ASSERT(expr)` stringifies the expression and dispatches file/line information, while default no-hook behavior returns without halting so host tests remain deterministic.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
