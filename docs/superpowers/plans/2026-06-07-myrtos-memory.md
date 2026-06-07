@@ -111,11 +111,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for allocating two blocks, freeing the first block, reusing that freed block for a smaller allocation, rejecting a pointer outside the heap, rejecting a duplicate free, and reporting free bytes after reuse.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is that `MRT_HEAP_MODE_FREE_LIST` does not reuse freed blocks.
-- [ ] Implement heap block headers, first-fit allocation, block splitting when the remainder can hold a header plus aligned payload, allocated/free state tracking, and free-list reuse without neighbor coalescing.
-- [ ] Run `python tools\run_host_tests.py`; expect 47 test targets pass.
-- [ ] Commit `feat: add free list heap allocation`.
+- [x] Write failing tests for allocating two blocks, freeing the first block, reusing that freed block for a smaller allocation, rejecting a pointer outside the heap, rejecting a duplicate free, and reporting free bytes after reuse.
+- [x] Run `python tools\run_host_tests.py`; expected failure is that `MRT_HEAP_MODE_FREE_LIST` does not reuse freed blocks.
+- [x] Implement heap block headers, first-fit allocation, block splitting when the remainder can hold a header plus aligned payload, allocated/free state tracking, and free-list reuse without neighbor coalescing.
+- [x] Run `python tools\run_host_tests.py`; expect 47 test targets pass.
+- [x] Commit `feat: add free list heap allocation`.
 
 ## Task 4: Coalescing Heap Release
 

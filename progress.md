@@ -403,6 +403,8 @@
 | Heap Task 1 GREEN | `python tools\run_host_tests.py` after heap initialization/query implementation | 45 test targets pass | `[summary] 45 test target(s) passed` | Pass |
 | Heap Task 2 RED | `python tools\run_host_tests.py` before heap allocation APIs | Build fails due to missing declarations | `implicit declaration of function 'MRT_Malloc'`, `implicit declaration of function 'MRT_Free'` | Pass |
 | Heap Task 2 GREEN | `python tools\run_host_tests.py` after linear heap allocation | 46 test targets pass | `[summary] 46 test target(s) passed` | Pass |
+| Heap Task 3 RED | `python tools\run_host_tests.py` after adding `test_heap_free_list` | `test_heap_free_list` fails because free-list release/reuse is missing | `[summary] 1 test target(s) failed`; `MRT_Free(large)` expected `MRT_RESULT_OK` but got `MRT_RESULT_OBJECT_BUSY` | Pass |
+| Heap Task 3 GREEN | `python tools\run_host_tests.py` after first-fit free-list implementation | 47 test targets pass | `[summary] 47 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
