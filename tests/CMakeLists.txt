@@ -53,3 +53,4 @@ mrt_add_test(test_message_buffer_create_static unit/test_message_buffer_create_s
 mrt_add_test(test_message_buffer_send_receive unit/test_message_buffer_send_receive.c)
 mrt_add_test(test_message_buffer_isr unit/test_message_buffer_isr.c)
 mrt_add_test(test_heap_initialize unit/test_heap_initialize.c)
+mrt_add_test(test_heap_linear unit/test_heap_linear.c)

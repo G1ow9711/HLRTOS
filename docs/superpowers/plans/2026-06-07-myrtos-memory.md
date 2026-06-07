@@ -95,11 +95,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for aligned `MRT_Malloc`, zero-size allocation returning null, exhaustion returning null, free-size/minimum-ever tracking, `MRT_Free(NULL)` as a no-op success, and freeing a linear-heap allocation returning `MRT_RESULT_OBJECT_BUSY`.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `MRT_Malloc` and `MRT_Free`.
-- [ ] Implement bump-pointer allocation for `MRT_HEAP_MODE_LINEAR`, aligned request sizing, free-size reduction, minimum-ever update, and linear free rejection.
-- [ ] Run `python tools\run_host_tests.py`; expect 46 test targets pass.
-- [ ] Commit `feat: add linear heap allocation`.
+- [x] Write failing tests for aligned `MRT_Malloc`, zero-size allocation returning null, exhaustion returning null, free-size/minimum-ever tracking, `MRT_Free(NULL)` as a no-op success, and freeing a linear-heap allocation returning `MRT_RESULT_OBJECT_BUSY`.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `MRT_Malloc` and `MRT_Free`.
+- [x] Implement bump-pointer allocation for `MRT_HEAP_MODE_LINEAR`, aligned request sizing, free-size reduction, minimum-ever update, and linear free rejection.
+- [x] Run `python tools\run_host_tests.py`; expect 46 test targets pass.
+- [x] Commit `feat: add linear heap allocation`.
 
 ## Task 3: Free-List Heap Allocation and Reuse
 

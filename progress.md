@@ -401,6 +401,8 @@
 | Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-memory.md` | Plan 8 tasks defined | 7 tasks defined for heap initialization, linear heap, free-list heap, coalescing heap, fixed block pool, dynamic queue allocation, and verification matrix update | Pass |
 | Heap Task 1 RED | `python tools\run_host_tests.py` before heap header exists | Build fails due to missing header | `fatal error: myrtos/mrt_heap.h: No such file or directory` | Pass |
 | Heap Task 1 GREEN | `python tools\run_host_tests.py` after heap initialization/query implementation | 45 test targets pass | `[summary] 45 test target(s) passed` | Pass |
+| Heap Task 2 RED | `python tools\run_host_tests.py` before heap allocation APIs | Build fails due to missing declarations | `implicit declaration of function 'MRT_Malloc'`, `implicit declaration of function 'MRT_Free'` | Pass |
+| Heap Task 2 GREEN | `python tools\run_host_tests.py` after linear heap allocation | 46 test targets pass | `[summary] 46 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

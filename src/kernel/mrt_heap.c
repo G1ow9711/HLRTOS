@@ -12,6 +12,8 @@ typedef struct MRT_HeapState {
     uint8_t *start;
     /** @brief 对齐后的堆总容量，单位为字节。 */
     size_t total_size;
+    /** @brief 下一次线性分配的偏移位置，单位为字节。 */
+    size_t allocation_offset;
     /** @brief 当前剩余空闲字节数。 */
     size_t free_size;
     /** @brief 初始化以来观察到的最低剩余空闲字节数。 */
@@ -92,6 +94,38 @@ static size_t MRT_HeapAlignSizeDown(size_t size)
 }
 
 /**
+ * @brief 将字节数向上规整到堆对齐粒度。
+ * @param size 原始字节数。
+ * @return size_t 返回向上对齐后的字节数。
+ * @example
+ * aligned = MRT_HeapAlignSizeUp(size);
+ */
+static size_t MRT_HeapAlignSizeUp(size_t size)
+{
+    /* 计算对齐掩码；该函数只在对齐值有效时调用。 */
+    size_t mask = MRT_CFG_HEAP_ALIGNMENT - 1u;
+
+    /* 加上掩码后清除低位，实现向上对齐。 */
+    return (size + mask) & ~mask;
+}
+
+/**
+ * @brief 在空闲空间降低后刷新历史最低水位。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_HeapUpdateMinimumFreeSize();
+ */
+static void MRT_HeapUpdateMinimumFreeSize(void)
+{
+    /* 只有当前空闲空间低于历史记录时才更新水位。 */
+    if (g_heap.free_size < g_heap.minimum_ever_free_size) {
+        /* 保存新的历史最低剩余空间。 */
+        g_heap.minimum_ever_free_size = g_heap.free_size;
+    }
+}
+
+/**
  * @brief 使用调用方提供的内存区域初始化 MyRTOS 全局堆。
  * @param buffer 堆区域起始地址，不能为 NULL。
  * @param size 堆区域字节数，必须至少能容纳一个对齐粒度。
@@ -160,6 +194,9 @@ MRT_Result MRT_HeapInitialize(void *buffer, size_t size, MRT_HeapMode mode)
     /* 记录对齐后的总容量。 */
     g_heap.total_size = aligned_size;
 
+    /* 初始化分配偏移，从堆起点开始分配。 */
+    g_heap.allocation_offset = 0u;
+
     /* 初始化时全部堆空间均为空闲。 */
     g_heap.free_size = aligned_size;
 
@@ -174,6 +211,81 @@ MRT_Result MRT_HeapInitialize(void *buffer, size_t size, MRT_HeapMode mode)
 
     /* 堆初始化成功。 */
     return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 从 MyRTOS 全局堆分配一段对齐内存。
+ * @param size 请求分配的用户字节数，必须大于 0。
+ * @return void* 返回分配成功的对齐地址；堆未初始化、size 为 0 或空间不足时返回 NULL。
+ * @example
+ * void *block = MRT_Malloc(128);
+ */
+void *MRT_Malloc(size_t size)
+{
+    /* 堆未初始化时不能分配。 */
+    if (!g_heap.initialized) {
+        /* 返回空指针表示失败。 */
+        return 0;
+    }
+
+    /* 零长度分配没有明确所有权，直接失败。 */
+    if (size == 0u) {
+        /* 返回空指针表示无需分配。 */
+        return 0;
+    }
+
+    /* 将请求大小向上规整到堆对齐粒度。 */
+    size_t aligned_size = MRT_HeapAlignSizeUp(size);
+
+    /* 对齐后大小不能回绕，也不能超过当前空闲空间。 */
+    if ((aligned_size < size) || (aligned_size > g_heap.free_size)) {
+        /* 返回空指针表示空间不足。 */
+        return 0;
+    }
+
+    /* 当前阶段所有模式先共享线性分配路径；后续任务会为可释放堆替换释放/复用逻辑。 */
+    uint8_t *block = g_heap.start + g_heap.allocation_offset;
+
+    /* 推进下一次分配偏移。 */
+    g_heap.allocation_offset += aligned_size;
+
+    /* 扣减当前空闲空间。 */
+    g_heap.free_size -= aligned_size;
+
+    /* 更新历史最低剩余空间。 */
+    MRT_HeapUpdateMinimumFreeSize();
+
+    /* 返回对齐后的用户块地址。 */
+    return block;
+}
+
+/**
+ * @brief 释放由 MyRTOS 全局堆分配的内存块。
+ * @param ptr 待释放指针；NULL 指针被视为无操作成功。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示释放成功；线性堆不支持释放单块，返回 MRT_RESULT_OBJECT_BUSY；
+ *         堆尚未初始化返回 MRT_RESULT_NOT_STARTED。
+ * @example
+ * MRT_Free(block);
+ */
+MRT_Result MRT_Free(void *ptr)
+{
+    /* 空指针释放是无操作，便于调用方在清理路径直接调用。 */
+    if (ptr == 0) {
+        /* 返回成功。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 堆未初始化时不能判断指针归属。 */
+    if (!g_heap.initialized) {
+        /* 返回未启动状态。 */
+        return MRT_RESULT_NOT_STARTED;
+    }
+
+    /* 当前线性阶段不支持回收单个块。 */
+    (void)ptr;
+
+    /* 返回对象忙，表示该堆模式不能立即释放该分配。 */
+    return MRT_RESULT_OBJECT_BUSY;
 }
 
 /**

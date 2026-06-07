@@ -52,6 +52,7 @@ TESTS = [
     ("test_message_buffer_send_receive", ROOT / "tests" / "unit" / "test_message_buffer_send_receive.c"),
     ("test_message_buffer_isr", ROOT / "tests" / "unit" / "test_message_buffer_isr.c"),
     ("test_heap_initialize", ROOT / "tests" / "unit" / "test_heap_initialize.c"),
+    ("test_heap_linear", ROOT / "tests" / "unit" / "test_heap_linear.c"),
 ]
 
 KERNEL_SOURCES = [

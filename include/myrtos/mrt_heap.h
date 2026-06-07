@@ -40,6 +40,25 @@ typedef enum MRT_HeapMode {
 MRT_Result MRT_HeapInitialize(void *buffer, size_t size, MRT_HeapMode mode);
 
 /**
+ * @brief 从 MyRTOS 全局堆分配一段对齐内存。
+ * @param size 请求分配的用户字节数，必须大于 0。
+ * @return void* 返回分配成功的对齐地址；堆未初始化、size 为 0 或空间不足时返回 NULL。
+ * @example
+ * void *block = MRT_Malloc(128);
+ */
+void *MRT_Malloc(size_t size);
+
+/**
+ * @brief 释放由 MyRTOS 全局堆分配的内存块。
+ * @param ptr 待释放指针；NULL 指针被视为无操作成功。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示释放成功；线性堆不支持释放单块，返回 MRT_RESULT_OBJECT_BUSY；
+ *         堆尚未初始化返回 MRT_RESULT_NOT_STARTED。
+ * @example
+ * MRT_Free(block);
+ */
+MRT_Result MRT_Free(void *ptr);
+
+/**
  * @brief 查询当前堆剩余空闲字节数。
  * @param out_free_size 输出当前空闲字节数，不能为 NULL。
  * @return MRT_Result 返回 MRT_RESULT_OK 表示查询成功；堆尚未初始化返回 MRT_RESULT_NOT_STARTED；

@@ -131,6 +131,7 @@
 - Stream/Message Buffer Task 7 updates requirement evidence for `R-002`, `R-008`, `R-009`, and `R-010`, and marks coupling rows `C-020`, `C-021`, and `C-022` verified with 44 passing host test targets.
 - Plan 8 memory management starts from `feature/stream-message-buffers` with 44 passing host targets. The plan will add three heap modes, a fixed block memory pool, and dynamic queue allocation to verify `C-007`, `C-023`, and `C-024`.
 - Memory Task 1 adds heap initialization and query APIs. Heap regions are aligned to `MRT_CFG_HEAP_ALIGNMENT`, invalid modes and too-small regions are rejected, and repeated initialization resets free/minimum-free statistics.
+- Memory Task 2 adds linear heap allocation. `MRT_Malloc` returns aligned blocks, updates current and minimum-ever free bytes, returns null for zero-size or exhausted allocations, and `MRT_Free` treats null as success while rejecting linear-heap block release with `MRT_RESULT_OBJECT_BUSY`.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
