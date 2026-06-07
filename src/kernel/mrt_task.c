@@ -59,6 +59,46 @@ void MRT_TaskKernelInitialize(void)
 }
 
 /**
+ * @brief 启动任务调度器并选择第一个运行任务。
+ * @param void 无输入参数。
+ * @return bool 返回 true 表示找到可运行任务，返回 false 表示没有 ready 任务。
+ * @example
+ * if (MRT_TaskKernelStartScheduler()) { MRT_PortStartFirstTask(); }
+ */
+bool MRT_TaskKernelStartScheduler(void)
+{
+    /* 定义最高 ready 优先级输出变量。 */
+    MRT_Priority highest_priority = 0u;
+
+    /* 查询 ready 位图；如果位图为空，则没有可运行任务。 */
+    if (!MRT_PriorityBitmapFindHighest(&g_ready_bitmap, &highest_priority)) {
+        /* 没有 ready 任务，调度器不能启动。 */
+        return false;
+    }
+
+    /* 获取最高优先级 ready list 的头节点。 */
+    MRT_ListNode *head = MRT_ListGetHead(&g_ready_lists[highest_priority]);
+
+    /* 头节点为空说明位图和链表不一致，保守返回失败。 */
+    if (head == 0) {
+        /* 没有可选择任务，调度器不能启动。 */
+        return false;
+    }
+
+    /* 从链表节点恢复任务控制块指针。 */
+    MRT_Task *task = (MRT_Task *)head->item;
+
+    /* 保存当前任务指针。 */
+    g_current_task = task;
+
+    /* 将被选中的任务状态标记为 running。 */
+    g_current_task->state = MRT_TASK_STATE_RUNNING;
+
+    /* 成功选中第一个运行任务。 */
+    return true;
+}
+
+/**
  * @brief 使用调用方提供的 TCB 和栈静态创建任务。
  * @param name 任务名称，允许为空，仅用于调试显示。
  * @param entry 任务入口函数，不能为空。

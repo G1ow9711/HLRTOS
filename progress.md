@@ -63,6 +63,9 @@
   - Consulted FreeRTOS `tasks.c` for concepts: ready lists per priority, current TCB, delayed lists, overflow handling; MyRTOS keeps original APIs and implementation.
   - Task scheduler Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_task.h` was missing.
   - Task scheduler Task 1 GREEN: added `include/myrtos/mrt_task.h`, `src/kernel/mrt_task.c`, and internal scheduler init; same command passed 7 test targets.
+  - Committed scheduler Task 1 as `e9a15da`.
+  - Task scheduler Task 2 RED: `python tools\run_host_tests.py` failed in `test_scheduler_start` because `MRT_KernelStart` returned `MRT_RESULT_NOT_STARTED`.
+  - Task scheduler Task 2 GREEN: implemented highest ready task selection; same command passed 8 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -100,6 +103,7 @@
   - `include/myrtos/mrt_task.h` created.
   - `src/kernel/mrt_task.c` created.
   - `src/kernel/mrt_task_internal.h` created.
+  - `tests/sim/test_scheduler_start.c` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -133,6 +137,8 @@
 | Foundation full verification | `python tools\run_host_tests.py` | 6 test targets pass | `[summary] 6 test target(s) passed` | Pass |
 | Scheduler Task 1 RED | `python tools\run_host_tests.py` before `mrt_task.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_task.h: No such file or directory` | Pass |
 | Scheduler Task 1 GREEN | `python tools\run_host_tests.py` after static task creation | 7 test targets pass | `[summary] 7 test target(s) passed` | Pass |
+| Scheduler Task 2 RED | `python tools\run_host_tests.py` before scheduler start selection | Start test fails | `expected 0 got 9` | Pass |
+| Scheduler Task 2 GREEN | `python tools\run_host_tests.py` after highest ready selection | 8 test targets pass | `[summary] 8 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

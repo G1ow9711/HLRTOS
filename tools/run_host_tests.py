@@ -14,6 +14,7 @@ TESTS = [
     ("test_port_mock", ROOT / "tests" / "port_mock" / "test_port_mock.c"),
     ("test_kernel_tick", ROOT / "tests" / "unit" / "test_kernel_tick.c"),
     ("test_task_create_static", ROOT / "tests" / "sim" / "test_task_create_static.c"),
+    ("test_scheduler_start", ROOT / "tests" / "sim" / "test_scheduler_start.c"),
 ]
 
 KERNEL_SOURCES = [

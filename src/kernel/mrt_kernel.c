@@ -48,13 +48,25 @@ MRT_Result MRT_KernelInitialize(void)
  */
 MRT_Result MRT_KernelStart(void)
 {
-    /* foundation 阶段尚未实现任务表，因此没有可运行任务。 */
-    if (!g_kernel_running) {
-        /* 返回未启动，后续调度器计划会替换为首任务启动逻辑。 */
+    /* 如果调度器已经运行，则不重复启动首任务。 */
+    if (g_kernel_running) {
+        /* 返回已经启动，提示调用方无需重复启动。 */
+        return MRT_RESULT_ALREADY_STARTED;
+    }
+
+    /* 请求任务模块选择第一个可运行任务。 */
+    if (!MRT_TaskKernelStartScheduler()) {
+        /* 没有 ready 任务时无法启动调度器。 */
         return MRT_RESULT_NOT_STARTED;
     }
 
-    /* 如果调度器已运行，则返回成功。 */
+    /* 标记调度器已经进入运行状态。 */
+    g_kernel_running = true;
+
+    /* 通知端口层启动第一个任务。 */
+    MRT_PortStartFirstTask();
+
+    /* 调度器启动成功。 */
     return MRT_RESULT_OK;
 }
 
