@@ -1,6 +1,7 @@
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
 #include "mrt_task_internal.h"
+#include "mrt_timer_internal.h"
 
 /** @brief 当前系统 tick 计数。 */
 static MRT_Tick g_kernel_tick;
@@ -34,6 +35,9 @@ MRT_Result MRT_KernelInitialize(void)
 
     /* 初始化任务调度器内部 ready/delay 状态。 */
     MRT_TaskKernelInitialize();
+
+    /* 初始化软件定时器内部活动链表状态。 */
+    MRT_TimerKernelInitialize();
 
     /* 基础状态初始化完成，返回成功。 */
     return MRT_RESULT_OK;
@@ -110,6 +114,9 @@ void MRT_KernelTick(void)
 
     /* 通知任务模块处理延时到期任务。 */
     MRT_TaskKernelTick(g_kernel_tick);
+
+    /* 通知软件定时器模块处理到期回调。 */
+    MRT_TimerKernelTick(g_kernel_tick);
 }
 
 #if MRT_TESTING

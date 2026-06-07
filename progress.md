@@ -333,6 +333,8 @@
 | Timer Task 1 pre-commit verification | `python tools\run_host_tests.py` | 34 test targets pass | `[summary] 34 test target(s) passed` | Pass |
 | Timer Task 2 RED | `python tools\run_host_tests.py` before timer control declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_TimerStart'`, `MRT_TimerStop`, `MRT_TimerReset`, `MRT_TimerChangePeriod` | Pass |
 | Timer Task 2 GREEN | `python tools\run_host_tests.py` after timer control APIs | 35 test targets pass | `[summary] 35 test target(s) passed` | Pass |
+| Timer Task 3 RED | `python tools\run_host_tests.py` before timer tick processing | Coupling test fails because callbacks are not run on tick expiry | `test_timer_tick_expiry.c:143: expected 1 got 0` | Pass |
+| Timer Task 3 GREEN | `python tools\run_host_tests.py` after kernel tick timer processing | 36 test targets pass | `[summary] 36 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

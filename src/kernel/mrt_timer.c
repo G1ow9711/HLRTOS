@@ -1,12 +1,27 @@
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
 #include "myrtos/mrt_timer.h"
+#include "mrt_timer_internal.h"
 
 /** @brief 活动软件定时器链表，节点按 expiry_tick 从小到大排序。 */
 static MRT_List g_timer_active_list;
 
 /** @brief 活动软件定时器链表是否已经完成初始化。 */
 static bool g_timer_list_initialized;
+
+/**
+ * @brief 判断当前 tick 是否已经到达定时器到期 tick。
+ * @param now 当前系统 tick。
+ * @param expiry_tick 定时器计划到期 tick。
+ * @return bool 返回 true 表示已经到期，返回 false 表示尚未到期。
+ * @example
+ * if (MRT_TimerTickReached(now, timer->expiry_tick)) { callback(timer, timer->arg); }
+ */
+static bool MRT_TimerTickReached(MRT_Tick now, MRT_Tick expiry_tick)
+{
+    /* 使用有符号差值处理无符号 tick 回绕。 */
+    return (int32_t)(now - expiry_tick) >= 0;
+}
 
 /**
  * @brief 确保软件定时器内部链表已经初始化。
@@ -79,6 +94,113 @@ static void MRT_TimerDisarmLocked(MRT_TimerHandle timer)
 
     /* 标记定时器不再活动。 */
     timer->active = false;
+}
+
+/**
+ * @brief 初始化软件定时器内核内部状态。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerKernelInitialize();
+ */
+void MRT_TimerKernelInitialize(void)
+{
+    /* 如果链表已经初始化，先清理仍处于活动链表中的定时器。 */
+    if (g_timer_list_initialized) {
+        /* 循环摘除所有活动节点，确保内核重新初始化后没有旧定时器残留。 */
+        while (!MRT_ListIsEmpty(&g_timer_active_list)) {
+            /* 读取当前最早到期的节点。 */
+            MRT_ListNode *node = MRT_ListGetHead(&g_timer_active_list);
+
+            /* 从节点反查定时器控制块。 */
+            MRT_TimerHandle timer = (MRT_TimerHandle)node->item;
+
+            /* 从活动链表中移除节点。 */
+            MRT_ListRemove(node);
+
+            /* 如果节点关联了定时器对象，则同步清空活动状态。 */
+            if (timer != 0) {
+                /* 标记该定时器已经不再活动。 */
+                timer->active = false;
+            }
+        }
+    }
+
+    /* 初始化或重新初始化活动定时器链表。 */
+    MRT_ListInitialize(&g_timer_active_list);
+
+    /* 标记链表已经完成初始化。 */
+    g_timer_list_initialized = true;
+}
+
+/**
+ * @brief 处理当前 tick 上已经到期的软件定时器。
+ * @param now 当前系统 tick。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerKernelTick(MRT_KernelGetTick());
+ */
+void MRT_TimerKernelTick(MRT_Tick now)
+{
+    /* 确保活动链表可用，支持未显式调用内核初始化的 host 测试场景。 */
+    MRT_TimerEnsureInitialized();
+
+    /* 持续处理当前 tick 前已经到期的所有定时器。 */
+    for (;;) {
+        /* 进入临界区，保护活动定时器链表。 */
+        MRT_IntState state = MRT_PortEnterCritical();
+
+        /* 如果没有活动定时器，退出处理循环。 */
+        if (MRT_ListIsEmpty(&g_timer_active_list)) {
+            /* 退出临界区。 */
+            MRT_PortExitCritical(state);
+
+            /* 当前 tick 没有可处理定时器。 */
+            break;
+        }
+
+        /* 读取最早到期的定时器节点。 */
+        MRT_ListNode *node = MRT_ListGetHead(&g_timer_active_list);
+
+        /* 从节点反查定时器控制块。 */
+        MRT_TimerHandle timer = (MRT_TimerHandle)node->item;
+
+        /* 如果头部定时器尚未到期，后续节点也不需要处理。 */
+        if ((timer == 0) || !MRT_TimerTickReached(now, timer->expiry_tick)) {
+            /* 退出临界区。 */
+            MRT_PortExitCritical(state);
+
+            /* 等待后续 tick 再处理。 */
+            break;
+        }
+
+        /* 从活动链表移除到期定时器。 */
+        MRT_ListRemove(&timer->node);
+
+        /* 默认先标记为非活动；自动重载路径随后会重新置为活动。 */
+        timer->active = false;
+
+        /* 保存回调函数，后续在临界区外执行。 */
+        MRT_TimerCallback callback = timer->callback;
+
+        /* 保存回调参数，避免回调前控制块被其他路径修改造成读取不一致。 */
+        void *arg = timer->arg;
+
+        /* 自动重载定时器需要在回调前重新入链，使回调内部可以停止或改周期。 */
+        if (timer->auto_reload) {
+            /* 按当前 tick 重新计算下一次到期时间。 */
+            MRT_TimerArmLocked(timer, now + timer->period_ticks);
+        }
+
+        /* 退出临界区，避免用户回调在关中断状态下运行过久。 */
+        MRT_PortExitCritical(state);
+
+        /* 如果回调函数有效，则执行用户到期逻辑。 */
+        if (callback != 0) {
+            /* 将到期定时器句柄和用户参数传给回调。 */
+            callback(timer, arg);
+        }
+    }
 }
 
 /**

@@ -97,14 +97,14 @@ Steps:
 
 Steps:
 
-- [ ] Write failing test where a one-shot timer started for 3 ticks fires exactly once when `MRT_KernelTick` reaches the expiry tick.
-- [ ] Write failing test where an auto-reload timer with period 2 fires at tick 2 and tick 4 and remains active.
-- [ ] Write failing test where two timers expiring on different ticks fire in expiry order.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is that kernel tick does not process timers.
-- [ ] Add `MRT_TimerKernelInitialize` and `MRT_TimerKernelTick(MRT_Tick now)` internal functions.
-- [ ] Call timer initialization from `MRT_KernelInitialize` and timer tick processing from `MRT_KernelTick`.
-- [ ] Run `python tools\run_host_tests.py`; expect 36 test targets pass.
-- [ ] Commit `feat: process software timers on tick`.
+- [x] Write failing test where a one-shot timer started for 3 ticks fires exactly once when `MRT_KernelTick` reaches the expiry tick.
+- [x] Write failing test where an auto-reload timer with period 2 fires at tick 2 and tick 4 and remains active.
+- [x] Write failing test where two timers expiring on different ticks fire in expiry order.
+- [x] Run `python tools\run_host_tests.py`; expected failure is that kernel tick does not process timers.
+- [x] Add `MRT_TimerKernelInitialize` and `MRT_TimerKernelTick(MRT_Tick now)` internal functions.
+- [x] Call timer initialization from `MRT_KernelInitialize` and timer tick processing from `MRT_KernelTick`.
+- [x] Run `python tools\run_host_tests.py`; expect 36 test targets pass.
+- [x] Commit `feat: process software timers on tick`.
 
 ## Task 4: Pending Function Calls
 

@@ -42,6 +42,7 @@ TESTS = [
     ("test_task_notify_isr", ROOT / "tests" / "unit" / "test_task_notify_isr.c"),
     ("test_timer_create_static", ROOT / "tests" / "unit" / "test_timer_create_static.c"),
     ("test_timer_control", ROOT / "tests" / "unit" / "test_timer_control.c"),
+    ("test_timer_tick_expiry", ROOT / "tests" / "coupling" / "test_timer_tick_expiry.c"),
 ]
 
 KERNEL_SOURCES = [
