@@ -1,8 +1,76 @@
 #include "myrtos/mrt_queue.h"
+#include "myrtos/mrt_config.h"
+#include "myrtos/mrt_heap.h"
 #include "myrtos/mrt_port.h"
 #include "mrt_task_internal.h"
 
 #include <string.h>
+
+/**
+ * @brief 将字节数向上规整到队列动态分配对齐粒度。
+ * @param size 原始字节数。
+ * @return size_t 返回对齐后的字节数；溢出时返回 0。
+ * @example
+ * size_t aligned = MRT_QueueAlignSizeUp(sizeof(MRT_Queue));
+ */
+static size_t MRT_QueueAlignSizeUp(size_t size)
+{
+    /* 队列动态分配复用堆对齐配置。 */
+    size_t alignment = MRT_CFG_HEAP_ALIGNMENT;
+
+    /* 对齐配置为 0 时无法计算有效布局。 */
+    if (alignment == 0u) {
+        /* 返回 0 表示布局失败。 */
+        return 0u;
+    }
+
+    /* 加法前检查是否会溢出。 */
+    if (size > (SIZE_MAX - (alignment - 1u))) {
+        /* 返回 0 表示请求过大。 */
+        return 0u;
+    }
+
+    /* 使用除法形式规整，避免对配置值做额外幂次假设。 */
+    return ((size + alignment - 1u) / alignment) * alignment;
+}
+
+/**
+ * @brief 计算动态队列数据区字节数。
+ * @param item_size 每个元素的字节数。
+ * @param capacity 队列容量。
+ * @param out_bytes 输出数据区字节数。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示计算成功；参数非法或乘法溢出时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_QueueCalculateBufferBytes(item_size, capacity, &bytes);
+ */
+static MRT_Result MRT_QueueCalculateBufferBytes(size_t item_size,
+                                                size_t capacity,
+                                                size_t *out_bytes)
+{
+    /* 输出指针不能为空。 */
+    if (out_bytes == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 元素大小和容量都必须大于 0。 */
+    if ((item_size == 0u) || (capacity == 0u)) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 检查 capacity * item_size 是否会溢出。 */
+    if (capacity > (SIZE_MAX / item_size)) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 写回数据区总字节数。 */
+    *out_bytes = capacity * item_size;
+
+    /* 计算成功。 */
+    return MRT_RESULT_OK;
+}
 
 /**
  * @brief 使用调用方提供的控制块和缓冲区静态创建队列。
@@ -95,6 +163,125 @@ MRT_Result MRT_QueueCreateStatic(size_t capacity,
  * @example
  * size_t used = MRT_QueueMessagesWaiting(queue);
  */
+/**
+ * @brief 从 MyRTOS 全局堆动态创建队列。
+ * @param item_size 每个元素的字节数，必须大于 0。
+ * @param capacity 队列容量，表示最多保存多少个元素，必须大于 0。
+ * @param out_queue 输出队列句柄，不能为 NULL；创建失败时写入 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配被关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_QueueHandle queue;
+ * MRT_QueueCreate(sizeof(uint32_t), 8, &queue);
+ */
+MRT_Result MRT_QueueCreate(size_t item_size, size_t capacity, MRT_QueueHandle *out_queue)
+{
+    /* 输出句柄不能为空。 */
+    if (out_queue == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 失败路径默认清空输出句柄，避免调用方误用旧值。 */
+    *out_queue = 0;
+
+    /* 动态分配关闭时不能创建堆队列。 */
+    if (MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION == 0u) {
+        /* 返回内存不足，表达当前系统不提供动态对象空间。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 计算队列数据区大小并验证 item_size/capacity。 */
+    size_t buffer_bytes = 0u;
+    MRT_Result result = MRT_QueueCalculateBufferBytes(item_size, capacity, &buffer_bytes);
+
+    /* 计算失败说明参数非法或乘法溢出。 */
+    if (result != MRT_RESULT_OK) {
+        /* 返回参数错误。 */
+        return result;
+    }
+
+    /* 控制块之后要放队列数据区，所以控制块大小需要向上对齐。 */
+    size_t control_bytes = MRT_QueueAlignSizeUp(sizeof(MRT_Queue));
+
+    /* 对齐失败时视为无法动态分配。 */
+    if (control_bytes == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 检查控制块大小与数据区大小相加是否溢出。 */
+    if (buffer_bytes > (SIZE_MAX - control_bytes)) {
+        /* 返回内存不足，表示请求布局超过可表示范围。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 动态队列使用一个堆块同时保存控制块和数据区。 */
+    size_t total_bytes = control_bytes + buffer_bytes;
+
+    /* 从 MyRTOS 堆分配完整队列内存。 */
+    void *memory = MRT_Malloc(total_bytes);
+
+    /* 堆空间不足时创建失败。 */
+    if (memory == 0) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 队列控制块位于堆块起始处。 */
+    MRT_Queue *queue = (MRT_Queue *)memory;
+
+    /* 数据区紧跟对齐后的控制块。 */
+    uint8_t *buffer = ((uint8_t *)memory) + control_bytes;
+
+    /* 复用静态创建逻辑初始化控制块和等待链表。 */
+    result = MRT_QueueCreateStatic(capacity, item_size, buffer, queue, out_queue);
+
+    /* 理论上参数已验证，但仍处理初始化失败路径。 */
+    if (result != MRT_RESULT_OK) {
+        /* 归还刚分配的堆块。 */
+        (void)MRT_Free(memory);
+
+        /* 清空输出句柄。 */
+        *out_queue = 0;
+
+        /* 返回静态初始化给出的错误。 */
+        return result;
+    }
+
+    /* 标记该队列归动态堆所有，允许 MRT_QueueDelete 释放。 */
+    queue->static_storage = false;
+
+    /* 动态队列创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 删除动态创建的队列并归还其堆内存。
+ * @param queue 待删除队列句柄，不能为 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态队列不是堆对象，返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_QueueDelete(queue);
+ */
+MRT_Result MRT_QueueDelete(MRT_QueueHandle queue)
+{
+    /* 队列句柄不能为空。 */
+    if (queue == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 静态队列的内存由调用方管理，不能由动态删除 API 释放。 */
+    if (queue->static_storage) {
+        /* 返回对象忙，表示该对象不归堆释放路径所有。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 动态队列控制块就是 MRT_Malloc 返回的堆块起始地址。 */
+    return MRT_Free(queue);
+}
+
 size_t MRT_QueueMessagesWaiting(MRT_QueueHandle queue)
 {
     /* 空队列句柄没有可查询对象，返回 0。 */

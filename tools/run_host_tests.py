@@ -56,6 +56,7 @@ TESTS = [
     ("test_heap_free_list", ROOT / "tests" / "unit" / "test_heap_free_list.c"),
     ("test_heap_coalescing", ROOT / "tests" / "unit" / "test_heap_coalescing.c"),
     ("test_memory_pool", ROOT / "tests" / "unit" / "test_memory_pool.c"),
+    ("test_queue_dynamic_allocation", ROOT / "tests" / "coupling" / "test_queue_dynamic_allocation.c"),
 ]
 
 KERNEL_SOURCES = [

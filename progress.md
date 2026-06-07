@@ -409,6 +409,8 @@
 | Heap Task 4 GREEN | `python tools\run_host_tests.py` after release-time coalescing implementation | 48 test targets pass | `[summary] 48 test target(s) passed` | Pass |
 | Memory Pool Task 5 RED | `python tools\run_host_tests.py` after adding `test_memory_pool` | Build fails because memory pool public header is missing | `fatal error: myrtos/mrt_memory_pool.h: No such file or directory`; `[summary] 1 test target(s) failed` | Pass |
 | Memory Pool Task 5 GREEN | `python tools\run_host_tests.py` after fixed-block pool implementation | 49 test targets pass | `[summary] 49 test target(s) passed` | Pass |
+| Dynamic Queue Task 6 RED | `python tools\run_host_tests.py` after adding `test_queue_dynamic_allocation` | Build fails because dynamic queue APIs are missing | implicit declaration of `MRT_QueueCreate` and `MRT_QueueDelete`; `[summary] 1 test target(s) failed` | Pass |
+| Dynamic Queue Task 6 GREEN | `python tools\run_host_tests.py` after dynamic queue create/delete implementation | 50 test targets pass | `[summary] 50 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

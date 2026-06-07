@@ -164,12 +164,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_QueueCreate` successful dynamic allocation, FIFO send/receive on the dynamic queue, `MRT_QueueDelete` returning heap memory, allocation failure returning `MRT_RESULT_NO_MEMORY`, and failed creation leaving heap free-size unchanged.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing dynamic queue APIs.
-- [ ] Implement dynamic queue allocation as one heap block that contains `MRT_Queue` followed by aligned item storage, mark `static_storage=false`, and reject dynamic creation when `MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION` is 0.
-- [ ] Implement `MRT_QueueDelete` so dynamic queues are freed through `MRT_Free`, while static queues reject deletion with `MRT_RESULT_OBJECT_BUSY`.
-- [ ] Run `python tools\run_host_tests.py`; expect 50 test targets pass.
-- [ ] Commit `feat: add dynamic queue allocation`.
+- [x] Write failing tests for `MRT_QueueCreate` successful dynamic allocation, FIFO send/receive on the dynamic queue, `MRT_QueueDelete` returning heap memory, allocation failure returning `MRT_RESULT_NO_MEMORY`, and failed creation leaving heap free-size unchanged.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing dynamic queue APIs.
+- [x] Implement dynamic queue allocation as one heap block that contains `MRT_Queue` followed by aligned item storage, mark `static_storage=false`, and reject dynamic creation when `MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION` is 0.
+- [x] Implement `MRT_QueueDelete` so dynamic queues are freed through `MRT_Free`, while static queues reject deletion with `MRT_RESULT_OBJECT_BUSY`.
+- [x] Run `python tools\run_host_tests.py`; expect 50 test targets pass.
+- [x] Commit `feat: add dynamic queue allocation`.
 
 ## Task 7: Verification Matrix Update
 

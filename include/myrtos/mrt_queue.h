@@ -60,6 +60,29 @@ MRT_Result MRT_QueueCreateStatic(size_t capacity,
                                  MRT_QueueHandle *out_queue);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建队列。
+ * @param item_size 每个元素的字节数，必须大于 0。
+ * @param capacity 队列容量，表示最多保存多少个元素，必须大于 0。
+ * @param out_queue 输出队列句柄，不能为 NULL；创建失败时写入 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配被关闭或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_QueueHandle queue;
+ * MRT_QueueCreate(sizeof(uint32_t), 8, &queue);
+ */
+MRT_Result MRT_QueueCreate(size_t item_size, size_t capacity, MRT_QueueHandle *out_queue);
+
+/**
+ * @brief 删除动态创建的队列并归还其堆内存。
+ * @param queue 待删除队列句柄，不能为 NULL。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态队列不是堆对象，返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_QueueDelete(queue);
+ */
+MRT_Result MRT_QueueDelete(MRT_QueueHandle queue);
+
+/**
  * @brief 查询队列中已有元素数量。
  * @param queue 待查询队列句柄，不能为空。
  * @return size_t 返回当前队列中的元素数量；队列为空指针时返回 0。
