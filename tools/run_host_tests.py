@@ -55,6 +55,7 @@ TESTS = [
     ("test_heap_linear", ROOT / "tests" / "unit" / "test_heap_linear.c"),
     ("test_heap_free_list", ROOT / "tests" / "unit" / "test_heap_free_list.c"),
     ("test_heap_coalescing", ROOT / "tests" / "unit" / "test_heap_coalescing.c"),
+    ("test_memory_pool", ROOT / "tests" / "unit" / "test_memory_pool.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -62,6 +63,7 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_list.c",
     ROOT / "src" / "kernel" / "mrt_kernel.c",
     ROOT / "src" / "kernel" / "mrt_heap.c",
+    ROOT / "src" / "kernel" / "mrt_memory_pool.c",
     ROOT / "src" / "kernel" / "mrt_message_buffer.c",
     ROOT / "src" / "kernel" / "mrt_mutex.c",
     ROOT / "src" / "kernel" / "mrt_priority.c",

@@ -146,12 +146,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for static pool creation, null arguments, block size smaller than a pointer, zero block count, allocation until empty, free count query, freeing a block back to the pool, invalid pointer rejection, and double-free rejection.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_memory_pool.h`.
-- [ ] Implement `MRT_MemoryPool` with aligned block size, caller-provided byte storage, singly-linked free list stored inside free blocks, free count, block-range validation, and free-list scan for double-free detection.
-- [ ] Add memory pool source to CMake and the host test runner.
-- [ ] Run `python tools\run_host_tests.py`; expect 49 test targets pass.
-- [ ] Commit `feat: add fixed block memory pool`.
+- [x] Write failing tests for static pool creation, null arguments, block size smaller than a pointer, zero block count, allocation until empty, free count query, freeing a block back to the pool, invalid pointer rejection, and double-free rejection.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing `myrtos/mrt_memory_pool.h`.
+- [x] Implement `MRT_MemoryPool` with aligned block size, caller-provided byte storage, singly-linked free list stored inside free blocks, free count, block-range validation, and free-list scan for double-free detection.
+- [x] Add memory pool source to CMake and the host test runner.
+- [x] Run `python tools\run_host_tests.py`; expect 49 test targets pass.
+- [x] Commit `feat: add fixed block memory pool`.
 
 ## Task 6: Dynamic Queue Creation Coupled to Heap
 

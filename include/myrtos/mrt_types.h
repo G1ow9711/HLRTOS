@@ -58,6 +58,9 @@ typedef struct MRT_StreamBuffer *MRT_StreamBufferHandle;
 /** @brief 消息缓冲对象句柄，用户只能通过 API 操作该不透明指针。 */
 typedef struct MRT_MessageBuffer *MRT_MessageBufferHandle;
 
+/** @brief 固定块内存池对象句柄，用户只能通过 API 操作该不透明指针。 */
+typedef struct MRT_MemoryPool *MRT_MemoryPoolHandle;
+
 /**
  * @brief MyRTOS 公共 API 统一返回值。
  *

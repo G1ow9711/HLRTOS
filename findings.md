@@ -136,6 +136,8 @@
 - Memory Task 3 adds address-ordered heap block metadata for reusable heap modes. Free-list allocation uses first-fit scanning, splits only when the remainder can hold a block header plus an aligned payload, rejects heap-external pointers, rejects double free, and intentionally does not merge adjacent free blocks yet so Task 4 can validate coalescing separately.
 - Memory Task 4 RED confirms `MRT_HEAP_MODE_COALESCING` currently behaves like the non-coalescing free-list mode. After freeing two adjacent 64-byte blocks and exhausting tail space, `MRT_Malloc(96)` fails to return the first block because neighbor merging is missing.
 - Memory Task 4 adds release-time coalescing only for `MRT_HEAP_MODE_COALESCING`. The implementation first merges with a free predecessor, then merges with a free successor; `MRT_HEAP_MODE_FREE_LIST` remains intentionally non-coalescing and is covered by the same coalescing test target.
+- Memory Pool Task 5 RED adds fixed-block pool coverage and currently fails because `myrtos/mrt_memory_pool.h` does not exist. The expected API is static-only creation with caller-provided control block and storage, allocation until empty, free-count query, invalid pointer rejection, and double-free rejection.
+- Memory Pool Task 5 implements static fixed-block pools without using the global heap. Blocks are aligned to at least pointer size, the free-list pointer is stored inside free blocks, allocation returns `MRT_RESULT_OBJECT_EMPTY` when empty, and release validates range, block boundary, and duplicate free before relinking the block.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

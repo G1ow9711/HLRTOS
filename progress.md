@@ -407,6 +407,8 @@
 | Heap Task 3 GREEN | `python tools\run_host_tests.py` after first-fit free-list implementation | 47 test targets pass | `[summary] 47 test target(s) passed` | Pass |
 | Heap Task 4 RED | `python tools\run_host_tests.py` after adding `test_heap_coalescing` | `test_heap_coalescing` fails because adjacent free blocks are not merged | `[summary] 1 test target(s) failed`; assertion `merged == first` failed | Pass |
 | Heap Task 4 GREEN | `python tools\run_host_tests.py` after release-time coalescing implementation | 48 test targets pass | `[summary] 48 test target(s) passed` | Pass |
+| Memory Pool Task 5 RED | `python tools\run_host_tests.py` after adding `test_memory_pool` | Build fails because memory pool public header is missing | `fatal error: myrtos/mrt_memory_pool.h: No such file or directory`; `[summary] 1 test target(s) failed` | Pass |
+| Memory Pool Task 5 GREEN | `python tools\run_host_tests.py` after fixed-block pool implementation | 49 test targets pass | `[summary] 49 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
