@@ -1,4 +1,6 @@
 #include "myrtos/mrt_event_group.h"
+#include "myrtos/mrt_task.h"
+#include "mrt_task_internal.h"
 
 /**
  * @brief 判断当前事件 bit 是否满足等待条件。
@@ -198,8 +200,32 @@ MRT_Result MRT_EventGroupWaitBits(MRT_EventGroupHandle group,
         return MRT_RESULT_OBJECT_EMPTY;
     }
 
-    /* 调度耦合尚未启用时，非零等待先按超时返回；后续任务会接入阻塞链表。 */
-    return MRT_RESULT_TIMEOUT;
+    /* 读取当前运行任务，只有任务上下文才能进入阻塞等待。 */
+    MRT_TaskHandle current = MRT_TaskGetCurrent();
+
+    /* 没有当前任务时，host 仿真无法挂起调用方，按等待超时返回。 */
+    if (current == 0) {
+        /* 保持非调度上下文的保守行为。 */
+        return MRT_RESULT_TIMEOUT;
+    }
+
+    /* 保存事件组等待掩码，后续 set bits 会用它判断是否唤醒该任务。 */
+    current->event_wait_bits = bits_to_wait;
+
+    /* 当前还没有匹配结果。 */
+    current->event_matched_bits = 0u;
+
+    /* 保存等待策略，供事件组置位时判定 wait-all 或 wait-any。 */
+    current->event_wait_all = wait_all;
+
+    /* 保存退出清位策略，供事件组置位时统一处理清位。 */
+    current->event_clear_on_exit = clear_on_exit;
+
+    /* 将当前任务挂入事件组等待链表，并设置 tick 超时。 */
+    return MRT_TaskKernelBlockCurrentOnObject(&group->waiting_tasks,
+                                              timeout,
+                                              MRT_TASK_WAIT_REASON_EVENT_BITS,
+                                              MRT_RESULT_TIMEOUT);
 }
 
 /**

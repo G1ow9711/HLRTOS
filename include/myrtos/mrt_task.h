@@ -57,7 +57,9 @@ typedef enum MRT_TaskWaitReason {
     /** @brief 任务正在等待信号量出现可获取计数。 */
     MRT_TASK_WAIT_REASON_SEMAPHORE_TAKE,
     /** @brief 任务正在等待互斥锁解锁。 */
-    MRT_TASK_WAIT_REASON_MUTEX_LOCK
+    MRT_TASK_WAIT_REASON_MUTEX_LOCK,
+    /** @brief 任务正在等待事件组 bit 条件满足。 */
+    MRT_TASK_WAIT_REASON_EVENT_BITS
 } MRT_TaskWaitReason;
 
 /**
@@ -93,6 +95,14 @@ typedef struct MRT_Task {
     MRT_TaskWaitReason wait_reason;
     /** @brief 任务从对象等待中恢复时传递给等待 API 的结果。 */
     MRT_Result wait_result;
+    /** @brief 事件组等待时请求的 bit 掩码。 */
+    MRT_EventBits event_wait_bits;
+    /** @brief 事件组等待被满足时匹配到的 bit。 */
+    MRT_EventBits event_matched_bits;
+    /** @brief 事件组等待是否要求全部请求 bit 均满足。 */
+    bool event_wait_all;
+    /** @brief 事件组等待成功退出时是否清除匹配 bit。 */
+    bool event_clear_on_exit;
     /** @brief 是否使用静态存储创建。 */
     bool static_storage;
 } MRT_Task;

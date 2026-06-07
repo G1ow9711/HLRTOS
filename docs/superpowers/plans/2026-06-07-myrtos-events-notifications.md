@@ -116,14 +116,14 @@ Steps:
 
 Steps:
 
-- [ ] Write failing test where a high-priority task waits for event bits with 3 tick timeout, blocks, low-priority task runs, tick expiry removes the waiter from both delay list and event wait list, and event bits remain unchanged.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is that event wait does not block current task.
-- [ ] Add `MRT_TASK_WAIT_REASON_EVENT_BITS`.
-- [ ] Add event wait metadata to `MRT_Task`: requested bits, wait-all flag, clear-on-exit flag, and matched bits.
-- [ ] Initialize event wait metadata in `MRT_TaskCreateStatic`.
-- [ ] Reuse `MRT_TaskKernelBlockCurrentOnObject` for event wait timeout.
-- [ ] Run `python tools\run_host_tests.py`; expect 28 test targets pass.
-- [ ] Commit `feat: add event group timeout wait`.
+- [x] Write failing test where a high-priority task waits for event bits with 3 tick timeout, blocks, low-priority task runs, tick expiry removes the waiter from both delay list and event wait list, and event bits remain unchanged.
+- [x] Run `python tools\run_host_tests.py`; expected failure is that event wait does not block current task.
+- [x] Add `MRT_TASK_WAIT_REASON_EVENT_BITS`.
+- [x] Add event wait metadata to `MRT_Task`: requested bits, wait-all flag, clear-on-exit flag, and matched bits.
+- [x] Initialize event wait metadata in `MRT_TaskCreateStatic`.
+- [x] Reuse `MRT_TaskKernelBlockCurrentOnObject` for event wait timeout.
+- [x] Run `python tools\run_host_tests.py`; expect 28 test targets pass.
+- [x] Commit `feat: add event group timeout wait`.
 
 ## Task 4: Event Group Set Wakes Matching Tasks
 

@@ -586,6 +586,18 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
     /* 新任务没有挂起的等待结果。 */
     storage->wait_result = MRT_RESULT_OK;
 
+    /* 新任务没有事件组等待掩码。 */
+    storage->event_wait_bits = 0u;
+
+    /* 新任务没有事件组匹配结果。 */
+    storage->event_matched_bits = 0u;
+
+    /* 新任务默认不处于 wait-all 事件等待。 */
+    storage->event_wait_all = false;
+
+    /* 新任务默认不请求事件等待退出清位。 */
+    storage->event_clear_on_exit = false;
+
     /* 标记该任务使用静态存储。 */
     storage->static_storage = true;
 

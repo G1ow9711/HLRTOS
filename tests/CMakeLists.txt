@@ -35,3 +35,4 @@ mrt_add_test(test_mutex_priority_inheritance coupling/test_mutex_priority_inheri
 mrt_add_test(test_mutex_recursive unit/test_mutex_recursive.c)
 mrt_add_test(test_event_group_create_bits unit/test_event_group_create_bits.c)
 mrt_add_test(test_event_group_wait_immediate unit/test_event_group_wait_immediate.c)
+mrt_add_test(test_event_group_task_timeout coupling/test_event_group_task_timeout.c)

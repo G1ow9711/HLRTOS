@@ -290,6 +290,8 @@
 | Event Group Task 1 GREEN | `python tools\run_host_tests.py` after static event group bit APIs | 26 test targets pass | `[summary] 26 test target(s) passed` | Pass |
 | Event Group Task 2 RED | `python tools\run_host_tests.py` before wait bits declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_EventGroupWaitBits'` | Pass |
 | Event Group Task 2 GREEN | `python tools\run_host_tests.py` after immediate wait implementation | 27 test targets pass | `[summary] 27 test target(s) passed` | Pass |
+| Event Group Task 3 RED | `python tools\run_host_tests.py` before event wait blocking | Coupling test fails because current task does not block | `assertion failed: MRT_TaskGetCurrent() == low_task` | Pass |
+| Event Group Task 3 GREEN | `python tools\run_host_tests.py` after event wait timeout coupling | 28 test targets pass | `[summary] 28 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
