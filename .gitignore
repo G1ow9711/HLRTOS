@@ -6,6 +6,7 @@ out/
 # Local Codex/runtime storage
 .codex-local/
 .venv/
+.worktrees/
 
 # Python cache
 __pycache__/
@@ -24,4 +25,3 @@ coverage/
 *.gcda
 *.gcno
 *.gcov
-

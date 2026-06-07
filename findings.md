@@ -38,6 +38,7 @@
 | Use TDD for implementation | User requires all functions and coupling cases tested; TDD skill also requires failing tests before production code. |
 | Provisional target platform | No exact chip/toolchain answer yet; proceed with STM32 Cortex-M4/M7 + ARM GCC/CMake + TI C2000-style DSP abstraction as reasonable default. |
 | API prefix `MRT_` proposed | Avoid confusion with FreeRTOS symbols and preserve originality. |
+| Autonomous decision mode | User instructed best-direction decisions without stopping for routine clarification; FreeRTOS may be consulted as reference only. |
 
 ## Issues Encountered
 | Issue | Resolution |
@@ -71,6 +72,7 @@
 
 ## Open Confirmations
 - User approved platform default, API prefix, manual originality constraint, and Git repository initialization.
+- User approved autonomous technical decision-making; only major irreversible scope changes should require asking.
 
 ## Verification Findings
 - Requirement traceability now has 10 top-level requirements (`R-001` through `R-010`).

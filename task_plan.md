@@ -67,6 +67,7 @@ Phase 3: Implementation Plan
 | Add verification matrices before code | User requires all features and coupling cases tested; matrices make completion auditable. |
 | User approved design | User replied "批准"; proceed to implementation planning and Git baseline. |
 | Split C implementation into plan series | Full C scope covers many subsystems; master plan plus subsystem plans keeps verification auditable. |
+| Autonomous technical decisions | User instructed Codex to choose the best direction, consult FreeRTOS source when unclear, and redesign rather than copy. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

@@ -32,6 +32,7 @@
   - Created master implementation plan.
   - Created foundation kernel TDD implementation plan.
   - Ran implementation-plan self-review scans.
+  - User instructed autonomous best-direction decisions and reiterated: reference FreeRTOS only as design input, do not copy.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
