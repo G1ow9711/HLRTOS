@@ -2,6 +2,7 @@
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
 #include "myrtos/mrt_priority.h"
+#include "myrtos/mrt_trace.h"
 #include "mrt_task_internal.h"
 
 /** @brief 每个优先级一个 ready list。 */
@@ -18,6 +19,56 @@ static MRT_Task *g_current_task;
 
 /** @brief 任务调度器内部结构是否已经初始化。 */
 static bool g_task_kernel_initialized;
+
+/**
+ * @brief 发布任务切换 trace 事件。
+ * @param previous_task 切换前的任务句柄；为空表示调度器启动或无旧任务。
+ * @param next_task 切换后的任务句柄；为空表示当前无 ready 任务。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskTraceSwitch(old_task, new_task);
+ */
+static void MRT_TaskTraceSwitch(MRT_Task *previous_task, MRT_Task *next_task)
+{
+    /* 旧任务为空时通常是调度器首次启动，不记录为一次任务切换。 */
+    if (previous_task == 0) {
+        /* 没有旧任务，不发布切换事件。 */
+        return;
+    }
+
+    /* 新旧任务相同表示没有发生可观察的调度切换。 */
+    if (previous_task == next_task) {
+        /* 没有变化，不发布事件。 */
+        return;
+    }
+
+    /* 构造任务切换事件快照。 */
+    MRT_TraceEvent event = {0};
+
+    /* 标记事件类型为任务切换。 */
+    event.kind = MRT_TRACE_EVENT_TASK_SWITCH;
+
+    /* 记录事件发生时的内核 tick。 */
+    event.tick = MRT_KernelGetTick();
+
+    /* 记录切换前任务。 */
+    event.task = previous_task;
+
+    /* 记录切换后任务。 */
+    event.related_task = next_task;
+
+    /* 任务切换事件没有关联对象。 */
+    event.object = 0;
+
+    /* 附加数值当前未使用，保持为 0。 */
+    event.value = 0u;
+
+    /* 调度切换完成时发布成功结果。 */
+    event.result = MRT_RESULT_OK;
+
+    /* 发布 trace 事件；未设置 sink 时该调用会静默返回。 */
+    MRT_TraceEmit(&event);
+}
 
 /**
  * @brief 判断 now 是否已经到达 wake_tick。
@@ -120,6 +171,9 @@ static void MRT_TaskRemoveReady(MRT_Task *task)
  */
 static void MRT_TaskSwitchToHighestReady(void)
 {
+    /* 保存切换前的当前任务，用于后续 trace 事件。 */
+    MRT_Task *previous_task = g_current_task;
+
     /* 如果当前任务仍处于 running，切换前先恢复为 ready。 */
     if ((g_current_task != 0) && (g_current_task->state == MRT_TASK_STATE_RUNNING)) {
         /* 当前任务仍在 ready list 中，只是失去运行权。 */
@@ -134,6 +188,9 @@ static void MRT_TaskSwitchToHighestReady(void)
         /* 当前无任务可运行。 */
         g_current_task = 0;
 
+        /* 发布切换到空任务的 trace；没有旧任务时 helper 会自动忽略。 */
+        MRT_TaskTraceSwitch(previous_task, g_current_task);
+
         /* 返回调用方。 */
         return;
     }
@@ -143,6 +200,9 @@ static void MRT_TaskSwitchToHighestReady(void)
 
     /* 将新当前任务标记为 running。 */
     g_current_task->state = MRT_TASK_STATE_RUNNING;
+
+    /* 发布可观察任务切换事件。 */
+    MRT_TaskTraceSwitch(previous_task, g_current_task);
 }
 
 /**
@@ -370,6 +430,9 @@ MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
     /* 重新选择下一个最高优先级 ready 任务运行。 */
     MRT_TaskSwitchToHighestReady();
 
+    /* 记录被阻塞任务让出 CPU 后产生的任务切换。 */
+    MRT_TaskTraceSwitch(task, g_current_task);
+
     /* 返回等待结果；真实端口后续会在任务恢复时从同一 API 继续返回。 */
     return task->wait_result;
 }
@@ -426,6 +489,9 @@ MRT_Result MRT_TaskKernelBlockCurrent(MRT_Tick ticks, MRT_TaskWaitReason wait_re
 
     /* 重新选择下一个最高优先级 ready 任务运行。 */
     MRT_TaskSwitchToHighestReady();
+
+    /* 记录被阻塞任务让出 CPU 后产生的任务切换。 */
+    MRT_TaskTraceSwitch(task, g_current_task);
 
     /* 返回等待结果；真实端口后续会在任务恢复时从同一 API 继续返回。 */
     return task->wait_result;
@@ -846,6 +912,9 @@ MRT_Result MRT_TaskDelay(MRT_Tick ticks)
 
     /* 选择下一个最高优先级 ready 任务运行。 */
     MRT_TaskSwitchToHighestReady();
+
+    /* 记录延时任务让出 CPU 后产生的任务切换。 */
+    MRT_TaskTraceSwitch(task, g_current_task);
 
     /* 延时操作完成。 */
     return MRT_RESULT_OK;

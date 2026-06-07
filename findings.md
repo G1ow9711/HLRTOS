@@ -147,6 +147,9 @@
 - Assert design uses one hook dispatcher and `MRT_ASSERT(expr)` macro; existing API parameter validation is not bulk-rewritten in this branch.
 - Tickless sleep compensation uses repeated `MRT_KernelTick()` calls after the port reports actual slept ticks. This preserves existing task delay and software timer expiry order while keeping the implementation small.
 - During compensation testing, a crash was traced to a test leaving an active stack-allocated timer in the global timer list before reinitializing the kernel. The test now stops that timer before returning.
+- Trace module stores one optional sink callback and user pointer. Events are dropped when no sink is set, so enabled trace APIs do not force a logging backend.
+- Task switch trace needs special handling for blocking paths because the scheduler clears `g_current_task` before choosing the next task. Blocking helpers explicitly publish `blocked_task -> new_current` after selection.
+- Queue trace records successful send/receive only, with `value` set to the queue element count after the operation.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

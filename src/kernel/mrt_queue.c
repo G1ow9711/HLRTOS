@@ -1,10 +1,57 @@
 #include "myrtos/mrt_queue.h"
 #include "myrtos/mrt_config.h"
 #include "myrtos/mrt_heap.h"
+#include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
+#include "myrtos/mrt_trace.h"
 #include "mrt_task_internal.h"
 
 #include <string.h>
+
+/**
+ * @brief 发布队列 trace 事件。
+ * @param kind 队列事件类型，必须是发送或接收事件。
+ * @param queue 队列句柄，不能为空。
+ * @param result 队列操作结果。
+ * @return void 无返回值。
+ * @example
+ * MRT_QueueTraceEvent(MRT_TRACE_EVENT_QUEUE_SEND, queue, MRT_RESULT_OK);
+ */
+static void MRT_QueueTraceEvent(MRT_TraceEventKind kind, MRT_QueueHandle queue, MRT_Result result)
+{
+    /* 队列句柄为空时没有可观察对象，直接忽略。 */
+    if (queue == 0) {
+        /* 不发布不完整事件。 */
+        return;
+    }
+
+    /* 构造 trace 事件快照。 */
+    MRT_TraceEvent event = {0};
+
+    /* 写入事件类型。 */
+    event.kind = kind;
+
+    /* 记录事件发生时的系统 tick。 */
+    event.tick = MRT_KernelGetTick();
+
+    /* 队列事件的主任务是当前任务；未启动调度器时允许为空。 */
+    event.task = MRT_TaskGetCurrent();
+
+    /* 队列事件没有关联任务。 */
+    event.related_task = 0;
+
+    /* 保存关联队列对象。 */
+    event.object = queue;
+
+    /* 保存操作后的队列元素数量，便于 trace 后端观察水位。 */
+    event.value = (uint32_t)queue->count;
+
+    /* 保存操作结果。 */
+    event.result = result;
+
+    /* 发布事件；未设置 sink 时该调用会静默返回。 */
+    MRT_TraceEmit(&event);
+}
 
 /**
  * @brief 将字节数向上规整到队列动态分配对齐粒度。
@@ -354,6 +401,9 @@ MRT_Result MRT_QueueSend(MRT_QueueHandle queue, const void *item, MRT_Timeout ti
     (void)MRT_TaskKernelWakeFirstObjectWaiter(&queue->waiting_receivers, MRT_RESULT_OK, true);
 
     /* 本次发送成功完成。 */
+    /* 发布队列发送成功 trace，value 保存发送后的队列元素数量。 */
+    MRT_QueueTraceEvent(MRT_TRACE_EVENT_QUEUE_SEND, queue, MRT_RESULT_OK);
+
     return MRT_RESULT_OK;
 }
 
@@ -410,6 +460,9 @@ MRT_Result MRT_QueueReceive(MRT_QueueHandle queue, void *out_item, MRT_Timeout t
     queue->count--;
 
     /* 本次接收成功完成。 */
+    /* 发布队列接收成功 trace，value 保存接收后的队列元素数量。 */
+    MRT_QueueTraceEvent(MRT_TRACE_EVENT_QUEUE_RECEIVE, queue, MRT_RESULT_OK);
+
     return MRT_RESULT_OK;
 }
 
@@ -657,6 +710,9 @@ MRT_Result MRT_QueueSendFromISR(MRT_QueueHandle queue, const void *item, bool *s
     }
 
     /* ISR 发送成功完成。 */
+    /* 发布 ISR 队列发送成功 trace，value 保存发送后的队列元素数量。 */
+    MRT_QueueTraceEvent(MRT_TRACE_EVENT_QUEUE_SEND, queue, MRT_RESULT_OK);
+
     return MRT_RESULT_OK;
 }
 

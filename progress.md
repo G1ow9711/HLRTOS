@@ -15,6 +15,9 @@
 - Tickless Task 2 fix: stopped the still-active timer at the end of the max-sleep-limit test case.
 - Tickless Task 2 GREEN: added `MRT_TicklessEnterIdle`, `MRT_PortSuppressTicksAndSleep`, mock sleep controls/observers, and `tests/coupling/test_tickless_timer_compensation.c`.
 - Tickless Task 2 verification: `python tools\run_host_tests.py` passed 52 test targets.
+- Trace Task 3 RED: `python tools\run_host_tests.py` failed on `test_trace_task_switch` and `test_trace_queue` because `myrtos/mrt_trace.h` was missing.
+- Trace Task 3 GREEN: added `MRT_TraceSetSink`, `MRT_TraceEmit`, trace event structures, task-switch hooks, and queue send/receive hooks.
+- Trace Task 3 verification: `python tools\run_host_tests.py` passed 54 test targets.
 
 ### Phase 1: Requirements & Discovery
 - **Status:** in_progress

@@ -59,6 +59,8 @@ TESTS = [
     ("test_queue_dynamic_allocation", ROOT / "tests" / "coupling" / "test_queue_dynamic_allocation.c"),
     ("test_tickless_expected_idle", ROOT / "tests" / "unit" / "test_tickless_expected_idle.c"),
     ("test_tickless_timer_compensation", ROOT / "tests" / "coupling" / "test_tickless_timer_compensation.c"),
+    ("test_trace_task_switch", ROOT / "tests" / "coupling" / "test_trace_task_switch.c"),
+    ("test_trace_queue", ROOT / "tests" / "coupling" / "test_trace_queue.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -75,6 +77,7 @@ KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_stream_buffer.c",
     ROOT / "src" / "kernel" / "mrt_task.c",
     ROOT / "src" / "kernel" / "mrt_tickless.c",
+    ROOT / "src" / "kernel" / "mrt_trace.c",
     ROOT / "src" / "kernel" / "mrt_timer.c",
     ROOT / "src" / "portable" / "mock" / "mrt_port_mock.c",
 ]
