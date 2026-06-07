@@ -97,6 +97,7 @@
 - Semaphore Task 2 implements only nonblocking take/give. Empty semaphore with nonzero timeout returns `MRT_RESULT_TIMEOUT` outside scheduler context; actual task blocking and wakeup are reserved for Task 3 coupling tests.
 - Semaphore Task 3 reuses the queue-era object wait helpers. A give to a nonempty taker wait list transfers the token directly to the highest-priority waiter, so semaphore count does not increase.
 - Semaphore Task 4 mirrors queue ISR wake semantics: ISR give never switches immediately; it makes the waiter ready and reports `should_yield=true` for the port layer.
+- Mutex Task 5 implements ownership-only mutex behavior. Lock/unlock require a running task; non-owner unlock returns `MRT_RESULT_OWNER_ERROR`; contention blocking and priority inheritance remain for Task 6.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

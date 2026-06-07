@@ -120,6 +120,10 @@
   - Semaphore Task 4 RED: `python tools\run_host_tests.py` failed because `MRT_SemaphoreGiveFromISR` was not declared.
   - Semaphore Task 4 GREEN: implemented ISR give, ISR context validation, full-count handling, and delayed-yield wakeup; same command passed 22 test targets.
   - Semaphore Task 4 commit message: `feat: add semaphore ISR give`.
+  - Mutex Task 5 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_mutex.h` was missing.
+  - Mutex Task 5 first GREEN attempt failed because `test_mutex_create_lock` reused current task state from an earlier test case; fixed by reinitializing the kernel inside the invalid-context test.
+  - Mutex Task 5 GREEN: added static mutex creation, lock/unlock ownership, owner query, owner-error handling, and invalid-context checks; same command passed 23 test targets.
+  - Mutex Task 5 commit message: `feat: add mutex ownership`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -196,6 +200,7 @@
 | 2026-06-07 | PowerShell rejected `&&` command separator | 1 | Switched to separate git commands. |
 | 2026-06-07 | `cmake` command not found | 1 | Used GCC-backed project-local Python runner for host tests and kept CMake files for standard environments. |
 | 2026-06-07 | `apply_patch` targeted the main worktree instead of `.worktrees\queues` | 1 | Re-ran the patch using the queue worktree path. |
+| 2026-06-07 | `test_mutex_create_lock` invalid-context case reused current task from a previous test case | 1 | Added `MRT_KernelInitialize()` at the start of that test case to isolate scheduler state. |
 
 ## Foundation Kernel Test Results
 | Test | Input | Expected | Actual | Status |
@@ -245,6 +250,8 @@
 | Semaphore Task 3 GREEN | `python tools\run_host_tests.py` after semaphore scheduler coupling | 21 test targets pass | `[summary] 21 test target(s) passed` | Pass |
 | Semaphore Task 4 RED | `python tools\run_host_tests.py` before ISR give declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_SemaphoreGiveFromISR'` | Pass |
 | Semaphore Task 4 GREEN | `python tools\run_host_tests.py` after ISR give | 22 test targets pass | `[summary] 22 test target(s) passed` | Pass |
+| Mutex Task 5 RED | `python tools\run_host_tests.py` before mutex header | Build fails due to missing header | `fatal error: myrtos/mrt_mutex.h: No such file or directory` | Pass |
+| Mutex Task 5 GREEN | `python tools\run_host_tests.py` after mutex ownership | 23 test targets pass | `[summary] 23 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

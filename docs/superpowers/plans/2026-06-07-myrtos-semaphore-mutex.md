@@ -93,11 +93,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_MutexCreateStatic`, first lock, owner query, unlock by owner, and unlock by non-owner.
-- [ ] Implement `MRT_Mutex` with owner, lock count, recursive flag, waiting lockers, and static storage.
-- [ ] Implement `MRT_MutexLock`, `MRT_MutexUnlock`, and `MRT_MutexGetOwner` for uncontended non-recursive paths.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add mutex ownership`.
+- [x] Write failing tests for `MRT_MutexCreateStatic`, first lock, owner query, unlock by owner, and unlock by non-owner.
+- [x] Implement `MRT_Mutex` with owner, lock count, recursive flag, waiting lockers, and static storage.
+- [x] Implement `MRT_MutexLock`, `MRT_MutexUnlock`, and `MRT_MutexGetOwner` for uncontended non-recursive paths.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add mutex ownership`.
 
 ## Task 6: Mutex Priority Inheritance
 

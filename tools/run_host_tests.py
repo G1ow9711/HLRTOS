@@ -29,11 +29,13 @@ TESTS = [
     ("test_semaphore_task_timeout", ROOT / "tests" / "coupling" / "test_semaphore_task_timeout.c"),
     ("test_semaphore_give_wakes_task", ROOT / "tests" / "coupling" / "test_semaphore_give_wakes_task.c"),
     ("test_semaphore_isr", ROOT / "tests" / "unit" / "test_semaphore_isr.c"),
+    ("test_mutex_create_lock", ROOT / "tests" / "unit" / "test_mutex_create_lock.c"),
 ]
 
 KERNEL_SOURCES = [
     ROOT / "src" / "kernel" / "mrt_list.c",
     ROOT / "src" / "kernel" / "mrt_kernel.c",
+    ROOT / "src" / "kernel" / "mrt_mutex.c",
     ROOT / "src" / "kernel" / "mrt_priority.c",
     ROOT / "src" / "kernel" / "mrt_queue.c",
     ROOT / "src" / "kernel" / "mrt_semaphore.c",
