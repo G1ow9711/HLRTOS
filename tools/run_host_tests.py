@@ -25,6 +25,7 @@ TESTS = [
     ("test_queue_task_timeout", ROOT / "tests" / "coupling" / "test_queue_task_timeout.c"),
     ("test_queue_send_wakes_receiver", ROOT / "tests" / "coupling" / "test_queue_send_wakes_receiver.c"),
     ("test_semaphore_create_static", ROOT / "tests" / "unit" / "test_semaphore_create_static.c"),
+    ("test_semaphore_take_give", ROOT / "tests" / "unit" / "test_semaphore_take_give.c"),
 ]
 
 KERNEL_SOURCES = [

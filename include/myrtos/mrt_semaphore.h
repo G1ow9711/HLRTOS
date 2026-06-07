@@ -70,4 +70,25 @@ MRT_Result MRT_SemaphoreCreateCountingStatic(size_t max_count,
  */
 size_t MRT_SemaphoreGetCount(MRT_SemaphoreHandle semaphore);
 
+/**
+ * @brief 获取一个信号量计数。
+ * @param semaphore 信号量句柄，不能为空。
+ * @param timeout 等待可用计数的 tick 数；当前非调度上下文下非 0 会返回 MRT_RESULT_TIMEOUT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示获取成功；非阻塞空信号量返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT；等待未完成返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * MRT_SemaphoreTake(sem, 0);
+ */
+MRT_Result MRT_SemaphoreTake(MRT_SemaphoreHandle semaphore, MRT_Timeout timeout);
+
+/**
+ * @brief 释放一个信号量计数。
+ * @param semaphore 信号量句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示释放成功；计数已满返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_SemaphoreGive(sem);
+ */
+MRT_Result MRT_SemaphoreGive(MRT_SemaphoreHandle semaphore);
+
 #endif

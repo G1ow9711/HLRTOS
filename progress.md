@@ -111,6 +111,9 @@
   - Semaphore Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_semaphore.h` was missing.
   - Semaphore Task 1 GREEN: added static binary/counting semaphore creation and count query; same command passed 18 test targets.
   - Semaphore Task 1 commit message: `feat: add static semaphore creation`.
+  - Semaphore Task 2 RED: `python tools\run_host_tests.py` failed because `MRT_SemaphoreTake` and `MRT_SemaphoreGive` were not declared.
+  - Semaphore Task 2 GREEN: implemented nonblocking take/give, empty/full results, null-handle validation, and no-current timeout result; same command passed 19 test targets.
+  - Semaphore Task 2 commit message: `feat: add semaphore take give`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -230,6 +233,8 @@
 | Queue final verification | `python tools\run_host_tests.py` after matrix updates | 17 test targets pass | `[summary] 17 test target(s) passed` | Pass |
 | Semaphore Task 1 RED | `python tools\run_host_tests.py` before semaphore header | Build fails due to missing header | `fatal error: myrtos/mrt_semaphore.h: No such file or directory` | Pass |
 | Semaphore Task 1 GREEN | `python tools\run_host_tests.py` after static semaphore creation | 18 test targets pass | `[summary] 18 test target(s) passed` | Pass |
+| Semaphore Task 2 RED | `python tools\run_host_tests.py` before take/give declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_SemaphoreTake'`, `implicit declaration of function 'MRT_SemaphoreGive'` | Pass |
+| Semaphore Task 2 GREEN | `python tools\run_host_tests.py` after take/give | 19 test targets pass | `[summary] 19 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

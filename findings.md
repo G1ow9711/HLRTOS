@@ -94,6 +94,7 @@
 - Queue verification matrix now marks `C-004`, `C-005`, and `C-006` verified. `C-007` remains explicitly not implemented because dynamic queue creation and heap failure behavior belong to the later memory-management module.
 - Plan 4 starts semaphore and mutex work on top of the queue object-wait infrastructure. Semaphores can reuse task wait lists directly; mutexes need additional task priority inheritance helpers.
 - Semaphore Task 1 adds static binary/counting semaphores with no heap dependency. Binary semaphores use max count 1 and an explicit initial availability flag; counting semaphores reject max count 0 and initial count above max.
+- Semaphore Task 2 implements only nonblocking take/give. Empty semaphore with nonzero timeout returns `MRT_RESULT_TIMEOUT` outside scheduler context; actual task blocking and wakeup are reserved for Task 3 coupling tests.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

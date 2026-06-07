@@ -39,11 +39,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for nonblocking take success, empty take, give success, and give at max count.
-- [ ] Implement `MRT_SemaphoreTake` and `MRT_SemaphoreGive` for nonblocking paths.
-- [ ] Keep nonzero timeout on empty semaphore routed through task object-wait helper when a current task exists.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add semaphore take give`.
+- [x] Write failing tests for nonblocking take success, empty take, give success, and give at max count.
+- [x] Implement `MRT_SemaphoreTake` and `MRT_SemaphoreGive` for nonblocking paths.
+- [x] Keep nonzero timeout returning `MRT_RESULT_TIMEOUT` until scheduler coupling is introduced in Task 3.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add semaphore take give`.
 
 ## Task 3: Semaphore Timeout and Wake Coupling
 
