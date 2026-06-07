@@ -193,15 +193,15 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests where `MRT_TaskNotifyWait` immediately returns pending value, applies clear-on-entry before waiting, applies clear-on-exit before returning, and returns `MRT_RESULT_OBJECT_EMPTY` for no pending notification with `timeout == 0`.
-- [ ] Write failing tests where `MRT_TaskNotifyTake` returns count, either clears count to zero or decrements by one, and blocks with timeout when count is zero.
-- [ ] Write failing coupling test where a high-priority task blocks in notify wait, a low-priority task notifies it, and the high-priority task becomes current.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing wait/take implementations.
-- [ ] Add `MRT_TASK_WAIT_REASON_NOTIFY_WAIT` and `MRT_TaskKernelBlockCurrent(ticks, wait_reason, wait_result)` for per-task notification waits that do not use an object wait list.
-- [ ] Implement notify wait/take immediate and blocking paths.
-- [ ] Make `MRT_TaskNotify` wake blocked tasks waiting for notification and reschedule in task context.
-- [ ] Run `python tools\run_host_tests.py`; expect 32 test targets pass.
-- [ ] Commit `feat: add task notification waits`.
+- [x] Write failing tests where `MRT_TaskNotifyWait` immediately returns pending value, applies clear-on-entry before waiting, applies clear-on-exit before returning, and returns `MRT_RESULT_OBJECT_EMPTY` for no pending notification with `timeout == 0`.
+- [x] Write failing tests where `MRT_TaskNotifyTake` returns count, either clears count to zero or decrements by one, and blocks with timeout when count is zero.
+- [x] Write failing coupling test where a high-priority task blocks in notify wait, a low-priority task notifies it, and the high-priority task becomes current.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing wait/take implementations.
+- [x] Add `MRT_TASK_WAIT_REASON_NOTIFY_WAIT` and `MRT_TaskKernelBlockCurrent(ticks, wait_reason, wait_result)` for per-task notification waits that do not use an object wait list.
+- [x] Implement notify wait/take immediate and blocking paths.
+- [x] Make `MRT_TaskNotify` wake blocked tasks waiting for notification and reschedule in task context.
+- [x] Run `python tools\run_host_tests.py`; expect 32 test targets pass.
+- [x] Commit `feat: add task notification waits`.
 
 ## Task 8: Task Notification ISR
 

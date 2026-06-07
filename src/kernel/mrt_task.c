@@ -374,6 +374,63 @@ MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
 }
 
 /**
+ * @brief 将当前任务阻塞到纯任务状态等待，不挂入额外对象等待链表。
+ * @param ticks 最大等待 tick 数；当前调用方应保证大于 0。
+ * @param wait_reason 任务等待原因，用于调试和超时清理。
+ * @param wait_result 等待到期时返回给调用方的结果。
+ * @return MRT_Result 返回 wait_result 表示当前 host 仿真中的等待结局。
+ * @example
+ * MRT_TaskKernelBlockCurrent(3, MRT_TASK_WAIT_REASON_NOTIFY_WAIT, MRT_RESULT_TIMEOUT);
+ */
+MRT_Result MRT_TaskKernelBlockCurrent(MRT_Tick ticks, MRT_TaskWaitReason wait_reason, MRT_Result wait_result)
+{
+    /* 如果当前没有运行任务，host 仿真无法真正挂起调用方，按等待结果返回。 */
+    if (g_current_task == 0) {
+        /* 保持非调度上下文行为：非零 timeout 直接表现为等待结果。 */
+        return wait_result;
+    }
+
+    /* 保存需要阻塞的当前任务。 */
+    MRT_Task *task = g_current_task;
+
+    /* 将当前任务从 ready list 移除，使调度器不再选择它运行。 */
+    MRT_TaskRemoveReady(task);
+
+    /* 计算任务等待到期 tick，允许无符号自然回绕。 */
+    task->wake_tick = MRT_KernelGetTick() + ticks;
+
+    /* 标记任务进入 blocked 状态。 */
+    task->state = MRT_TASK_STATE_BLOCKED;
+
+    /* 保存任务等待原因。 */
+    task->wait_reason = wait_reason;
+
+    /* 保存等待结果，host 仿真中立即返回给调用方。 */
+    task->wait_result = wait_result;
+
+    /* 使用唤醒 tick 作为 delay list 排序值。 */
+    task->state_node.value = task->wake_tick;
+
+    /* 如果等待节点仍在对象链表中，先摘除，保证纯任务等待不污染对象链表。 */
+    if (MRT_ListNodeIsLinked(&task->wait_node)) {
+        /* 清理旧对象等待关系。 */
+        MRT_ListRemove(&task->wait_node);
+    }
+
+    /* 将任务加入 delay list，tick 到期时自动超时唤醒。 */
+    MRT_ListInsertOrdered(&g_delayed_list, &task->state_node);
+
+    /* 当前任务已经阻塞，清空当前任务指针。 */
+    g_current_task = 0;
+
+    /* 重新选择下一个最高优先级 ready 任务运行。 */
+    MRT_TaskSwitchToHighestReady();
+
+    /* 返回等待结果；真实端口后续会在任务恢复时从同一 API 继续返回。 */
+    return task->wait_result;
+}
+
+/**
  * @brief 唤醒对象等待链表中的第一个任务。
  * @param wait_list 队列、信号量等对象的等待链表，不能为空。
  * @param wait_result 写入被唤醒任务的等待结果。
@@ -910,7 +967,153 @@ MRT_Result MRT_TaskNotify(MRT_TaskHandle task, MRT_NotifyValue value, MRT_Notify
     }
 
     /* 对目标任务应用通知动作。 */
-    return MRT_TaskApplyNotification(task, value, action);
+    MRT_Result result = MRT_TaskApplyNotification(task, value, action);
+
+    /* no-overwrite 忙等失败路径不能唤醒等待任务。 */
+    if (result != MRT_RESULT_OK) {
+        /* 返回实际通知动作结果。 */
+        return result;
+    }
+
+    /* 如果目标任务正在等待通知，则通知到达后应立即唤醒。 */
+    if (task->wait_reason == MRT_TASK_WAIT_REASON_NOTIFY_WAIT) {
+        /* 任务上下文发送通知允许被唤醒的高优先级任务立即抢占。 */
+        (void)MRT_TaskKernelWakeTask(task, MRT_RESULT_OK, true);
+    }
+
+    /* 通知发送成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 等待当前任务收到通知并读取通知值。
+ * @param clear_on_entry 进入等待前需要清除的通知值 bit 掩码。
+ * @param clear_on_exit 成功读取后需要清除的通知值 bit 掩码。
+ * @param timeout 等待通知到达的 tick 数；为 0 时只检查一次并立即返回。
+ * @param out_value 输出读取到的通知值，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取到通知；非阻塞无通知返回 MRT_RESULT_OBJECT_EMPTY；
+ *         无当前任务返回 MRT_RESULT_INVALID_CONTEXT；等待未完成返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * MRT_NotifyValue value;
+ * MRT_TaskNotifyWait(0, 0xffffffffu, 10u, &value);
+ */
+MRT_Result MRT_TaskNotifyWait(MRT_NotifyValue clear_on_entry,
+                              MRT_NotifyValue clear_on_exit,
+                              MRT_Timeout timeout,
+                              MRT_NotifyValue *out_value)
+{
+    /* 通知等待必须由当前运行任务调用。 */
+    MRT_TaskHandle current = MRT_TaskGetCurrent();
+
+    /* 当前任务为空表示调度器尚未运行或当前不在任务上下文。 */
+    if (current == 0) {
+        /* 返回非法上下文。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 进入等待前按请求清除通知值中的 bit。 */
+    current->notify_value &= ~clear_on_entry;
+
+    /* 如果已有 pending 通知，则立即读取。 */
+    if (current->notify_pending) {
+        /* 保存读取快照，返回值必须先于退出清位。 */
+        MRT_NotifyValue snapshot = current->notify_value;
+
+        /* 如调用方提供输出指针，则写回读取到的通知值。 */
+        if (out_value != 0) {
+            /* 写回通知值快照。 */
+            *out_value = snapshot;
+        }
+
+        /* 成功读取后按请求清除通知值中的 bit。 */
+        current->notify_value &= ~clear_on_exit;
+
+        /* 当前 pending 通知已经被读取。 */
+        current->notify_pending = false;
+
+        /* 通知读取成功。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 没有 pending 通知时，仍写回当前通知值，便于调用方诊断。 */
+    if (out_value != 0) {
+        /* 写回当前通知值。 */
+        *out_value = current->notify_value;
+    }
+
+    /* 非阻塞等待不满足时立即返回对象为空。 */
+    if (timeout == 0u) {
+        /* 当前没有可读取通知。 */
+        return MRT_RESULT_OBJECT_EMPTY;
+    }
+
+    /* 将当前任务阻塞到通知等待状态，并设置 timeout。 */
+    return MRT_TaskKernelBlockCurrent(timeout, MRT_TASK_WAIT_REASON_NOTIFY_WAIT, MRT_RESULT_TIMEOUT);
+}
+
+/**
+ * @brief 以计数信号量方式等待并获取当前任务通知值。
+ * @param clear_count_on_exit true 表示成功获取后把通知计数清零；false 表示只递减 1。
+ * @param timeout 等待通知计数非 0 的 tick 数；为 0 时只检查一次并立即返回。
+ * @param out_count 输出获取前的通知计数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示获取到计数；非阻塞无计数返回 MRT_RESULT_OBJECT_EMPTY；
+ *         无当前任务返回 MRT_RESULT_INVALID_CONTEXT；等待未完成返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * MRT_NotifyValue count;
+ * MRT_TaskNotifyTake(true, 10u, &count);
+ */
+MRT_Result MRT_TaskNotifyTake(bool clear_count_on_exit, MRT_Timeout timeout, MRT_NotifyValue *out_count)
+{
+    /* 通知计数等待必须由当前运行任务调用。 */
+    MRT_TaskHandle current = MRT_TaskGetCurrent();
+
+    /* 当前任务为空表示调度器尚未运行或当前不在任务上下文。 */
+    if (current == 0) {
+        /* 返回非法上下文。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 当前通知值非 0 时，可以立即作为计数获取。 */
+    if (current->notify_value != 0u) {
+        /* 保存获取前计数。 */
+        MRT_NotifyValue snapshot = current->notify_value;
+
+        /* 如调用方提供输出指针，则写回获取前计数。 */
+        if (out_count != 0) {
+            /* 写回计数快照。 */
+            *out_count = snapshot;
+        }
+
+        /* 清零模式会一次性消费全部计数。 */
+        if (clear_count_on_exit) {
+            /* 清空通知计数。 */
+            current->notify_value = 0u;
+        } else {
+            /* 递减模式只消费一个计数。 */
+            current->notify_value--;
+        }
+
+        /* 计数归零后 pending 状态也清除，否则保留 pending。 */
+        current->notify_pending = current->notify_value != 0u;
+
+        /* 通知计数获取成功。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 没有可取计数时，输出 0。 */
+    if (out_count != 0) {
+        /* 写回当前计数。 */
+        *out_count = 0u;
+    }
+
+    /* 非阻塞等待不满足时立即返回对象为空。 */
+    if (timeout == 0u) {
+        /* 当前没有可取通知计数。 */
+        return MRT_RESULT_OBJECT_EMPTY;
+    }
+
+    /* 将当前任务阻塞到通知等待状态，并设置 timeout。 */
+    return MRT_TaskKernelBlockCurrent(timeout, MRT_TASK_WAIT_REASON_NOTIFY_WAIT, MRT_RESULT_TIMEOUT);
 }
 
 /**

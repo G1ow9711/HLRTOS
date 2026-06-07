@@ -59,7 +59,9 @@ typedef enum MRT_TaskWaitReason {
     /** @brief 任务正在等待互斥锁解锁。 */
     MRT_TASK_WAIT_REASON_MUTEX_LOCK,
     /** @brief 任务正在等待事件组 bit 条件满足。 */
-    MRT_TASK_WAIT_REASON_EVENT_BITS
+    MRT_TASK_WAIT_REASON_EVENT_BITS,
+    /** @brief 任务正在等待本任务通知到达。 */
+    MRT_TASK_WAIT_REASON_NOTIFY_WAIT
 } MRT_TaskWaitReason;
 
 /**
@@ -214,6 +216,36 @@ const char *MRT_TaskGetName(MRT_TaskHandle task);
  * MRT_TaskNotify(worker, 0x01u, MRT_NOTIFY_SET_BITS);
  */
 MRT_Result MRT_TaskNotify(MRT_TaskHandle task, MRT_NotifyValue value, MRT_NotifyAction action);
+
+/**
+ * @brief 等待当前任务收到通知并读取通知值。
+ * @param clear_on_entry 进入等待前需要清除的通知值 bit 掩码。
+ * @param clear_on_exit 成功读取后需要清除的通知值 bit 掩码。
+ * @param timeout 等待通知到达的 tick 数；为 0 时只检查一次并立即返回。
+ * @param out_value 输出读取到的通知值，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取到通知；非阻塞无通知返回 MRT_RESULT_OBJECT_EMPTY；
+ *         无当前任务返回 MRT_RESULT_INVALID_CONTEXT；等待未完成返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * MRT_NotifyValue value;
+ * MRT_TaskNotifyWait(0, 0xffffffffu, 10u, &value);
+ */
+MRT_Result MRT_TaskNotifyWait(MRT_NotifyValue clear_on_entry,
+                              MRT_NotifyValue clear_on_exit,
+                              MRT_Timeout timeout,
+                              MRT_NotifyValue *out_value);
+
+/**
+ * @brief 以计数信号量方式等待并获取当前任务通知值。
+ * @param clear_count_on_exit true 表示成功获取后把通知计数清零；false 表示只递减 1。
+ * @param timeout 等待通知计数非 0 的 tick 数；为 0 时只检查一次并立即返回。
+ * @param out_count 输出获取前的通知计数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示获取到计数；非阻塞无计数返回 MRT_RESULT_OBJECT_EMPTY；
+ *         无当前任务返回 MRT_RESULT_INVALID_CONTEXT；等待未完成返回 MRT_RESULT_TIMEOUT。
+ * @example
+ * MRT_NotifyValue count;
+ * MRT_TaskNotifyTake(true, 10u, &count);
+ */
+MRT_Result MRT_TaskNotifyTake(bool clear_count_on_exit, MRT_Timeout timeout, MRT_NotifyValue *out_count);
 
 /**
  * @brief 清除指定任务的 pending 通知状态。

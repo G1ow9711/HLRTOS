@@ -112,6 +112,7 @@
 - Event Group Task 4 adds `MRT_TaskKernelWakeTask` so event groups can wake multiple specific waiters in one set operation. Matching uses the post-set, pre-clear snapshot; clear-on-exit is applied once after all eligible waiters have been selected.
 - Event Group Task 5 adds `MRT_EventGroupSetBitsFromISR`. It validates ISR context through the port mock, never switches immediately, and reports `should_yield=true` when a waiting task is moved to ready.
 - Task Notify Task 6 adds one notification slot per task with `notify_value` and `notify_pending`. `MRT_TaskNotify` supports set-bits, increment, overwrite, and no-overwrite; no-overwrite rejects pending notifications without changing the old value.
+- Task Notify Task 7 adds `MRT_TaskNotifyWait`, `MRT_TaskNotifyTake`, and `MRT_TaskKernelBlockCurrent`. Notification waits block without an object wait list; task-context notify wakes blocked tasks and can immediately reschedule. In the current host model, a blocked wait API returns timeout immediately, so a later notify leaves the value pending for future real resume semantics.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
