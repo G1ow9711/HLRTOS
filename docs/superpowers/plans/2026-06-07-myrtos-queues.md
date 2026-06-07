@@ -125,8 +125,8 @@ Steps:
 
 Steps:
 
-- [ ] Run `python tools\run_host_tests.py`; expect queue, scheduler, and foundation tests pass.
-- [ ] Mark `C-004`, `C-005`, `C-006`, and `C-007` according to implemented coverage.
-- [ ] Update `R-002`, `R-008`, and `R-009` evidence with queue source and tests.
-- [ ] Record commit hashes and test output in `progress.md`.
-- [ ] Commit `docs: record queue verification evidence`.
+- [x] Run `python tools\run_host_tests.py`; expect queue, scheduler, and foundation tests pass.
+- [x] Mark `C-004`, `C-005`, `C-006`, and `C-007` according to implemented coverage.
+- [x] Update `R-002`, `R-008`, and `R-009` evidence with queue source and tests.
+- [x] Record commit hashes and test output in `progress.md`.
+- [x] Commit `docs: record queue verification evidence`.

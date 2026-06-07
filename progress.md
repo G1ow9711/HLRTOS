@@ -100,6 +100,11 @@
   - Queue Task 6 RED: `python tools\run_host_tests.py` failed in `test_queue_send_wakes_receiver` because queue send did not wake the blocked receiver.
   - Queue Task 6 GREEN: added object-wait wakeup helper, normal send immediate reschedule, and ISR send delayed-yield signaling; same command passed 17 test targets.
   - Queue Task 6 commit message: `feat: wake receiver on queue send`.
+  - Queue Task 7 verification: `python tools\run_host_tests.py` passed 17 test targets.
+  - Queue Task 7 updated requirement matrix rows `R-002`, `R-008`, and `R-009`.
+  - Queue Task 7 updated coupling matrix rows `C-004`, `C-005`, `C-006`, and `C-007`.
+  - Queue branch commits: `8d7ff8c` static creation, `44e2d9f` nonblocking send/receive, `ffe8fc7` variants, `11eca1d` ISR variants, `4f7386e` receive timeout coupling, `96bb674` send wakes receiver.
+  - Queue Task 7 commit message: `docs: record queue verification evidence`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -216,6 +221,7 @@
 | Queue Task 5 GREEN | `python tools\run_host_tests.py` after queue receive timeout coupling | 16 test targets pass | `[summary] 16 test target(s) passed` | Pass |
 | Queue Task 6 RED | `python tools\run_host_tests.py` before send wakeup | Coupling test fails because sender does not wake receiver | `assertion failed: MRT_TaskGetCurrent() == receiver_task` | Pass |
 | Queue Task 6 GREEN | `python tools\run_host_tests.py` after send wakeup | 17 test targets pass | `[summary] 17 test target(s) passed` | Pass |
+| Queue final verification | `python tools\run_host_tests.py` after matrix updates | 17 test targets pass | `[summary] 17 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
