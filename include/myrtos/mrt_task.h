@@ -161,6 +161,69 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
                                 MRT_TaskHandle *out_task);
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建任务。
+ * @param name 任务名称，允许为空；内核只保存指针不复制字符串。
+ * @param entry 任务入口函数，不能为空。
+ * @param arg 传给任务入口函数的用户参数，可为空。
+ * @param priority 任务优先级，必须小于 MRT_CFG_MAX_PRIORITIES。
+ * @param stack_words 动态分配的任务栈长度，单位为 MRT_StackType，必须大于 0。
+ * @param out_task 输出任务句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         动态分配关闭、堆未初始化或堆空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_TaskHandle worker;
+ * MRT_TaskCreate("worker", WorkerTask, NULL, 3u, 256u, &worker);
+ */
+MRT_Result MRT_TaskCreate(const char *name,
+                          MRT_TaskEntry entry,
+                          void *arg,
+                          MRT_Priority priority,
+                          size_t stack_words,
+                          MRT_TaskHandle *out_task);
+
+/**
+ * @brief 删除指定任务并在需要时释放动态任务内存。
+ * @param task 待删除任务句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_TaskDelete(worker);
+ */
+MRT_Result MRT_TaskDelete(MRT_TaskHandle task);
+
+/**
+ * @brief 挂起指定任务，使其暂时不参与调度。
+ * @param task 待挂起任务句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示挂起成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_TaskSuspend(worker);
+ */
+MRT_Result MRT_TaskSuspend(MRT_TaskHandle task);
+
+/**
+ * @brief 恢复一个处于挂起状态的任务。
+ * @param task 待恢复任务句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示恢复成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         目标任务未挂起时返回 MRT_RESULT_OBJECT_BUSY；ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_TaskResume(worker);
+ */
+MRT_Result MRT_TaskResume(MRT_TaskHandle task);
+
+/**
+ * @brief 在 ISR 上下文恢复一个处于挂起状态的任务。
+ * @param task 待恢复任务句柄，不能为空。
+ * @param should_yield 输出是否需要在 ISR 退出前请求调度切换，可为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示恢复成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         非 ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT；目标任务未挂起时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * bool yield = false;
+ * MRT_TaskResumeFromISR(worker, &yield);
+ */
+MRT_Result MRT_TaskResumeFromISR(MRT_TaskHandle task, bool *should_yield);
+
+/**
  * @brief 让当前任务阻塞指定 tick 数。
  * @param ticks 需要延时的 tick 数；为 0 时等价于主动让出 CPU。
  * @return MRT_Result 返回 MRT_RESULT_OK 表示延时成功；调度器未运行或无当前任务时返回 MRT_RESULT_INVALID_CONTEXT。
@@ -168,6 +231,29 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
  * MRT_TaskDelay(10);
  */
 MRT_Result MRT_TaskDelay(MRT_Tick ticks);
+
+/**
+ * @brief 按固定周期延时当前任务。
+ * @param previous_wake_tick 上一次周期基准 tick 指针，不能为空；函数会把它推进一个 period_ticks。
+ * @param period_ticks 周期 tick 数，必须大于 0。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示已完成周期等待或当前周期已到期；参数非法返回
+ *         MRT_RESULT_INVALID_ARGUMENT；无当前任务或 ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_Tick last = MRT_KernelGetTick();
+ * MRT_TaskDelayUntil(&last, 100u);
+ */
+MRT_Result MRT_TaskDelayUntil(MRT_Tick *previous_wake_tick, MRT_Tick period_ticks);
+
+/**
+ * @brief 修改任务基础优先级并重排调度位置。
+ * @param task 目标任务句柄，不能为空。
+ * @param priority 新基础优先级，必须小于 MRT_CFG_MAX_PRIORITIES。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示设置成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         ISR 上下文调用返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_TaskSetPriority(worker, 5u);
+ */
+MRT_Result MRT_TaskSetPriority(MRT_TaskHandle task, MRT_Priority priority);
 
 /**
  * @brief 获取当前正在运行的任务句柄。
@@ -199,6 +285,17 @@ MRT_Result MRT_TaskGetState(MRT_TaskHandle task, MRT_TaskState *out_state);
  * MRT_TaskGetPriority(task, &priority);
  */
 MRT_Result MRT_TaskGetPriority(MRT_TaskHandle task, MRT_Priority *out_priority);
+
+/**
+ * @brief 查询任务栈剩余高水位。
+ * @param task 目标任务句柄，不能为空。
+ * @param out_words 输出剩余栈元素数量，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示查询成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * size_t words;
+ * MRT_TaskGetStackHighWaterMark(worker, &words);
+ */
+MRT_Result MRT_TaskGetStackHighWaterMark(MRT_TaskHandle task, size_t *out_words);
 
 /**
  * @brief 获取任务名称。

@@ -1,9 +1,12 @@
 #include "myrtos/mrt_task.h"
+#include "myrtos/mrt_heap.h"
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
 #include "myrtos/mrt_priority.h"
 #include "myrtos/mrt_trace.h"
 #include "mrt_task_internal.h"
+
+#include <stdint.h>
 
 /** @brief 每个优先级一个 ready list。 */
 static MRT_List g_ready_lists[MRT_CFG_MAX_PRIORITIES];
@@ -160,6 +163,68 @@ static void MRT_TaskRemoveReady(MRT_Task *task)
         /* 清除该优先级 ready 标记。 */
         MRT_PriorityBitmapClear(&g_ready_bitmap, priority);
     }
+}
+
+/**
+ * @brief 将任务从当前调度链表和对象等待链表中摘除。
+ * @param task 待摘除任务指针，不能为空。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskUnlinkFromScheduling(task);
+ */
+static void MRT_TaskUnlinkFromScheduling(MRT_Task *task)
+{
+    /* 如果任务挂在对象等待链表中，先清理对象等待关系。 */
+    if (MRT_ListNodeIsLinked(&task->wait_node)) {
+        /* 摘除队列、信号量、事件组或缓冲区等待节点。 */
+        MRT_ListRemove(&task->wait_node);
+    }
+
+    /* 如果任务状态节点未入链，则无需继续摘除。 */
+    if (!MRT_ListNodeIsLinked(&task->state_node)) {
+        /* 清空等待原因，防止后续诊断读到旧等待状态。 */
+        task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
+
+        /* 直接返回调用方。 */
+        return;
+    }
+
+    /* ready/running 任务的 state_node 位于 ready list，需要同步维护 ready bitmap。 */
+    if ((task->state == MRT_TASK_STATE_READY) || (task->state == MRT_TASK_STATE_RUNNING)) {
+        /* 使用 ready 专用移除路径，保证位图和链表计数一致。 */
+        MRT_TaskRemoveReady(task);
+    } else {
+        /* blocked 任务的 state_node 位于 delay list，直接从当前链表摘除。 */
+        MRT_ListRemove(&task->state_node);
+    }
+
+    /* 任务被外部删除或挂起后不再等待具体对象。 */
+    task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
+
+    /* 清除等待返回结果，避免恢复后沿用旧结果。 */
+    task->wait_result = MRT_RESULT_OK;
+}
+
+/**
+ * @brief 将字节数向上规整到堆对齐粒度。
+ * @param size 原始字节数。
+ * @return size_t 返回规整后的字节数；溢出时返回 0。
+ * @example
+ * size_t aligned = MRT_TaskAlignSizeUp(sizeof(MRT_Task));
+ */
+static size_t MRT_TaskAlignSizeUp(size_t size)
+{
+    /* 计算对齐掩码，配置要求 MRT_CFG_HEAP_ALIGNMENT 为 2 的幂。 */
+    const size_t mask = (size_t)MRT_CFG_HEAP_ALIGNMENT - 1u;
+
+    /* 如果加上掩码会溢出，则报告 0 表示无法表示。 */
+    if (size > (SIZE_MAX - mask)) {
+        /* 返回 0 让调用方走内存不足路径。 */
+        return 0u;
+    }
+
+    /* 使用按位清掩码方式完成向上对齐。 */
+    return (size + mask) & ~mask;
 }
 
 /**
@@ -877,6 +942,325 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
 }
 
 /**
+ * @brief 从 MyRTOS 全局堆动态创建任务。
+ * @param name 任务名称指针，可为空；内核只保存指针不复制字符串。
+ * @param entry 任务入口函数，不能为空。
+ * @param arg 传给任务入口函数的用户参数，可为空。
+ * @param priority 任务优先级，必须小于 MRT_CFG_MAX_PRIORITIES。
+ * @param stack_words 动态分配的任务栈元素数量，必须大于 0。
+ * @param out_task 输出任务句柄，不能为空；失败时写入空指针。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         堆不可用或空间不足时返回 MRT_RESULT_NO_MEMORY。
+ * @example
+ * MRT_TaskHandle task;
+ * MRT_TaskCreate("worker", WorkerTask, NULL, 3u, 256u, &task);
+ */
+MRT_Result MRT_TaskCreate(const char *name,
+                          MRT_TaskEntry entry,
+                          void *arg,
+                          MRT_Priority priority,
+                          size_t stack_words,
+                          MRT_TaskHandle *out_task)
+{
+    /* 输出句柄不能为空，因为动态创建失败时需要明确清空调用方句柄。 */
+    if (out_task == 0) {
+        /* 返回参数错误，提示调用方提供输出存储。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 失败路径默认清空输出句柄，避免调用方误用旧句柄。 */
+    *out_task = 0;
+
+    /* 任务入口函数不能为空。 */
+    if (entry == 0) {
+        /* 返回参数错误，调用方需要提供合法入口函数。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 动态任务栈长度必须非零。 */
+    if (stack_words == 0u) {
+        /* 返回参数错误，调用方需要提供栈深度。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 优先级必须位于配置范围内。 */
+    if (priority >= MRT_CFG_MAX_PRIORITIES) {
+        /* 返回参数错误，调用方需要降低优先级或调整配置。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 动态分配关闭时不能从堆创建任务。 */
+    if (MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION == 0u) {
+        /* 返回内存不足，表达当前系统不提供动态对象空间。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 检查栈字数到字节数的乘法是否溢出。 */
+    if (stack_words > (SIZE_MAX / sizeof(MRT_StackType))) {
+        /* 请求无法表示，按内存不足处理。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 计算任务栈字节数。 */
+    size_t stack_bytes = stack_words * sizeof(MRT_StackType);
+
+    /* 控制块之后放任务栈，所以控制块大小需要向上对齐。 */
+    size_t control_bytes = MRT_TaskAlignSizeUp(sizeof(MRT_Task));
+
+    /* 对齐溢出时按内存不足处理。 */
+    if (control_bytes == 0u) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 检查控制块和栈相加是否溢出。 */
+    if (stack_bytes > (SIZE_MAX - control_bytes)) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 动态任务使用一个堆块同时保存 TCB 和任务栈。 */
+    size_t total_bytes = control_bytes + stack_bytes;
+
+    /* 从 MyRTOS 全局堆申请动态任务内存。 */
+    void *memory = MRT_Malloc(total_bytes);
+
+    /* 堆未初始化或空间不足时分配失败。 */
+    if (memory == 0) {
+        /* 返回内存不足。 */
+        return MRT_RESULT_NO_MEMORY;
+    }
+
+    /* 堆块起始处保存任务控制块。 */
+    MRT_Task *task = (MRT_Task *)memory;
+
+    /* 栈空间紧跟对齐后的任务控制块。 */
+    MRT_StackType *stack = (MRT_StackType *)(((uint8_t *)memory) + control_bytes);
+
+    /* 复用静态创建逻辑初始化任务控制块并加入 ready list。 */
+    MRT_Result result = MRT_TaskCreateStatic(name, entry, arg, priority, stack, stack_words, task, out_task);
+
+    /* 理论上参数已提前校验，但仍处理初始化失败路径。 */
+    if (result != MRT_RESULT_OK) {
+        /* 归还刚申请的堆块。 */
+        (void)MRT_Free(memory);
+
+        /* 清空输出句柄。 */
+        *out_task = 0;
+
+        /* 返回静态创建给出的错误。 */
+        return result;
+    }
+
+    /* 标记任务归动态堆所有，允许删除时释放。 */
+    task->static_storage = false;
+
+    /* 动态任务创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 删除任务并在动态任务场景释放堆内存。
+ * @param task 待删除任务句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；参数非法或上下文非法时返回对应错误。
+ * @example
+ * MRT_TaskDelete(worker);
+ */
+MRT_Result MRT_TaskDelete(MRT_TaskHandle task)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 删除任务不能在 ISR 上下文执行。 */
+    if (MRT_PortIsInsideISR()) {
+        /* 返回上下文错误，调用方应切换到任务上下文清理。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 已删除任务不能重复删除。 */
+    if (task->state == MRT_TASK_STATE_DELETED) {
+        /* 返回对象忙，表示该对象生命周期已经结束。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 记录是否正在删除当前任务。 */
+    bool deleting_current = task == g_current_task;
+
+    /* 记录任务是否由动态堆创建。 */
+    bool dynamic_storage = !task->static_storage;
+
+    /* 从 ready、delay 和对象等待链表中摘除任务。 */
+    MRT_TaskUnlinkFromScheduling(task);
+
+    /* 将任务标记为 deleted。 */
+    task->state = MRT_TASK_STATE_DELETED;
+
+    /* 如果删除的是当前任务，需要清空当前指针并重新选择任务。 */
+    if (deleting_current) {
+        /* 清空当前任务，避免调度器继续引用已删除对象。 */
+        g_current_task = 0;
+
+        /* 选择下一个 ready 任务运行。 */
+        MRT_TaskSwitchToHighestReady();
+    }
+
+    /* 动态任务的控制块就是 MRT_Malloc 返回的堆块起始地址。 */
+    if (dynamic_storage) {
+        /* 释放动态任务的 TCB 和栈。 */
+        return MRT_Free(task);
+    }
+
+    /* 静态任务内存归调用方所有，内核只完成调度层删除。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 挂起任务并从调度结构中移除。
+ * @param task 待挂起任务句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示挂起成功；参数或上下文非法时返回对应错误。
+ * @example
+ * MRT_TaskSuspend(worker);
+ */
+MRT_Result MRT_TaskSuspend(MRT_TaskHandle task)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 挂起任务不能在 ISR 上下文执行。 */
+    if (MRT_PortIsInsideISR()) {
+        /* 返回上下文错误。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 已删除任务不能再挂起。 */
+    if (task->state == MRT_TASK_STATE_DELETED) {
+        /* 返回参数错误，表示该句柄不再代表可操作任务。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 已挂起任务再次挂起视为无操作成功。 */
+    if (task->state == MRT_TASK_STATE_SUSPENDED) {
+        /* 保持幂等行为，便于防御式调用。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 记录是否正在挂起当前任务。 */
+    bool suspending_current = task == g_current_task;
+
+    /* 从 ready、delay 和对象等待链表中摘除任务。 */
+    MRT_TaskUnlinkFromScheduling(task);
+
+    /* 标记任务处于挂起状态。 */
+    task->state = MRT_TASK_STATE_SUSPENDED;
+
+    /* 如果挂起的是当前任务，需要立即让出 CPU。 */
+    if (suspending_current) {
+        /* 清空当前任务指针。 */
+        g_current_task = 0;
+
+        /* 选择下一个 ready 任务运行。 */
+        MRT_TaskSwitchToHighestReady();
+    }
+
+    /* 任务挂起完成。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 恢复一个挂起任务。
+ * @param task 待恢复任务句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示恢复成功；目标未挂起时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_TaskResume(worker);
+ */
+MRT_Result MRT_TaskResume(MRT_TaskHandle task)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 任务上下文恢复不能在 ISR 中调用。 */
+    if (MRT_PortIsInsideISR()) {
+        /* 返回上下文错误，ISR 应调用 FromISR 版本。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 只有 suspended 任务可以被恢复。 */
+    if (task->state != MRT_TASK_STATE_SUSPENDED) {
+        /* 返回对象忙，提示调用方该任务当前不在挂起态。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 将任务重新加入 ready list。 */
+    MRT_TaskAddReady(task);
+
+    /* 如果调度器已经有当前任务，恢复高优先级任务可能立即抢占。 */
+    if (g_current_task != 0) {
+        /* 重选最高优先级 ready 任务。 */
+        MRT_TaskSwitchToHighestReady();
+    }
+
+    /* 任务恢复完成。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文恢复一个挂起任务。
+ * @param task 待恢复任务句柄，不能为空。
+ * @param should_yield 输出是否需要 ISR 退出后切换，可为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示恢复成功；上下文、参数或状态错误时返回对应错误。
+ * @example
+ * bool yield;
+ * MRT_TaskResumeFromISR(worker, &yield);
+ */
+MRT_Result MRT_TaskResumeFromISR(MRT_TaskHandle task, bool *should_yield)
+{
+    /* 默认不请求 ISR 退出后切换。 */
+    if (should_yield != 0) {
+        /* 写回 false，确保失败路径不会沿用旧值。 */
+        *should_yield = false;
+    }
+
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* FromISR API 必须在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回上下文错误。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 只有 suspended 任务可以被恢复。 */
+    if (task->state != MRT_TASK_STATE_SUSPENDED) {
+        /* 返回对象忙。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* ISR 中只把任务放回 ready list，不立即切换当前任务。 */
+    MRT_TaskAddReady(task);
+
+    /* 恢复任务后端口层需要在 ISR 退出时评估一次切换。 */
+    if (should_yield != 0) {
+        /* 报告有任务被恢复为 ready。 */
+        *should_yield = true;
+    }
+
+    /* ISR 恢复完成。 */
+    return MRT_RESULT_OK;
+}
+
+/**
  * @brief 让当前任务阻塞指定 tick 数。
  * @param ticks 需要延时的 tick 数；为 0 时等价于主动让出 CPU。
  * @return MRT_Result 返回 MRT_RESULT_OK 表示延时成功；调度器未运行或无当前任务时返回 MRT_RESULT_INVALID_CONTEXT。
@@ -934,6 +1318,113 @@ MRT_Result MRT_TaskDelay(MRT_Tick ticks)
     MRT_TaskTraceSwitch(task, g_current_task);
 
     /* 延时操作完成。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 按固定周期延时当前任务。
+ * @param previous_wake_tick 上一次周期基准 tick 指针，不能为空。
+ * @param period_ticks 周期 tick 数，必须大于 0。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示完成周期等待；参数或上下文非法时返回对应错误。
+ * @example
+ * MRT_Tick last = MRT_KernelGetTick();
+ * MRT_TaskDelayUntil(&last, 100u);
+ */
+MRT_Result MRT_TaskDelayUntil(MRT_Tick *previous_wake_tick, MRT_Tick period_ticks)
+{
+    /* 周期基准指针不能为空。 */
+    if (previous_wake_tick == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 周期必须非零。 */
+    if (period_ticks == 0u) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 周期延时必须由当前运行任务调用。 */
+    if (g_current_task == 0) {
+        /* 返回上下文错误。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 周期延时不能在 ISR 上下文调用。 */
+    if (MRT_PortIsInsideISR()) {
+        /* 返回上下文错误。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 计算下一次绝对唤醒 tick，允许无符号自然回绕。 */
+    MRT_Tick next_wake_tick = *previous_wake_tick + period_ticks;
+
+    /* 将基准推进到下一周期，避免循环执行时间造成周期漂移。 */
+    *previous_wake_tick = next_wake_tick;
+
+    /* 读取当前 tick。 */
+    MRT_Tick now = MRT_KernelGetTick();
+
+    /* 如果下一周期已经到达或错过，则不阻塞，只执行一次 yield。 */
+    if ((int32_t)(next_wake_tick - now) <= 0) {
+        /* 复用 0 tick 延时路径让同优先级任务有机会运行。 */
+        return MRT_TaskDelay(0u);
+    }
+
+    /* 计算距离下一绝对周期点还需要等待的 tick 数。 */
+    MRT_Tick ticks_to_wait = next_wake_tick - now;
+
+    /* 使用相对延时路径挂起当前任务。 */
+    return MRT_TaskDelay(ticks_to_wait);
+}
+
+/**
+ * @brief 修改任务基础优先级并按新优先级重排调度位置。
+ * @param task 目标任务句柄，不能为空。
+ * @param priority 新基础优先级，必须小于 MRT_CFG_MAX_PRIORITIES。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示设置成功；参数或上下文非法时返回对应错误。
+ * @example
+ * MRT_TaskSetPriority(worker, 5u);
+ */
+MRT_Result MRT_TaskSetPriority(MRT_TaskHandle task, MRT_Priority priority)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 优先级必须位于配置范围内。 */
+    if (priority >= MRT_CFG_MAX_PRIORITIES) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 任务上下文优先级设置不能在 ISR 中调用。 */
+    if (MRT_PortIsInsideISR()) {
+        /* 返回上下文错误。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 已删除任务不能再设置优先级。 */
+    if (task->state == MRT_TASK_STATE_DELETED) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 写入新的基础优先级，供互斥锁继承恢复路径使用。 */
+    task->base_priority = priority;
+
+    /* 使用现有 helper 设置有效优先级并维护 ready list。 */
+    MRT_TaskKernelSetEffectivePriority(task, priority);
+
+    /* 如果调度器已经有当前任务，优先级变化可能需要立即重选。 */
+    if (g_current_task != 0) {
+        /* 重选最高优先级 ready 任务。 */
+        MRT_TaskSwitchToHighestReady();
+    }
+
+    /* 优先级设置成功。 */
     return MRT_RESULT_OK;
 }
 
@@ -1005,6 +1496,42 @@ MRT_Result MRT_TaskGetPriority(MRT_TaskHandle task, MRT_Priority *out_priority)
 
     /* 写入任务当前有效优先级。 */
     *out_priority = task->priority;
+
+    /* 查询成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 查询任务栈剩余高水位。
+ * @param task 待查询任务句柄，不能为空。
+ * @param out_words 输出剩余栈元素数量，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示查询成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * size_t words;
+ * MRT_TaskGetStackHighWaterMark(task, &words);
+ */
+MRT_Result MRT_TaskGetStackHighWaterMark(MRT_TaskHandle task, size_t *out_words)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 输出指针不能为空。 */
+    if (out_words == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 已删除任务的栈可能已经被释放，不能继续查询。 */
+    if (task->state == MRT_TASK_STATE_DELETED) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 当前 host 模型尚未模拟栈涂色和真实栈消耗，剩余水位等于配置栈容量。 */
+    *out_words = task->stack_words;
 
     /* 查询成功。 */
     return MRT_RESULT_OK;

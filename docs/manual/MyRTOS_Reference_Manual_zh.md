@@ -157,34 +157,34 @@ int main(void)
 - 常见错误：栈数组生命周期短于任务生命周期。
 
 ### MRT_TaskCreate
-- 函数原型：`MRT_Result MRT_TaskCreate(...);`
+- 函数原型：`MRT_Result MRT_TaskCreate(const char *name, MRT_TaskEntry entry, void *arg, MRT_Priority priority, size_t stack_words, MRT_TaskHandle *out_task);`
 - 功能说明：从 MyRTOS heap 动态分配 TCB 和栈后创建任务。
-- 参数：应提供任务名、入口、参数、优先级、栈深度和输出句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；内存不足返回 `MRT_RESULT_NO_MEMORY`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 参数：`name` 可为空；`entry` 不能为空；`arg` 可为空；`priority` 必须小于 `MRT_CFG_MAX_PRIORITIES`；`stack_words` 必须大于 0；`out_task` 不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；动态分配关闭、heap 未初始化或空间不足返回 `MRT_RESULT_NO_MEMORY`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文或调度启动前。
 - 阻塞行为：不等待任务运行；可能在 heap 内部进入短临界区。
 - ISR 限制：禁止在 ISR 中调用。
-- 配置宏：`MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION`。
+- 配置宏：`MRT_CFG_SUPPORT_DYNAMIC_ALLOCATION`、`MRT_CFG_HEAP_ALIGNMENT`、`MRT_CFG_MAX_PRIORITIES`。
 - 调用示例：`MRT_TaskCreate("worker", worker, 0, 4u, 256u, &task);`
-- 常见错误：未初始化 heap 就调用动态创建。
+- 常见错误：未初始化 heap 就调用动态创建；创建失败后继续使用旧任务句柄。
 
 ### MRT_TaskDelete
 - 函数原型：`MRT_Result MRT_TaskDelete(MRT_TaskHandle task);`
-- 功能说明：删除指定任务或当前任务，并释放相关动态资源。
-- 参数：`task` 为目标任务句柄；为空时可按实现表示当前任务。
-- 返回值：成功返回 `MRT_RESULT_OK`；对象忙或参数非法返回相应错误。
+- 功能说明：删除指定任务，将其从 ready/delay/object wait 链表摘除；动态任务会释放 TCB 和栈所在堆块，静态任务只改变调度状态。
+- 参数：`task` 为目标任务句柄，不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；重复删除返回 `MRT_RESULT_OBJECT_BUSY`；ISR 上下文返回 `MRT_RESULT_INVALID_CONTEXT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：删除当前任务会触发调度。
 - ISR 限制：禁止在 ISR 中调用。
 - 配置宏：动态释放依赖 heap 配置。
 - 调用示例：`MRT_TaskDelete(task);`
-- 常见错误：删除仍持有互斥锁的任务而未定义资源清理策略。
+- 常见错误：删除仍持有互斥锁的任务；当前版本不会自动释放该任务持有的互斥锁。
 
 ### MRT_TaskSuspend
 - 函数原型：`MRT_Result MRT_TaskSuspend(MRT_TaskHandle task);`
-- 功能说明：挂起目标任务，使其不参与调度。
-- 参数：目标任务句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；参数非法返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 功能说明：挂起目标任务，使其不参与调度；若任务正在延时或等待对象，会同步移出 delay/object wait 链表。
+- 参数：目标任务句柄，不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄或已删除任务返回 `MRT_RESULT_INVALID_ARGUMENT`；ISR 上下文返回 `MRT_RESULT_INVALID_CONTEXT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：挂起当前任务会触发调度。
 - ISR 限制：禁止在 ISR 中调用。
@@ -195,8 +195,8 @@ int main(void)
 ### MRT_TaskResume
 - 函数原型：`MRT_Result MRT_TaskResume(MRT_TaskHandle task);`
 - 功能说明：恢复被挂起任务，使其重新参与调度。
-- 参数：目标任务句柄。
-- 返回值：成功返回 `MRT_RESULT_OK`；参数非法返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 参数：目标任务句柄，不能为空，且目标必须处于 `MRT_TASK_STATE_SUSPENDED`。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；目标未挂起返回 `MRT_RESULT_OBJECT_BUSY`；ISR 上下文返回 `MRT_RESULT_INVALID_CONTEXT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞，但可能触发抢占。
 - ISR 限制：ISR 中使用 `MRT_TaskResumeFromISR`。
@@ -207,8 +207,8 @@ int main(void)
 ### MRT_TaskResumeFromISR
 - 函数原型：`MRT_Result MRT_TaskResumeFromISR(MRT_TaskHandle task, bool *should_yield);`
 - 功能说明：在 ISR 中恢复任务，并报告是否需要在 ISR 退出后切换。
-- 参数：`task` 为目标任务；`should_yield` 可为空，非空时写出切换建议。
-- 返回值：成功返回 `MRT_RESULT_OK`；上下文错误返回 `MRT_RESULT_INVALID_CONTEXT`。
+- 参数：`task` 为目标挂起任务，不能为空；`should_yield` 可为空，非空时写出切换建议。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；任务上下文调用返回 `MRT_RESULT_INVALID_CONTEXT`；目标未挂起返回 `MRT_RESULT_OBJECT_BUSY`。
 - 调用上下文：ISR 上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：这是 ISR 专用 API。
@@ -220,7 +220,7 @@ int main(void)
 - 函数原型：`MRT_Result MRT_TaskDelay(MRT_Tick ticks);`
 - 功能说明：让当前任务延时指定 tick 数。
 - 参数：`ticks` 为相对延时 tick 数。
-- 返回值：成功进入延时返回 `MRT_RESULT_TIMEOUT` 或阶段性等待结果；参数/上下文错误返回相应错误。
+- 返回值：成功进入延时或执行 0 tick yield 返回 `MRT_RESULT_OK`；无当前任务返回 `MRT_RESULT_INVALID_CONTEXT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：`ticks > 0` 时阻塞当前任务直到 tick 到期。
 - ISR 限制：禁止在 ISR 中调用。
@@ -232,7 +232,7 @@ int main(void)
 - 函数原型：`MRT_Result MRT_TaskDelayUntil(MRT_Tick *previous, MRT_Tick period);`
 - 功能说明：按固定周期延时，降低周期任务漂移。
 - 参数：`previous` 保存上一周期基准 tick；`period` 为周期 tick。
-- 返回值：成功返回等待结果；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 返回值：成功等待到下一周期或周期已到期时返回 `MRT_RESULT_OK`；空指针或 0 周期返回 `MRT_RESULT_INVALID_ARGUMENT`；无当前任务或 ISR 上下文返回 `MRT_RESULT_INVALID_CONTEXT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：到达下一周期前阻塞。
 - ISR 限制：禁止在 ISR 中调用。
@@ -244,7 +244,7 @@ int main(void)
 - 函数原型：`MRT_Result MRT_TaskSetPriority(MRT_TaskHandle task, MRT_Priority priority);`
 - 功能说明：修改任务基础优先级并重排就绪队列。
 - 参数：目标任务和新优先级。
-- 返回值：成功返回 `MRT_RESULT_OK`；优先级越界返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄、已删除任务或优先级越界返回 `MRT_RESULT_INVALID_ARGUMENT`；ISR 上下文返回 `MRT_RESULT_INVALID_CONTEXT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞，但可能触发调度。
 - ISR 限制：禁止在 ISR 中调用。
@@ -302,13 +302,13 @@ int main(void)
 
 ### MRT_TaskGetStackHighWaterMark
 - 函数原型：`MRT_Result MRT_TaskGetStackHighWaterMark(MRT_TaskHandle task, size_t *out_words);`
-- 功能说明：查询任务栈剩余水位。
+- 功能说明：查询任务栈剩余水位；当前 host 模型返回任务创建时的栈容量，真实端口可通过栈涂色扩展为实际剩余水位。
 - 参数：任务句柄和输出剩余栈字数。
-- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄、已删除任务或空输出指针返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文或诊断任务。
 - 阻塞行为：不阻塞。
 - ISR 限制：不建议在 ISR 中调用。
-- 配置宏：栈填充策略由端口实现决定。
+- 配置宏：栈填充策略由端口实现决定；host 测试模型不消耗任务栈。
 - 调用示例：`MRT_TaskGetStackHighWaterMark(task, &words);`
 - 常见错误：未启用栈填充却依赖水位结果。
 

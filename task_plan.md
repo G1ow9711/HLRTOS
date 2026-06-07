@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 5: Documentation
+Phase 4 extension: Task lifecycle API gap closure
 
 ## Phases
 
@@ -37,6 +37,9 @@ Phase 5: Documentation
   - [x] STM32 Cortex-M stack/tick/priority helper contract
   - [x] DSP C28x-style stack/software-interrupt helper contract
 - [ ] Add detailed Chinese comments to every public and internal function
+- [ ] Close preview API implementation gaps
+  - [x] Task lifecycle APIs: dynamic create/delete, suspend/resume, delay-until, priority set, stack water mark
+  - [ ] Dynamic synchronization/buffer APIs and runtime stats
 - **Status:** in_progress
 
 ### Phase 5: Documentation
@@ -75,6 +78,7 @@ Phase 5: Documentation
 | Split C implementation into plan series | Full C scope covers many subsystems; master plan plus subsystem plans keeps verification auditable. |
 | Autonomous technical decisions | User instructed Codex to choose the best direction, consult FreeRTOS source when unclear, and redesign rather than copy. |
 | Host test fallback | Local environment has GCC but no CMake; keep CMake files for standard environments and use `tools/run_host_tests.py` for current host verification. |
+| Task lifecycle gap first | API catalog vs C source audit found 21 missing catalog APIs; start with 8 task lifecycle APIs because they unblock scheduler, heap, ISR, and manual consistency evidence. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

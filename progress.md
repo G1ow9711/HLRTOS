@@ -470,6 +470,18 @@
 ---
 *Update after completing each phase or encountering errors.*
 
+## Task Lifecycle API Gap Closure Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree baseline | `git status --short --branch` in `.worktrees\task-lifecycle-apis` | Clean feature branch | `## feature/task-lifecycle-apis` | Pass |
+| Planning files | Create/update task lifecycle plan and root planning logs | Plan, findings, and progress record scope | `docs/superpowers/plans/2026-06-08-myrtos-task-lifecycle-apis.md` added; root files updated | Pass |
+| Task lifecycle RED | `python tools\run_host_tests.py` after adding two lifecycle tests | Build fails because task lifecycle APIs are missing | `test_task_lifecycle` and `test_task_dynamic_allocation` fail with implicit declarations for the eight target APIs | Pass |
+| Task lifecycle GREEN | `python tools\run_host_tests.py` after task API implementation | All existing and new host tests pass | `[summary] 61 test target(s) passed` | Pass |
+| Documentation evidence | Update manual, requirement matrix, coupling matrix, final report | Task lifecycle APIs documented as implemented; remaining gaps stated accurately | Manual task sections updated; R-002/R-008/R-009/C-001/C-002/C-012/C-023/C-027/final report updated | Pass |
+| Static checks | Run three `tools\verify` scripts | Manual/comments/originality pass | API 125 covered; comments covered; originality clean | Pass |
+| Final verification | `python tools\run_host_tests.py` plus three static scripts | Host and static checks pass | `[summary] 61 test target(s) passed`; API 125 covered; comments covered; originality clean | Pass |
+| Whitespace check | `git diff --check` | No real whitespace errors | Exit 0; only expected LF-to-CRLF warnings | Pass |
+
 ## Final Verification Report Results
 | Check | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|

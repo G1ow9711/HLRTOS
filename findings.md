@@ -174,3 +174,13 @@
 
 ---
 *Update this file after every 2 view/browser/search operations.*
+
+## Task Lifecycle API Gap Closure
+- Branch `feature/task-lifecycle-apis` starts from `feature/final-verification-report` at `e6995d0`.
+- API catalog/source audit found 21 catalog APIs without C declarations/definitions. The first closure batch targets 8 task APIs: `MRT_TaskCreate`, `MRT_TaskDelete`, `MRT_TaskSuspend`, `MRT_TaskResume`, `MRT_TaskResumeFromISR`, `MRT_TaskDelayUntil`, `MRT_TaskSetPriority`, and `MRT_TaskGetStackHighWaterMark`.
+- Existing task internals already provide ready lists, delay list, object wait links, wake helpers, effective-priority helper, and notification wait state. New lifecycle APIs should reuse these helpers and add unlink/delete guards instead of copying FreeRTOS internals.
+- Existing dynamic queue implementation provides the preferred pattern for heap-backed dynamic objects: validate, allocate one aligned block, initialize through the static API, mark `static_storage=false`, and free only dynamic storage on delete.
+- Manual already includes detailed STM32 and DSP porting chapters. This branch should keep those sections and update task lifecycle sections from preview/gap language to implemented/tested behavior.
+- Task lifecycle implementation is now covered by 61 passing host targets. The original 21 catalog/source gaps are reduced by 8; remaining known gaps are the 13 non-task dynamic/statistics APIs: dynamic semaphore, mutex, event group, timer, stream/message buffer create/delete APIs and `MRT_StatsGetTaskRuntime`.
+- `MRT_TaskGetStackHighWaterMark` currently returns configured stack capacity in the host model because stack painting and real stack consumption belong to architecture-specific ports. The manual documents this limit explicitly.
+- `MRT_TaskDelete` now handles scheduler/list cleanup and dynamic task heap release, but deletion while holding a mutex remains a separate coupling policy gap under `C-012`.
