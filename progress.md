@@ -405,6 +405,8 @@
 | Heap Task 2 GREEN | `python tools\run_host_tests.py` after linear heap allocation | 46 test targets pass | `[summary] 46 test target(s) passed` | Pass |
 | Heap Task 3 RED | `python tools\run_host_tests.py` after adding `test_heap_free_list` | `test_heap_free_list` fails because free-list release/reuse is missing | `[summary] 1 test target(s) failed`; `MRT_Free(large)` expected `MRT_RESULT_OK` but got `MRT_RESULT_OBJECT_BUSY` | Pass |
 | Heap Task 3 GREEN | `python tools\run_host_tests.py` after first-fit free-list implementation | 47 test targets pass | `[summary] 47 test target(s) passed` | Pass |
+| Heap Task 4 RED | `python tools\run_host_tests.py` after adding `test_heap_coalescing` | `test_heap_coalescing` fails because adjacent free blocks are not merged | `[summary] 1 test target(s) failed`; assertion `merged == first` failed | Pass |
+| Heap Task 4 GREEN | `python tools\run_host_tests.py` after release-time coalescing implementation | 48 test targets pass | `[summary] 48 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

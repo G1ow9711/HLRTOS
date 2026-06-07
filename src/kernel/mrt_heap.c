@@ -285,6 +285,68 @@ static void MRT_HeapSplitBlockIfUseful(MRT_HeapBlock *block, size_t allocated_si
 }
 
 /**
+ * @brief 将指定空闲块与其后方相邻空闲块合并。
+ * @param block 待合并的空闲块。
+ * @return MRT_HeapBlock* 返回合并后的块头；如果后继不存在或已分配，则返回原块。
+ * @example
+ * block = MRT_HeapMergeWithNextFreeBlock(block);
+ */
+static MRT_HeapBlock *MRT_HeapMergeWithNextFreeBlock(MRT_HeapBlock *block)
+{
+    /* 读取地址顺序上的后继块。 */
+    MRT_HeapBlock *next = block->next;
+
+    /* 没有后继块时无法向后合并。 */
+    if (next == 0) {
+        /* 返回原块。 */
+        return block;
+    }
+
+    /* 后继块已分配时不能合并。 */
+    if (next->allocated) {
+        /* 返回原块。 */
+        return block;
+    }
+
+    /* 合并后的块大小等于两个相邻空闲块的总大小。 */
+    block->size += next->size;
+
+    /* 当前块跳过被吸收的后继块。 */
+    block->next = next->next;
+
+    /* 如果合并后仍有后继块，需要修正其前驱链接。 */
+    if (block->next != 0) {
+        /* 新后继的前驱改为合并后的当前块。 */
+        block->next->previous = block;
+    }
+
+    /* 返回合并后的块头。 */
+    return block;
+}
+
+/**
+ * @brief 对刚释放的块执行相邻空闲块合并。
+ * @param block 刚释放并已经标记为空闲的块。
+ * @return MRT_HeapBlock* 返回合并后的块头。
+ * @example
+ * block = MRT_HeapCoalesceReleasedBlock(block);
+ */
+static MRT_HeapBlock *MRT_HeapCoalesceReleasedBlock(MRT_HeapBlock *block)
+{
+    /* 如果前驱块存在且空闲，先把当前块并入前驱块。 */
+    if ((block->previous != 0) && (!block->previous->allocated)) {
+        /* 前驱吸收当前块后，合并结果从前驱开始。 */
+        block = MRT_HeapMergeWithNextFreeBlock(block->previous);
+    }
+
+    /* 再尝试吸收后方相邻空闲块。 */
+    block = MRT_HeapMergeWithNextFreeBlock(block);
+
+    /* 返回合并后的块头。 */
+    return block;
+}
+
+/**
  * @brief 从可释放堆执行 first-fit 分配。
  * @param aligned_size 已按堆对齐粒度规整的用户请求字节数。
  * @return void* 分配成功返回用户载荷地址；空间不足或碎片不满足时返回 NULL。
@@ -372,7 +434,13 @@ static MRT_Result MRT_HeapFreeToFreeList(void *ptr)
     /* 归还当前块实际占用的整块字节数。 */
     g_heap.free_size += block->size;
 
-    /* 空闲链表模式不合并相邻块；合并模式会在后续任务单独实现。 */
+    /* 合并堆需要把相邻空闲块整理成一个更大的块。 */
+    if (g_heap.mode == MRT_HEAP_MODE_COALESCING) {
+        /* 合并只调整块表元数据，不改变已经归还的空闲字节总数。 */
+        (void)MRT_HeapCoalesceReleasedBlock(block);
+    }
+
+    /* 释放流程完成。 */
     return MRT_RESULT_OK;
 }
 

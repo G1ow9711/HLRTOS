@@ -127,11 +127,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for allocating three adjacent blocks, freeing two neighbors, allocating a block larger than either single freed block, and verifying `MRT_HeapGetFreeSize` reflects merged free space.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is that adjacent free blocks do not merge.
-- [ ] Implement previous/next block links and coalescing for `MRT_HEAP_MODE_COALESCING` while preserving non-coalescing behavior in `MRT_HEAP_MODE_FREE_LIST`.
-- [ ] Run `python tools\run_host_tests.py`; expect 48 test targets pass.
-- [ ] Commit `feat: add coalescing heap release`.
+- [x] Write failing tests for allocating three adjacent blocks, freeing two neighbors, allocating a block larger than either single freed block, and verifying `MRT_HeapGetFreeSize` reflects merged free space.
+- [x] Run `python tools\run_host_tests.py`; expected failure is that adjacent free blocks do not merge.
+- [x] Implement previous/next block links and coalescing for `MRT_HEAP_MODE_COALESCING` while preserving non-coalescing behavior in `MRT_HEAP_MODE_FREE_LIST`.
+- [x] Run `python tools\run_host_tests.py`; expect 48 test targets pass.
+- [x] Commit `feat: add coalescing heap release`.
 
 ## Task 5: Fixed Block Memory Pool
 

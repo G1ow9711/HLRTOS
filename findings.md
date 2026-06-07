@@ -134,6 +134,8 @@
 - Memory Task 2 adds linear heap allocation. `MRT_Malloc` returns aligned blocks, updates current and minimum-ever free bytes, returns null for zero-size or exhausted allocations, and `MRT_Free` treats null as success while rejecting linear-heap block release with `MRT_RESULT_OBJECT_BUSY`.
 - Memory Task 3 RED confirms the current heap still routes `MRT_HEAP_MODE_FREE_LIST` releases through the linear no-free policy. `test_heap_free_list` fails at `MRT_Free(large)` with `MRT_RESULT_OBJECT_BUSY`, so first-fit block metadata and free-list release handling are required.
 - Memory Task 3 adds address-ordered heap block metadata for reusable heap modes. Free-list allocation uses first-fit scanning, splits only when the remainder can hold a block header plus an aligned payload, rejects heap-external pointers, rejects double free, and intentionally does not merge adjacent free blocks yet so Task 4 can validate coalescing separately.
+- Memory Task 4 RED confirms `MRT_HEAP_MODE_COALESCING` currently behaves like the non-coalescing free-list mode. After freeing two adjacent 64-byte blocks and exhausting tail space, `MRT_Malloc(96)` fails to return the first block because neighbor merging is missing.
+- Memory Task 4 adds release-time coalescing only for `MRT_HEAP_MODE_COALESCING`. The implementation first merges with a free predecessor, then merges with a free successor; `MRT_HEAP_MODE_FREE_LIST` remains intentionally non-coalescing and is covered by the same coalescing test target.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

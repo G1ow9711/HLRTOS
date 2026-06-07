@@ -54,6 +54,7 @@ TESTS = [
     ("test_heap_initialize", ROOT / "tests" / "unit" / "test_heap_initialize.c"),
     ("test_heap_linear", ROOT / "tests" / "unit" / "test_heap_linear.c"),
     ("test_heap_free_list", ROOT / "tests" / "unit" / "test_heap_free_list.c"),
+    ("test_heap_coalescing", ROOT / "tests" / "unit" / "test_heap_coalescing.c"),
 ]
 
 KERNEL_SOURCES = [
