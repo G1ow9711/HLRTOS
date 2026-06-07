@@ -375,6 +375,23 @@
 | Message Buffer Task 6 RED | Single-target GCC compile for `tests\unit\test_message_buffer_isr.c` before ISR APIs and wait reason | Build fails due to missing declarations and wait reason | `implicit declaration of function 'MRT_MessageBufferSendFromISR'`, `MRT_MessageBufferReceiveFromISR`, `MRT_TASK_WAIT_REASON_MESSAGE_RECEIVE undeclared` | Pass |
 | Message Buffer Task 6 single-target GREEN | Compile and run `build\host-tests\test_message_buffer_isr.exe` after ISR implementation | New ISR test target passes | Exit code 0 | Pass |
 | Message Buffer Task 6 GREEN | `python tools\run_host_tests.py` after message ISR APIs and reader wake coupling | 44 test targets pass | `[summary] 44 test target(s) passed` | Pass |
+| Stream/Message Buffer Task 7 final verification | `python tools\run_host_tests.py` before matrix update | Stream/message buffers plus prior modules pass | `[summary] 44 test target(s) passed` | Pass |
+
+## Stream/Message Buffer Commit Evidence
+| Commit | Scope |
+|--------|-------|
+| `79f122b` | Stream/message buffer implementation plan |
+| `1af8d79` | Static stream buffer creation |
+| `2647d02` | Stream buffer send/receive |
+| `153fc6a` | Stream buffer ISR wake coupling |
+| `4b1ca30` | Static message buffer creation |
+| `69e6858` | Message buffer send/receive |
+| `d4df611` | Message buffer ISR APIs |
+
+## Stream/Message Buffer Verification Notes
+- `docs/verification/requirements_traceability_matrix.md` now records stream/message buffer implementation and tests for `R-002`, `R-008`, `R-009`, and `R-010`.
+- `docs/verification/coupling_test_matrix.md` now marks `C-020`, `C-021`, and `C-022` verified.
+- Remaining large modules are memory managers, tickless/low-power, trace/assertion hooks, STM32/DSP ports, final manual with detailed porting steps, static comment verification, and final report.
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
@@ -385,11 +402,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Plan 6: software timers |
-| Where am I going? | Commit the Plan 6 implementation plan, then execute TDD tasks for timers |
+| Where am I? | Plan 7: stream/message buffer verification matrix update |
+| Where am I going? | Commit Plan 7 verification evidence, push the branch, then continue with memory/tickless/trace/port/manual plans |
 | What's the goal? | Build original STM32/DSP-capable RTOS with detailed Chinese comments, manual, and tests |
-| What have I learned? | New timer branch starts from `feature/events-notifications` with 33 passing host targets |
-| What have I done? | Created isolated `.worktrees\timers` branch and wrote Plan 6 implementation plan |
+| What have I learned? | Stream/message buffers now pass 44 host targets and have verified wrap-around, ISR reader wake, and no-half-packet behavior |
+| What have I done? | Implemented and committed stream/message buffer APIs through Task 6, then updated verification evidence for Task 7 |
 
 ---
 *Update after completing each phase or encountering errors.*

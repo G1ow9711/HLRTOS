@@ -128,6 +128,7 @@
 - Message Buffer Task 4 adds static message buffer creation with caller-provided control block and byte storage. Capacity must hold a 4-byte length header plus at least one payload byte; query APIs report used bytes and free spaces.
 - Message Buffer Task 5 adds packet-preserving send/receive with a 32-bit little-endian length header. Sends require enough free space for both header and payload, receives reject undersized output buffers without removing the pending message, and reset clears read/write indexes plus used-byte state.
 - Message Buffer Task 6 adds ISR send/receive APIs plus reader wake coupling. Empty task-context receive with nonzero timeout blocks on `waiting_readers`; task-context send and ISR send wake one reader only after a complete message record is present; ISR send reports `should_yield=true` without switching immediately.
+- Stream/Message Buffer Task 7 updates requirement evidence for `R-002`, `R-008`, `R-009`, and `R-010`, and marks coupling rows `C-020`, `C-021`, and `C-022` verified with 44 passing host test targets.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

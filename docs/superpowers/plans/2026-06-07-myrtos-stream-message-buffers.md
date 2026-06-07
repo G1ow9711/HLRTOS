@@ -221,10 +221,10 @@ Steps:
 
 Steps:
 
-- [ ] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, task notifications, timers, stream buffers, and message buffers pass.
-- [ ] Update `R-002`, `R-008`, `R-009`, and `R-010` evidence with stream/message buffer sources and tests.
-- [ ] Mark `C-020` verified for stream buffer wrap-around.
-- [ ] Mark `C-021` verified for ISR send waking a blocked stream reader.
-- [ ] Mark `C-022` verified for message buffer capacity and no-half-packet behavior.
-- [ ] Record commit hashes and final test output in `progress.md`.
-- [ ] Commit `docs: record stream message buffer verification evidence`.
+- [x] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, task notifications, timers, stream buffers, and message buffers pass.
+- [x] Update `R-002`, `R-008`, `R-009`, and `R-010` evidence with stream/message buffer sources and tests.
+- [x] Mark `C-020` verified for stream buffer wrap-around.
+- [x] Mark `C-021` verified for ISR send waking a blocked stream reader.
+- [x] Mark `C-022` verified for message buffer capacity and no-half-packet behavior.
+- [x] Record commit hashes and final test output in `progress.md`.
+- [x] Commit `docs: record stream message buffer verification evidence`.
