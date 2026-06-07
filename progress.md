@@ -354,6 +354,14 @@
 - `C-019` remains pending because tickless idle compensation belongs to the later low-power/tickless plan.
 - User requirement that the final manual include detailed STM32/DSP porting steps remains captured as `R-011`.
 
+## Stream/Message Buffer Plan Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree creation | `git worktree add .worktrees\stream-message-buffers -b feature/stream-message-buffers feature/timers` | New branch from timer baseline | Worktree created at `F:\My_RTOS\.worktrees\stream-message-buffers` | Pass |
+| Baseline | `python tools\run_host_tests.py` in `.worktrees\stream-message-buffers` | 37 test targets pass | `[summary] 37 test target(s) passed` | Pass |
+| Plan placeholder scan | `rg -n "TBD|TODO|implement later|fill in details|appropriate error handling|add validation|Similar to Task|待定" docs\superpowers\plans\2026-06-07-myrtos-stream-message-buffers.md` | No matches | No matches, exit code 1 | Pass |
+| Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-stream-message-buffers.md` | Plan 7 tasks defined | 7 tasks defined for stream creation, stream FIFO, stream ISR coupling, message creation, message packet IO, message ISR, and matrix update | Pass |
+
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
