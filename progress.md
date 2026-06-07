@@ -363,6 +363,8 @@
 | Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-stream-message-buffers.md` | Plan 7 tasks defined | 7 tasks defined for stream creation, stream FIFO, stream ISR coupling, message creation, message packet IO, message ISR, and matrix update | Pass |
 | Stream Buffer Task 1 RED | `python tools\run_host_tests.py` before stream buffer header | Build fails due to missing header | `fatal error: myrtos/mrt_stream_buffer.h: No such file or directory` | Pass |
 | Stream Buffer Task 1 GREEN | `python tools\run_host_tests.py` after static stream buffer creation | 38 test targets pass | `[summary] 38 test target(s) passed` | Pass |
+| Stream Buffer Task 2 RED | `python tools\run_host_tests.py` before stream send/receive/reset declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_StreamBufferSend'`, `MRT_StreamBufferReceive`, `MRT_StreamBufferReset` | Pass |
+| Stream Buffer Task 2 GREEN | `python tools\run_host_tests.py` after stream send/receive/reset | 39 test targets pass | `[summary] 39 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

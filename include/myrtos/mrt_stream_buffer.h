@@ -61,6 +61,44 @@ MRT_Result MRT_StreamBufferCreateStatic(size_t capacity,
                                         MRT_StreamBufferHandle *out_stream);
 
 /**
+ * @brief 向流缓冲写入字节流。
+ * @param stream 目标流缓冲句柄，不能为空。
+ * @param data 待写入数据地址；length 大于 0 时不能为空。
+ * @param length 请求写入字节数。
+ * @param timeout 等待可写空间的 tick 数；当前阶段非阻塞路径会在无空间时返回。
+ * @param out_sent 输出实际写入字节数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示写入了请求字节或部分字节；无空间时返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * size_t sent;
+ * MRT_StreamBufferSend(stream, data, len, 0, &sent);
+ */
+MRT_Result MRT_StreamBufferSend(MRT_StreamBufferHandle stream,
+                                const void *data,
+                                size_t length,
+                                MRT_Timeout timeout,
+                                size_t *out_sent);
+
+/**
+ * @brief 从流缓冲读取字节流。
+ * @param stream 源流缓冲句柄，不能为空。
+ * @param out_data 接收数据地址；length 大于 0 时不能为空。
+ * @param length 请求读取字节数。
+ * @param timeout 等待可读字节的 tick 数；当前阶段非阻塞路径会在无数据时返回。
+ * @param out_received 输出实际读取字节数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取了请求字节或部分字节；无数据时返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * size_t received;
+ * MRT_StreamBufferReceive(stream, out, sizeof(out), 0, &received);
+ */
+MRT_Result MRT_StreamBufferReceive(MRT_StreamBufferHandle stream,
+                                   void *out_data,
+                                   size_t length,
+                                   MRT_Timeout timeout,
+                                   size_t *out_received);
+
+/**
  * @brief 查询流缓冲当前可读字节数。
  * @param stream 流缓冲句柄，不能为空。
  * @param out_bytes 输出可读字节数，不能为空。
@@ -81,5 +119,14 @@ MRT_Result MRT_StreamBufferBytesAvailable(MRT_StreamBufferHandle stream, size_t 
  * MRT_StreamBufferSpacesAvailable(stream, &spaces);
  */
 MRT_Result MRT_StreamBufferSpacesAvailable(MRT_StreamBufferHandle stream, size_t *out_spaces);
+
+/**
+ * @brief 清空流缓冲并复位读写索引。
+ * @param stream 流缓冲句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示复位成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_StreamBufferReset(stream);
+ */
+MRT_Result MRT_StreamBufferReset(MRT_StreamBufferHandle stream);
 
 #endif

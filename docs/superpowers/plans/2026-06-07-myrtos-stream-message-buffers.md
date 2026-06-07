@@ -120,12 +120,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for nonblocking send, nonblocking receive, byte order preservation, write/read wrap-around, partial send when free space is smaller than requested length, empty receive returning `MRT_RESULT_OBJECT_EMPTY`, and reset clearing indexes/count.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing stream send/receive/reset declarations.
-- [ ] Implement circular byte copy helpers for write, read, and peek-free-space queries.
-- [ ] Implement `MRT_StreamBufferSend`, `MRT_StreamBufferReceive`, and `MRT_StreamBufferReset`.
-- [ ] Run `python tools\run_host_tests.py`; expect 39 test targets pass.
-- [ ] Commit `feat: add stream buffer send receive`.
+- [x] Write failing tests for nonblocking send, nonblocking receive, byte order preservation, write/read wrap-around, partial send when free space is smaller than requested length, empty receive returning `MRT_RESULT_OBJECT_EMPTY`, and reset clearing indexes/count.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing stream send/receive/reset declarations.
+- [x] Implement circular byte copy helpers for write, read, and peek-free-space queries.
+- [x] Implement `MRT_StreamBufferSend`, `MRT_StreamBufferReceive`, and `MRT_StreamBufferReset`.
+- [x] Run `python tools\run_host_tests.py`; expect 39 test targets pass.
+- [x] Commit `feat: add stream buffer send receive`.
 
 ## Task 3: Stream Buffer ISR and Reader Wake Coupling
 

@@ -123,6 +123,7 @@
 - Timer Task 5 updates verification evidence. `R-002`, `R-008`, and `R-009` now include timer sources and tests; `C-018` is verified for host tick expiry callbacks; `C-017` is partial because deterministic service-shim behavior is implemented but a dedicated service task and asynchronous command queue remain future work; `C-019` stays pending for tickless idle.
 - Plan 7 stream/message buffer reference check: FreeRTOS `stream_buffer.c` uses one shared byte-buffer engine for stream buffers and message buffers; message buffers preserve packet boundaries by storing a length field before each message, while stream buffers expose raw byte FIFO semantics. MyRTOS will borrow these concepts only, keeping original `MRT_` APIs, original data structures, explicit `MRT_Result` returns, and Chinese comments.
 - Stream Buffer Task 1 adds static stream buffer creation with caller-provided control block and byte storage. Creation rejects zero capacity, zero trigger level, trigger level greater than capacity, null byte storage, null control block, and null output handle. Query APIs report bytes used and free spaces through `MRT_Result`-based calls.
+- Stream Buffer Task 2 adds nonblocking byte FIFO send/receive and reset. The stream buffer supports wrap-around, partial sends when free space is smaller than requested bytes, empty receive returning `MRT_RESULT_OBJECT_EMPTY`, full send returning `MRT_RESULT_OBJECT_FULL`, and reset clearing read/write indexes plus used byte count.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
