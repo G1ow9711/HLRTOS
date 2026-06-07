@@ -55,7 +55,9 @@ typedef enum MRT_TaskWaitReason {
     /** @brief 任务正在等待队列出现可发送空间。 */
     MRT_TASK_WAIT_REASON_QUEUE_SEND,
     /** @brief 任务正在等待信号量出现可获取计数。 */
-    MRT_TASK_WAIT_REASON_SEMAPHORE_TAKE
+    MRT_TASK_WAIT_REASON_SEMAPHORE_TAKE,
+    /** @brief 任务正在等待互斥锁解锁。 */
+    MRT_TASK_WAIT_REASON_MUTEX_LOCK
 } MRT_TaskWaitReason;
 
 /**

@@ -111,13 +111,13 @@ Steps:
 
 Steps:
 
-- [ ] Write failing test where low-priority owner is boosted when high-priority task waits on the mutex.
-- [ ] Add task internal helper to raise current effective priority while preserving base priority.
-- [ ] Add task internal helper to restore owner priority when mutex unlocks.
-- [ ] On mutex contention, block waiter in priority-ordered wait list and boost owner.
-- [ ] On unlock, transfer ownership to highest-priority waiter or clear owner and restore priority.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add mutex priority inheritance`.
+- [x] Write failing test where low-priority owner is boosted when high-priority task waits on the mutex.
+- [x] Add task internal helper to raise current effective priority while preserving base priority.
+- [x] Add task internal helper to restore owner priority when mutex unlocks.
+- [x] On mutex contention, block waiter in priority-ordered wait list and boost owner.
+- [x] On unlock, transfer ownership to highest-priority waiter or clear owner and restore priority.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add mutex priority inheritance`.
 
 ## Task 7: Recursive Mutex
 

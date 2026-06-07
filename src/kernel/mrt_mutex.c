@@ -1,4 +1,5 @@
 #include "myrtos/mrt_mutex.h"
+#include "mrt_task_internal.h"
 
 /**
  * @brief 使用调用方提供的控制块静态创建普通互斥锁。
@@ -105,8 +106,25 @@ MRT_Result MRT_MutexLock(MRT_MutexHandle mutex, MRT_Timeout timeout)
         return MRT_RESULT_OBJECT_BUSY;
     }
 
-    /* 阻塞和优先级继承由后续任务接入；当前先返回超时。 */
-    return MRT_RESULT_TIMEOUT;
+    /* 查询当前等待者优先级。 */
+    MRT_Priority waiter_priority = 0u;
+    (void)MRT_TaskGetPriority(current, &waiter_priority);
+
+    /* 查询当前拥有者有效优先级。 */
+    MRT_Priority owner_priority = 0u;
+    (void)MRT_TaskGetPriority(mutex->owner, &owner_priority);
+
+    /* 高优先级任务等待低优先级拥有者时，提升拥有者有效优先级。 */
+    if (waiter_priority > owner_priority) {
+        /* 执行优先级继承，降低优先级反转时间。 */
+        MRT_TaskKernelSetEffectivePriority(mutex->owner, waiter_priority);
+    }
+
+    /* 将当前任务挂入互斥锁等待链表，并设置 tick 超时。 */
+    return MRT_TaskKernelBlockCurrentOnObject(&mutex->waiting_lockers,
+                                              timeout,
+                                              MRT_TASK_WAIT_REASON_MUTEX_LOCK,
+                                              MRT_RESULT_TIMEOUT);
 }
 
 /**
@@ -149,11 +167,41 @@ MRT_Result MRT_MutexUnlock(MRT_MutexHandle mutex)
         return MRT_RESULT_OK;
     }
 
-    /* 最后一层解锁后清空拥有者。 */
+    /* 保存旧拥有者，用于恢复基础优先级。 */
+    MRT_TaskHandle old_owner = mutex->owner;
+
+    /* 如果存在等待者，互斥锁直接转交给最高优先级等待任务。 */
+    if (!MRT_ListIsEmpty(&mutex->waiting_lockers)) {
+        /* 读取等待链表头部任务，作为新的互斥锁拥有者。 */
+        MRT_ListNode *wait_node = MRT_ListGetHead(&mutex->waiting_lockers);
+
+        /* 从等待节点恢复任务句柄。 */
+        MRT_TaskHandle next_owner = (MRT_TaskHandle)wait_node->item;
+
+        /* 设置新的拥有者。 */
+        mutex->owner = next_owner;
+
+        /* 新拥有者获得一层锁。 */
+        mutex->lock_count = 1u;
+
+        /* 旧拥有者释放锁后恢复基础优先级。 */
+        MRT_TaskKernelRestoreBasePriority(old_owner);
+
+        /* 唤醒新的拥有者，并允许其按优先级立即抢占。 */
+        (void)MRT_TaskKernelWakeFirstObjectWaiter(&mutex->waiting_lockers, MRT_RESULT_OK, true);
+
+        /* 解锁并转交成功。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 最后一层解锁且没有等待者时清空拥有者。 */
     mutex->owner = 0;
 
     /* 清空锁定深度。 */
     mutex->lock_count = 0u;
+
+    /* 没有等待者时同样恢复旧拥有者基础优先级。 */
+    MRT_TaskKernelRestoreBasePriority(old_owner);
 
     /* 解锁成功。 */
     return MRT_RESULT_OK;

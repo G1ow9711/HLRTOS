@@ -430,6 +430,81 @@ bool MRT_TaskKernelWakeFirstObjectWaiter(MRT_List *wait_list, MRT_Result wait_re
     return true;
 }
 
+/**
+ * @brief 设置任务当前有效优先级。
+ * @param task 目标任务句柄，不能为空。
+ * @param priority 新有效优先级，必须小于 MRT_CFG_MAX_PRIORITIES。
+ * @return void 无返回值；参数非法时直接返回。
+ * @example
+ * MRT_TaskKernelSetEffectivePriority(owner, waiter_priority);
+ */
+void MRT_TaskKernelSetEffectivePriority(MRT_TaskHandle task, MRT_Priority priority)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 无目标任务时直接返回。 */
+        return;
+    }
+
+    /* 新优先级必须在配置范围内。 */
+    if (priority >= MRT_CFG_MAX_PRIORITIES) {
+        /* 非法优先级不修改任务状态。 */
+        return;
+    }
+
+    /* 优先级没有变化时无需重排 ready list。 */
+    if (task->priority == priority) {
+        /* 直接返回调用方。 */
+        return;
+    }
+
+    /* 记录任务节点当前是否在 ready list 或运行任务的 ready 节点中。 */
+    bool was_linked = MRT_ListNodeIsLinked(&task->state_node);
+
+    /* 记录修改前的任务状态，用于保持 running 状态不被 ready 插入逻辑覆盖。 */
+    MRT_TaskState old_state = task->state;
+
+    /* 如果任务节点已入链，需要先从旧优先级链表移除。 */
+    if (was_linked) {
+        /* 使用旧优先级维护 ready bitmap 和链表计数。 */
+        MRT_TaskRemoveReady(task);
+    }
+
+    /* 写入新的有效优先级。 */
+    task->priority = priority;
+
+    /* 如果原来已入链，则按新优先级重新插入对应 ready list。 */
+    if (was_linked) {
+        /* 将任务节点插入新优先级 ready list 尾部。 */
+        MRT_ListInsertTail(&g_ready_lists[task->priority], &task->state_node);
+
+        /* 标记新优先级存在 ready/running 任务节点。 */
+        MRT_PriorityBitmapSet(&g_ready_bitmap, task->priority);
+
+        /* 恢复调用前任务状态，避免 running 任务被误标 ready。 */
+        task->state = old_state;
+    }
+}
+
+/**
+ * @brief 将任务当前有效优先级恢复为基础优先级。
+ * @param task 目标任务句柄，不能为空。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskKernelRestoreBasePriority(owner);
+ */
+void MRT_TaskKernelRestoreBasePriority(MRT_TaskHandle task)
+{
+    /* 任务句柄不能为空。 */
+    if (task == 0) {
+        /* 无目标任务时直接返回。 */
+        return;
+    }
+
+    /* 复用有效优先级设置函数恢复基础优先级。 */
+    MRT_TaskKernelSetEffectivePriority(task, task->base_priority);
+}
+
 MRT_Result MRT_TaskCreateStatic(const char *name,
                                 MRT_TaskEntry entry,
                                 void *arg,

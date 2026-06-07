@@ -124,6 +124,9 @@
   - Mutex Task 5 first GREEN attempt failed because `test_mutex_create_lock` reused current task state from an earlier test case; fixed by reinitializing the kernel inside the invalid-context test.
   - Mutex Task 5 GREEN: added static mutex creation, lock/unlock ownership, owner query, owner-error handling, and invalid-context checks; same command passed 23 test targets.
   - Mutex Task 5 commit message: `feat: add mutex ownership`.
+  - Mutex Task 6 RED: `python tools\run_host_tests.py` failed because high-priority mutex wait did not block and did not boost the low-priority owner.
+  - Mutex Task 6 GREEN: added task effective-priority helpers, mutex wait blocking, priority inheritance, owner priority restore, and ownership transfer to the highest-priority waiter; same command passed 24 test targets.
+  - Mutex Task 6 commit message: `feat: add mutex priority inheritance`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -252,6 +255,8 @@
 | Semaphore Task 4 GREEN | `python tools\run_host_tests.py` after ISR give | 22 test targets pass | `[summary] 22 test target(s) passed` | Pass |
 | Mutex Task 5 RED | `python tools\run_host_tests.py` before mutex header | Build fails due to missing header | `fatal error: myrtos/mrt_mutex.h: No such file or directory` | Pass |
 | Mutex Task 5 GREEN | `python tools\run_host_tests.py` after mutex ownership | 23 test targets pass | `[summary] 23 test target(s) passed` | Pass |
+| Mutex Task 6 RED | `python tools\run_host_tests.py` before priority inheritance | Coupling test fails because high-priority waiter does not block | `assertion failed: MRT_TaskGetCurrent() == low_task` | Pass |
+| Mutex Task 6 GREEN | `python tools\run_host_tests.py` after priority inheritance | 24 test targets pass | `[summary] 24 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
