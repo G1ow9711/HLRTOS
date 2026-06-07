@@ -302,6 +302,25 @@
 | Task Notify Task 7 GREEN | `python tools\run_host_tests.py` after notify wait/take coupling | 32 test targets pass | `[summary] 32 test target(s) passed` | Pass |
 | Task Notify Task 8 RED | `python tools\run_host_tests.py` before notify ISR declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_TaskNotifyFromISR'` | Pass |
 | Task Notify Task 8 GREEN | `python tools\run_host_tests.py` after notify ISR implementation | 33 test targets pass | `[summary] 33 test target(s) passed` | Pass |
+| Events/Notifications Task 9 final verification | `python tools\run_host_tests.py` after matrix updates | 33 test targets pass | `[summary] 33 test target(s) passed` | Pass |
+
+## Events/Notifications Commit Evidence
+| Commit | Scope |
+|--------|-------|
+| `7c8564a` | Events/notifications implementation plan |
+| `7e77add` | Static event group bit operations |
+| `156eac0` | Event group immediate wait |
+| `8c6a10c` | Event group timeout wait |
+| `ac6fa44` | Event group multi-waiter wake |
+| `5bffb09` | Event group ISR set |
+| `683efd7` | Task notification actions |
+| `9b1a470` | Task notification wait/take |
+| `d7cccea` | Task notification ISR |
+
+## Events/Notifications Verification Notes
+- `docs/verification/requirements_traceability_matrix.md` now records event group and task notification implementation/test evidence for `R-002`, `R-008`, and `R-009`.
+- `docs/verification/coupling_test_matrix.md` now marks `C-014`, `C-015`, and `C-016` verified, and expands `C-027` partial illegal-context evidence with event group and task notification FromISR tests.
+- Remaining unimplemented high-level modules are timers, stream/message buffers, memory managers, tickless/trace/assertion hooks, STM32/DSP ports, manual/static verification, and final report.
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
@@ -312,11 +331,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Plan 5: events and task notifications |
-| Where am I going? | Commit the Plan 5 implementation plan, then execute TDD tasks for event groups and task notifications |
+| Where am I? | Plan 5 Task 9: events/notifications verification evidence |
+| Where am I going? | Commit Plan 5 verification evidence, push branch, then continue with software timers |
 | What's the goal? | Build original STM32/DSP-capable RTOS with detailed Chinese comments, manual, and tests |
-| What have I learned? | New branch starts from `feature/semaphore-mutex` with 25 passing host targets |
-| What have I done? | Created isolated `.worktrees\events-notifications` branch and wrote Plan 5 implementation plan |
+| What have I learned? | Event groups and task notifications pass 33 host targets with ISR and coupling coverage |
+| What have I done? | Implemented event groups, task notifications, updated matrices, and preserved R-011 detailed porting manual requirement |
 
 ---
 *Update after completing each phase or encountering errors.*

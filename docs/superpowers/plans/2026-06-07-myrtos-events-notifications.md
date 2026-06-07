@@ -231,8 +231,8 @@ Steps:
 
 Steps:
 
-- [ ] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, and task notifications pass.
-- [ ] Update `R-002`, `R-008`, and `R-009` evidence with event group and task notification source/tests.
-- [ ] Mark `C-014`, `C-015`, and `C-016` according to implemented coverage.
-- [ ] Record commit hashes and final test output in `progress.md`.
-- [ ] Commit `docs: record events notifications verification evidence`.
+- [x] Run `python tools\run_host_tests.py`; expect foundation, scheduler, queues, semaphores, mutexes, event groups, and task notifications pass.
+- [x] Update `R-002`, `R-008`, and `R-009` evidence with event group and task notification source/tests.
+- [x] Mark `C-014`, `C-015`, and `C-016` according to implemented coverage.
+- [x] Record commit hashes and final test output in `progress.md`.
+- [x] Commit `docs: record events notifications verification evidence`.

@@ -114,6 +114,7 @@
 - Task Notify Task 6 adds one notification slot per task with `notify_value` and `notify_pending`. `MRT_TaskNotify` supports set-bits, increment, overwrite, and no-overwrite; no-overwrite rejects pending notifications without changing the old value.
 - Task Notify Task 7 adds `MRT_TaskNotifyWait`, `MRT_TaskNotifyTake`, and `MRT_TaskKernelBlockCurrent`. Notification waits block without an object wait list; task-context notify wakes blocked tasks and can immediately reschedule. In the current host model, a blocked wait API returns timeout immediately, so a later notify leaves the value pending for future real resume semantics.
 - Task Notify Task 8 adds `MRT_TaskNotifyFromISR`. It validates ISR context, reuses the same notification action helper, wakes notification waiters with deferred scheduling, and sets `should_yield=true` only when a task is made ready.
+- Events/Notifications Task 9 updates `R-002`, `R-008`, `R-009`, `C-014`, `C-015`, `C-016`, and `C-027`. Event groups and task notifications are now evidenced by 33 passing host targets; timers, stream/message buffers, memory, tickless/trace/assert, ports, manual, static verification, and final report remain future plans.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
