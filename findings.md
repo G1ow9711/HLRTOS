@@ -96,6 +96,7 @@
 - Semaphore Task 1 adds static binary/counting semaphores with no heap dependency. Binary semaphores use max count 1 and an explicit initial availability flag; counting semaphores reject max count 0 and initial count above max.
 - Semaphore Task 2 implements only nonblocking take/give. Empty semaphore with nonzero timeout returns `MRT_RESULT_TIMEOUT` outside scheduler context; actual task blocking and wakeup are reserved for Task 3 coupling tests.
 - Semaphore Task 3 reuses the queue-era object wait helpers. A give to a nonempty taker wait list transfers the token directly to the highest-priority waiter, so semaphore count does not increase.
+- Semaphore Task 4 mirrors queue ISR wake semantics: ISR give never switches immediately; it makes the waiter ready and reports `should_yield=true` for the port layer.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

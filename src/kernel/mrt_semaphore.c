@@ -1,4 +1,5 @@
 #include "myrtos/mrt_semaphore.h"
+#include "myrtos/mrt_port.h"
 #include "mrt_task_internal.h"
 
 /**
@@ -200,5 +201,63 @@ MRT_Result MRT_SemaphoreGive(MRT_SemaphoreHandle semaphore)
     semaphore->count++;
 
     /* 释放成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文释放一个信号量计数。
+ * @param semaphore 信号量句柄，不能为空。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示释放成功；计数已满返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_SemaphoreGiveFromISR(sem, &yield);
+ */
+MRT_Result MRT_SemaphoreGiveFromISR(MRT_SemaphoreHandle semaphore, bool *should_yield)
+{
+    /* 如果调用方提供 yield 输出指针，先写入保守的 false 默认值。 */
+    if (should_yield != 0) {
+        /* 默认不请求 ISR 退出后的任务切换。 */
+        *should_yield = false;
+    }
+
+    /* FromISR API 必须在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文，提示调用方改用任务上下文 API。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 信号量句柄不能为空，否则无法读取和修改计数。 */
+    if (semaphore == 0) {
+        /* 返回参数错误，提示调用方传入有效信号量。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 如果已有任务等待获取该信号量，本次释放直接交给等待者。 */
+    if (!MRT_ListIsEmpty(&semaphore->waiting_takers)) {
+        /* ISR 中只让等待任务 ready，不立即切换当前任务。 */
+        bool woke_task = MRT_TaskKernelWakeFirstObjectWaiter(&semaphore->waiting_takers, MRT_RESULT_OK, false);
+
+        /* 唤醒等待任务时，请求端口层在 ISR 退出后调度。 */
+        if ((should_yield != 0) && woke_task) {
+            /* 写入 true，调用方可传给 MRT_PortYieldFromISR。 */
+            *should_yield = true;
+        }
+
+        /* 令牌已转交给等待任务。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 当前计数达到最大计数时不能继续释放。 */
+    if (semaphore->count == semaphore->max_count) {
+        /* 返回对象已满。 */
+        return MRT_RESULT_OBJECT_FULL;
+    }
+
+    /* 增加一个可用计数。 */
+    semaphore->count++;
+
+    /* ISR give 成功。 */
     return MRT_RESULT_OK;
 }

@@ -76,10 +76,10 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_SemaphoreGiveFromISR`: no waiter keeps `should_yield=false`, waiter wakes with `should_yield=true`, full semaphore returns `MRT_RESULT_OBJECT_FULL`, task context returns `MRT_RESULT_INVALID_CONTEXT`.
-- [ ] Implement ISR give without blocking and without immediate task switch.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add semaphore ISR give`.
+- [x] Write failing tests for `MRT_SemaphoreGiveFromISR`: no waiter keeps `should_yield=false`, waiter wakes with `should_yield=true`, full semaphore returns `MRT_RESULT_OBJECT_FULL`, task context returns `MRT_RESULT_INVALID_CONTEXT`.
+- [x] Implement ISR give without blocking and without immediate task switch.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add semaphore ISR give`.
 
 ## Task 5: Static Mutex Creation and Lock Ownership
 

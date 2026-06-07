@@ -91,4 +91,16 @@ MRT_Result MRT_SemaphoreTake(MRT_SemaphoreHandle semaphore, MRT_Timeout timeout)
  */
 MRT_Result MRT_SemaphoreGive(MRT_SemaphoreHandle semaphore);
 
+/**
+ * @brief 在 ISR 上下文释放一个信号量计数。
+ * @param semaphore 信号量句柄，不能为空。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示释放成功；计数已满返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_SemaphoreGiveFromISR(sem, &yield);
+ */
+MRT_Result MRT_SemaphoreGiveFromISR(MRT_SemaphoreHandle semaphore, bool *should_yield);
+
 #endif
