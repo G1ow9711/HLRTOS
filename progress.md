@@ -58,6 +58,11 @@
   - Committed Task 6 as `034deb6`.
   - Foundation full verification: `python tools\run_host_tests.py` passed 6 test targets.
   - Updated requirement and coupling matrices with foundation evidence.
+  - Created task scheduler worktree `feature/task-scheduler`.
+  - Added scheduler implementation plan.
+  - Consulted FreeRTOS `tasks.c` for concepts: ready lists per priority, current TCB, delayed lists, overflow handling; MyRTOS keeps original APIs and implementation.
+  - Task scheduler Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_task.h` was missing.
+  - Task scheduler Task 1 GREEN: added `include/myrtos/mrt_task.h`, `src/kernel/mrt_task.c`, and internal scheduler init; same command passed 7 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -90,6 +95,11 @@
   - `tests/unit/test_kernel_tick.c` created.
   - `include/myrtos/mrt_kernel.h` created.
   - `src/kernel/mrt_kernel.c` created.
+  - `docs/superpowers/plans/2026-06-07-myrtos-task-scheduler.md` created.
+  - `tests/sim/test_task_create_static.c` created.
+  - `include/myrtos/mrt_task.h` created.
+  - `src/kernel/mrt_task.c` created.
+  - `src/kernel/mrt_task_internal.h` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -121,6 +131,8 @@
 | Task 6 RED | `python tools\run_host_tests.py` before `mrt_kernel.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_kernel.h: No such file or directory` | Pass |
 | Task 6 GREEN | `python tools\run_host_tests.py` after adding kernel tick shell | 6 test targets pass | `[summary] 6 test target(s) passed` | Pass |
 | Foundation full verification | `python tools\run_host_tests.py` | 6 test targets pass | `[summary] 6 test target(s) passed` | Pass |
+| Scheduler Task 1 RED | `python tools\run_host_tests.py` before `mrt_task.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_task.h: No such file or directory` | Pass |
+| Scheduler Task 1 GREEN | `python tools\run_host_tests.py` after static task creation | 7 test targets pass | `[summary] 7 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

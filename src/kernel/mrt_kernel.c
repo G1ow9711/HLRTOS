@@ -1,5 +1,6 @@
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
+#include "mrt_task_internal.h"
 
 /** @brief 当前系统 tick 计数。 */
 static MRT_Tick g_kernel_tick;
@@ -30,6 +31,9 @@ MRT_Result MRT_KernelInitialize(void)
 
     /* 初始化端口层，使临界区、yield 和 ISR 状态进入已知状态。 */
     MRT_PortInitialize();
+
+    /* 初始化任务调度器内部 ready/delay 状态。 */
+    MRT_TaskKernelInitialize();
 
     /* 基础状态初始化完成，返回成功。 */
     return MRT_RESULT_OK;
