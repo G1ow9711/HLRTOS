@@ -99,6 +99,41 @@ MRT_Result MRT_StreamBufferReceive(MRT_StreamBufferHandle stream,
                                    size_t *out_received);
 
 /**
+ * @brief 在 ISR 上下文向流缓冲写入字节流。
+ * @param stream 目标流缓冲句柄，不能为空。
+ * @param data 待写入数据地址；length 大于 0 时不能为空。
+ * @param length 请求写入字节数。
+ * @param out_sent 输出实际写入字节数，允许为空。
+ * @param should_yield 输出是否需要在 ISR 退出前请求调度切换，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示写入成功；无空间时返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_StreamBufferSendFromISR(stream, data, len, &sent, &yield);
+ */
+MRT_Result MRT_StreamBufferSendFromISR(MRT_StreamBufferHandle stream,
+                                       const void *data,
+                                       size_t length,
+                                       size_t *out_sent,
+                                       bool *should_yield);
+
+/**
+ * @brief 在 ISR 上下文从流缓冲读取字节流。
+ * @param stream 源流缓冲句柄，不能为空。
+ * @param out_data 接收数据地址；length 大于 0 时不能为空。
+ * @param length 请求读取字节数。
+ * @param out_received 输出实际读取字节数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取成功；无数据时返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_StreamBufferReceiveFromISR(stream, out, sizeof(out), &received);
+ */
+MRT_Result MRT_StreamBufferReceiveFromISR(MRT_StreamBufferHandle stream,
+                                          void *out_data,
+                                          size_t length,
+                                          size_t *out_received);
+
+/**
  * @brief 查询流缓冲当前可读字节数。
  * @param stream 流缓冲句柄，不能为空。
  * @param out_bytes 输出可读字节数，不能为空。

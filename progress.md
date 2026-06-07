@@ -365,6 +365,8 @@
 | Stream Buffer Task 1 GREEN | `python tools\run_host_tests.py` after static stream buffer creation | 38 test targets pass | `[summary] 38 test target(s) passed` | Pass |
 | Stream Buffer Task 2 RED | `python tools\run_host_tests.py` before stream send/receive/reset declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_StreamBufferSend'`, `MRT_StreamBufferReceive`, `MRT_StreamBufferReset` | Pass |
 | Stream Buffer Task 2 GREEN | `python tools\run_host_tests.py` after stream send/receive/reset | 39 test targets pass | `[summary] 39 test target(s) passed` | Pass |
+| Stream Buffer Task 3 RED | `python tools\run_host_tests.py` before stream ISR API declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_StreamBufferSendFromISR'`, `MRT_StreamBufferReceiveFromISR` | Pass |
+| Stream Buffer Task 3 GREEN | `python tools\run_host_tests.py` after stream ISR and reader wake coupling | 41 test targets pass | `[summary] 41 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

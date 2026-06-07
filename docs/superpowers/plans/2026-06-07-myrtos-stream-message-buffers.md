@@ -140,15 +140,15 @@ Steps:
 
 Steps:
 
-- [ ] Write failing unit tests for `MRT_StreamBufferSendFromISR`, `MRT_StreamBufferReceiveFromISR`, ISR context validation, task-context misuse returning `MRT_RESULT_INVALID_CONTEXT`, and conservative no-wait behavior.
-- [ ] Write failing coupling test where a high-priority task blocks in `MRT_StreamBufferReceive(stream, out, len, timeout, &received)` and an ISR send writes enough bytes to meet trigger level, wakes the reader, and sets `should_yield=true`.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing ISR APIs and reader wait reason.
-- [ ] Add `MRT_TASK_WAIT_REASON_STREAM_RECEIVE` to task wait reasons.
-- [ ] Implement stream receive blocking on empty buffer with timeout using the existing object-wait helper.
-- [ ] Implement task-context send and ISR send wake logic when available bytes reach trigger level.
-- [ ] Implement ISR receive with zero-timeout semantics and no writer wake behavior.
-- [ ] Run `python tools\run_host_tests.py`; expect 41 test targets pass.
-- [ ] Commit `feat: add stream buffer ISR wake coupling`.
+- [x] Write failing unit tests for `MRT_StreamBufferSendFromISR`, `MRT_StreamBufferReceiveFromISR`, ISR context validation, task-context misuse returning `MRT_RESULT_INVALID_CONTEXT`, and conservative no-wait behavior.
+- [x] Write failing coupling test where a high-priority task blocks in `MRT_StreamBufferReceive(stream, out, len, timeout, &received)` and an ISR send writes enough bytes to meet trigger level, wakes the reader, and sets `should_yield=true`.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing ISR APIs and reader wait reason.
+- [x] Add `MRT_TASK_WAIT_REASON_STREAM_RECEIVE` to task wait reasons.
+- [x] Implement stream receive blocking on empty buffer with timeout using the existing object-wait helper.
+- [x] Implement task-context send and ISR send wake logic when available bytes reach trigger level.
+- [x] Implement ISR receive with zero-timeout semantics and no writer wake behavior.
+- [x] Run `python tools\run_host_tests.py`; expect 41 test targets pass.
+- [x] Commit `feat: add stream buffer ISR wake coupling`.
 
 ## Task 4: Static Message Buffer Creation
 

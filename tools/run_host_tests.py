@@ -46,6 +46,8 @@ TESTS = [
     ("test_timer_pending_function", ROOT / "tests" / "unit" / "test_timer_pending_function.c"),
     ("test_stream_buffer_create_static", ROOT / "tests" / "unit" / "test_stream_buffer_create_static.c"),
     ("test_stream_buffer_send_receive", ROOT / "tests" / "unit" / "test_stream_buffer_send_receive.c"),
+    ("test_stream_buffer_isr", ROOT / "tests" / "unit" / "test_stream_buffer_isr.c"),
+    ("test_stream_buffer_isr_wakes_reader", ROOT / "tests" / "coupling" / "test_stream_buffer_isr_wakes_reader.c"),
 ]
 
 KERNEL_SOURCES = [

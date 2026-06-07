@@ -124,6 +124,7 @@
 - Plan 7 stream/message buffer reference check: FreeRTOS `stream_buffer.c` uses one shared byte-buffer engine for stream buffers and message buffers; message buffers preserve packet boundaries by storing a length field before each message, while stream buffers expose raw byte FIFO semantics. MyRTOS will borrow these concepts only, keeping original `MRT_` APIs, original data structures, explicit `MRT_Result` returns, and Chinese comments.
 - Stream Buffer Task 1 adds static stream buffer creation with caller-provided control block and byte storage. Creation rejects zero capacity, zero trigger level, trigger level greater than capacity, null byte storage, null control block, and null output handle. Query APIs report bytes used and free spaces through `MRT_Result`-based calls.
 - Stream Buffer Task 2 adds nonblocking byte FIFO send/receive and reset. The stream buffer supports wrap-around, partial sends when free space is smaller than requested bytes, empty receive returning `MRT_RESULT_OBJECT_EMPTY`, full send returning `MRT_RESULT_OBJECT_FULL`, and reset clearing read/write indexes plus used byte count.
+- Stream Buffer Task 3 adds ISR send/receive and reader wake coupling. Empty receive with nonzero timeout blocks the current task on `waiting_readers`; task-context send and ISR send wake a reader when `bytes_used >= trigger_level`. ISR send never switches immediately and reports `should_yield=true` when it wakes a reader.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

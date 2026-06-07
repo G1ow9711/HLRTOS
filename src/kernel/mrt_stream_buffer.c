@@ -1,4 +1,6 @@
+#include "myrtos/mrt_port.h"
 #include "myrtos/mrt_stream_buffer.h"
+#include "mrt_task_internal.h"
 
 /**
  * @brief 返回两个 size_t 值中的较小值。
@@ -83,6 +85,32 @@ static void MRT_StreamReadBytes(MRT_StreamBufferHandle stream, uint8_t *out_data
         /* 已使用字节数减少。 */
         stream->bytes_used--;
     }
+}
+
+/**
+ * @brief 在写入后按触发水位唤醒等待读者。
+ * @param stream 流缓冲句柄，不能为空。
+ * @param switch_now true 表示任务上下文立即重选调度，false 表示 ISR 延后切换。
+ * @return bool 返回 true 表示唤醒了一个读者，返回 false 表示没有读者被唤醒。
+ * @example
+ * bool woke = MRT_StreamWakeReaderIfTriggered(stream, true);
+ */
+static bool MRT_StreamWakeReaderIfTriggered(MRT_StreamBufferHandle stream, bool switch_now)
+{
+    /* 未达到触发水位时不唤醒读者。 */
+    if (stream->bytes_used < stream->trigger_level) {
+        /* 没有满足唤醒条件。 */
+        return false;
+    }
+
+    /* 等待读者链表为空时没有任务可唤醒。 */
+    if (MRT_ListIsEmpty(&stream->waiting_readers)) {
+        /* 没有读者等待。 */
+        return false;
+    }
+
+    /* 唤醒最高优先级等待读者。 */
+    return MRT_TaskKernelWakeFirstObjectWaiter(&stream->waiting_readers, MRT_RESULT_OK, switch_now);
 }
 
 /**
@@ -266,6 +294,9 @@ MRT_Result MRT_StreamBufferSend(MRT_StreamBufferHandle stream,
     /* 执行环形写入。 */
     MRT_StreamWriteBytes(stream, (const uint8_t *)data, writable);
 
+    /* 如果写入后达到触发水位，唤醒等待可读数据的任务。 */
+    (void)MRT_StreamWakeReaderIfTriggered(stream, true);
+
     /* 写回实际写入数量。 */
     if (out_sent != 0) {
         /* 告诉调用方本次写入了多少字节。 */
@@ -324,6 +355,175 @@ MRT_Result MRT_StreamBufferReceive(MRT_StreamBufferHandle stream,
 
     /* 没有可读字节时返回对象空。 */
     if (stream->bytes_used == 0u) {
+        /* 非阻塞读取直接返回对象空。 */
+        if (timeout == 0u) {
+            /* 告诉调用方当前无数据。 */
+            return MRT_RESULT_OBJECT_EMPTY;
+        }
+
+        /* 非零 timeout 时，将当前任务加入流缓冲读等待链表。 */
+        return MRT_TaskKernelBlockCurrentOnObject(&stream->waiting_readers,
+                                                  timeout,
+                                                  MRT_TASK_WAIT_REASON_STREAM_RECEIVE,
+                                                  MRT_RESULT_TIMEOUT);
+    }
+
+    /* 目前已有数据，timeout 不参与非阻塞读取路径。 */
+    (void)timeout;
+
+    /* 实际读取数量为请求长度和可读字节数中的较小值。 */
+    size_t readable = MRT_StreamMin(length, stream->bytes_used);
+
+    /* 执行环形读取。 */
+    MRT_StreamReadBytes(stream, (uint8_t *)out_data, readable);
+
+    /* 写回实际读取数量。 */
+    if (out_received != 0) {
+        /* 告诉调用方本次读取了多少字节。 */
+        *out_received = readable;
+    }
+
+    /* 读取成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文向流缓冲写入字节流。
+ * @param stream 目标流缓冲句柄，不能为空。
+ * @param data 待写入数据地址；length 大于 0 时不能为空。
+ * @param length 请求写入字节数。
+ * @param out_sent 输出实际写入字节数，允许为空。
+ * @param should_yield 输出是否需要在 ISR 退出前请求调度切换，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示写入成功；无空间时返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_StreamBufferSendFromISR(stream, data, len, &sent, &yield);
+ */
+MRT_Result MRT_StreamBufferSendFromISR(MRT_StreamBufferHandle stream,
+                                       const void *data,
+                                       size_t length,
+                                       size_t *out_sent,
+                                       bool *should_yield)
+{
+    /* 如果调用方提供输出指针，先清零，保证失败路径结果确定。 */
+    if (out_sent != 0) {
+        /* 默认没有写入字节。 */
+        *out_sent = 0u;
+    }
+
+    /* 如果调用方提供 yield 输出，先清零。 */
+    if (should_yield != 0) {
+        /* 默认不请求切换。 */
+        *should_yield = false;
+    }
+
+    /* FromISR API 只能在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 流缓冲句柄不能为空。 */
+    if (stream == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 非零长度写入必须提供数据地址。 */
+    if ((length != 0u) && (data == 0)) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 零长度写入是空操作。 */
+    if (length == 0u) {
+        /* 空操作成功。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* 计算当前可写空间。 */
+    size_t spaces = stream->capacity - stream->bytes_used;
+
+    /* ISR 中没有空间时不能阻塞等待。 */
+    if (spaces == 0u) {
+        /* 告诉调用方当前没有可写空间。 */
+        return MRT_RESULT_OBJECT_FULL;
+    }
+
+    /* 实际写入数量为请求长度和空闲空间中的较小值。 */
+    size_t writable = MRT_StreamMin(length, spaces);
+
+    /* 执行环形写入。 */
+    MRT_StreamWriteBytes(stream, (const uint8_t *)data, writable);
+
+    /* 写回实际写入数量。 */
+    if (out_sent != 0) {
+        /* 告诉调用方本次写入了多少字节。 */
+        *out_sent = writable;
+    }
+
+    /* 如果达到触发水位并唤醒了读者，则要求 ISR 退出后切换。 */
+    if (MRT_StreamWakeReaderIfTriggered(stream, false)) {
+        /* 写回延迟切换请求。 */
+        if (should_yield != 0) {
+            /* 提示端口层在 ISR 末尾请求调度。 */
+            *should_yield = true;
+        }
+    }
+
+    /* ISR 写入成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文从流缓冲读取字节流。
+ * @param stream 源流缓冲句柄，不能为空。
+ * @param out_data 接收数据地址；length 大于 0 时不能为空。
+ * @param length 请求读取字节数。
+ * @param out_received 输出实际读取字节数，允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示读取成功；无数据时返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * MRT_StreamBufferReceiveFromISR(stream, out, sizeof(out), &received);
+ */
+MRT_Result MRT_StreamBufferReceiveFromISR(MRT_StreamBufferHandle stream,
+                                          void *out_data,
+                                          size_t length,
+                                          size_t *out_received)
+{
+    /* 如果调用方提供输出指针，先清零，保证失败路径结果确定。 */
+    if (out_received != 0) {
+        /* 默认没有读取字节。 */
+        *out_received = 0u;
+    }
+
+    /* FromISR API 只能在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 流缓冲句柄不能为空。 */
+    if (stream == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 非零长度读取必须提供输出地址。 */
+    if ((length != 0u) && (out_data == 0)) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 零长度读取是空操作。 */
+    if (length == 0u) {
+        /* 空操作成功。 */
+        return MRT_RESULT_OK;
+    }
+
+    /* ISR 中没有可读字节时不能阻塞等待。 */
+    if (stream->bytes_used == 0u) {
         /* 告诉调用方当前无数据。 */
         return MRT_RESULT_OBJECT_EMPTY;
     }
@@ -340,7 +540,7 @@ MRT_Result MRT_StreamBufferReceive(MRT_StreamBufferHandle stream,
         *out_received = readable;
     }
 
-    /* 读取成功。 */
+    /* ISR 读取成功。 */
     return MRT_RESULT_OK;
 }
 
