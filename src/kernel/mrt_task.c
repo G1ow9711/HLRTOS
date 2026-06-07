@@ -1,5 +1,6 @@
 #include "myrtos/mrt_task.h"
 #include "myrtos/mrt_kernel.h"
+#include "myrtos/mrt_port.h"
 #include "myrtos/mrt_priority.h"
 #include "mrt_task_internal.h"
 
@@ -982,6 +983,73 @@ MRT_Result MRT_TaskNotify(MRT_TaskHandle task, MRT_NotifyValue value, MRT_Notify
     }
 
     /* 通知发送成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文向指定任务发送通知。
+ * @param task 目标任务句柄，不能为空。
+ * @param value 通知值，具体含义由 action 决定。
+ * @param action 通知写入动作，必须是 MRT_NotifyAction 中的有效枚举值。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示通知写入成功；no-overwrite 遇到 pending 通知时返回
+ *         MRT_RESULT_OBJECT_BUSY；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文返回
+ *         MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_TaskNotifyFromISR(worker, 1u, MRT_NOTIFY_INCREMENT, &yield);
+ */
+MRT_Result MRT_TaskNotifyFromISR(MRT_TaskHandle task,
+                                 MRT_NotifyValue value,
+                                 MRT_NotifyAction action,
+                                 bool *should_yield)
+{
+    /* 默认不请求 ISR 退出后切换，所有失败路径保持该状态。 */
+    if (should_yield != 0) {
+        /* 写回 false，避免调用方沿用旧值。 */
+        *should_yield = false;
+    }
+
+    /* 目标任务不能为空，否则无法写入通知槽。 */
+    if (task == 0) {
+        /* 返回参数错误，提示调用方提供合法任务句柄。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 通知动作必须是定义过的枚举值。 */
+    if (!MRT_TaskNotifyActionIsValid(action)) {
+        /* 返回参数错误，避免非法动作破坏通知状态。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* FromISR API 只能在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文，提示调用方使用任务上下文 API。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 对目标任务应用通知动作。 */
+    MRT_Result result = MRT_TaskApplyNotification(task, value, action);
+
+    /* no-overwrite 忙等失败路径不能唤醒等待任务。 */
+    if (result != MRT_RESULT_OK) {
+        /* 返回实际通知动作结果。 */
+        return result;
+    }
+
+    /* 如果目标任务正在等待通知，则 ISR 中只唤醒为 ready，不立即切换。 */
+    if (task->wait_reason == MRT_TASK_WAIT_REASON_NOTIFY_WAIT) {
+        /* 唤醒任务但保留当前任务，等待 ISR 退出时由端口层处理切换。 */
+        (void)MRT_TaskKernelWakeTask(task, MRT_RESULT_OK, false);
+
+        /* 告诉调用方需要在 ISR 末尾请求一次调度。 */
+        if (should_yield != 0) {
+            /* 写回需要 yield。 */
+            *should_yield = true;
+        }
+    }
+
+    /* ISR 通知发送成功。 */
     return MRT_RESULT_OK;
 }
 

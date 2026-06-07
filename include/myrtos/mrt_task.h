@@ -218,6 +218,24 @@ const char *MRT_TaskGetName(MRT_TaskHandle task);
 MRT_Result MRT_TaskNotify(MRT_TaskHandle task, MRT_NotifyValue value, MRT_NotifyAction action);
 
 /**
+ * @brief 在 ISR 上下文向指定任务发送通知。
+ * @param task 目标任务句柄，不能为空。
+ * @param value 通知值，具体含义由 action 决定。
+ * @param action 通知写入动作，必须是 MRT_NotifyAction 中的有效枚举值。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示通知写入成功；no-overwrite 遇到 pending 通知时返回
+ *         MRT_RESULT_OBJECT_BUSY；参数非法返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文返回
+ *         MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_TaskNotifyFromISR(worker, 1u, MRT_NOTIFY_INCREMENT, &yield);
+ */
+MRT_Result MRT_TaskNotifyFromISR(MRT_TaskHandle task,
+                                 MRT_NotifyValue value,
+                                 MRT_NotifyAction action,
+                                 bool *should_yield);
+
+/**
  * @brief 等待当前任务收到通知并读取通知值。
  * @param clear_on_entry 进入等待前需要清除的通知值 bit 掩码。
  * @param clear_on_exit 成功读取后需要清除的通知值 bit 掩码。

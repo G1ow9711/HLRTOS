@@ -214,12 +214,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_TaskNotifyFromISR`: no blocked waiter keeps `should_yield=false`, blocked waiter sets `should_yield=true` and becomes ready without immediate switch, task context returns `MRT_RESULT_INVALID_CONTEXT`, null task returns `MRT_RESULT_INVALID_ARGUMENT`, no-overwrite busy returns `MRT_RESULT_OBJECT_BUSY`.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing ISR notify API declaration.
-- [ ] Implement ISR notification using the same action helper as task-context notify.
-- [ ] Wake notification waiters with `switch_now=false` and set `should_yield` when a task is made ready.
-- [ ] Run `python tools\run_host_tests.py`; expect 33 test targets pass.
-- [ ] Commit `feat: add task notification ISR`.
+- [x] Write failing tests for `MRT_TaskNotifyFromISR`: no blocked waiter keeps `should_yield=false`, blocked waiter sets `should_yield=true` and becomes ready without immediate switch, task context returns `MRT_RESULT_INVALID_CONTEXT`, null task returns `MRT_RESULT_INVALID_ARGUMENT`, no-overwrite busy returns `MRT_RESULT_OBJECT_BUSY`.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing ISR notify API declaration.
+- [x] Implement ISR notification using the same action helper as task-context notify.
+- [x] Wake notification waiters with `switch_now=false` and set `should_yield` when a task is made ready.
+- [x] Run `python tools\run_host_tests.py`; expect 33 test targets pass.
+- [x] Commit `feat: add task notification ISR`.
 
 ## Task 9: Events and Notifications Verification Matrix Update
 

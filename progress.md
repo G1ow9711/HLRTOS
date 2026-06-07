@@ -300,6 +300,8 @@
 | Task Notify Task 6 GREEN | `python tools\run_host_tests.py` after notify actions | 31 test targets pass | `[summary] 31 test target(s) passed` | Pass |
 | Task Notify Task 7 RED | `python tools\run_host_tests.py` before notify wait/take declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_TaskNotifyWait'`, `implicit declaration of function 'MRT_TaskNotifyTake'` | Pass |
 | Task Notify Task 7 GREEN | `python tools\run_host_tests.py` after notify wait/take coupling | 32 test targets pass | `[summary] 32 test target(s) passed` | Pass |
+| Task Notify Task 8 RED | `python tools\run_host_tests.py` before notify ISR declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_TaskNotifyFromISR'` | Pass |
+| Task Notify Task 8 GREEN | `python tools\run_host_tests.py` after notify ISR implementation | 33 test targets pass | `[summary] 33 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

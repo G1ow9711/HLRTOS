@@ -39,6 +39,7 @@ TESTS = [
     ("test_event_group_isr", ROOT / "tests" / "unit" / "test_event_group_isr.c"),
     ("test_task_notify_actions", ROOT / "tests" / "unit" / "test_task_notify_actions.c"),
     ("test_task_notify_wait_take", ROOT / "tests" / "coupling" / "test_task_notify_wait_take.c"),
+    ("test_task_notify_isr", ROOT / "tests" / "unit" / "test_task_notify_isr.c"),
 ]
 
 KERNEL_SOURCES = [
