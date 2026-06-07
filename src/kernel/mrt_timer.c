@@ -1,4 +1,85 @@
+#include "myrtos/mrt_kernel.h"
+#include "myrtos/mrt_port.h"
 #include "myrtos/mrt_timer.h"
+
+/** @brief 活动软件定时器链表，节点按 expiry_tick 从小到大排序。 */
+static MRT_List g_timer_active_list;
+
+/** @brief 活动软件定时器链表是否已经完成初始化。 */
+static bool g_timer_list_initialized;
+
+/**
+ * @brief 确保软件定时器内部链表已经初始化。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerEnsureInitialized();
+ */
+static void MRT_TimerEnsureInitialized(void)
+{
+    /* 如果链表已经初始化，直接返回。 */
+    if (g_timer_list_initialized) {
+        /* 已初始化状态无需重复清空链表。 */
+        return;
+    }
+
+    /* 初始化活动定时器链表。 */
+    MRT_ListInitialize(&g_timer_active_list);
+
+    /* 标记链表已经可用。 */
+    g_timer_list_initialized = true;
+}
+
+/**
+ * @brief 在已进入临界区的前提下，将定时器按到期时间加入活动链表。
+ * @param timer 定时器句柄，不能为空。
+ * @param expiry_tick 下一次到期 tick。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerArmLocked(timer, MRT_KernelGetTick() + timer->period_ticks);
+ */
+static void MRT_TimerArmLocked(MRT_TimerHandle timer, MRT_Tick expiry_tick)
+{
+    /* 如果节点已经在链表中，先移除旧位置，避免重复入链。 */
+    if (MRT_ListNodeIsLinked(&timer->node)) {
+        /* 从当前活动链表中脱离旧节点。 */
+        MRT_ListRemove(&timer->node);
+    }
+
+    /* 保存新的到期 tick。 */
+    timer->expiry_tick = expiry_tick;
+
+    /* 更新链表节点排序值，使有序插入按到期时间排序。 */
+    timer->node.value = expiry_tick;
+
+    /* 确保节点关联对象仍指向当前定时器。 */
+    timer->node.item = timer;
+
+    /* 按到期 tick 插入活动定时器链表。 */
+    MRT_ListInsertOrdered(&g_timer_active_list, &timer->node);
+
+    /* 标记定时器处于活动状态。 */
+    timer->active = true;
+}
+
+/**
+ * @brief 在已进入临界区的前提下，将定时器从活动链表移除。
+ * @param timer 定时器句柄，不能为空。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerDisarmLocked(timer);
+ */
+static void MRT_TimerDisarmLocked(MRT_TimerHandle timer)
+{
+    /* 如果节点处于入链状态，先从活动链表移除。 */
+    if (MRT_ListNodeIsLinked(&timer->node)) {
+        /* 移除节点并清空节点的 owner/prev/next。 */
+        MRT_ListRemove(&timer->node);
+    }
+
+    /* 标记定时器不再活动。 */
+    timer->active = false;
+}
 
 /**
  * @brief 使用调用方提供的控制块静态创建软件定时器。
@@ -128,4 +209,157 @@ const char *MRT_TimerGetName(MRT_TimerHandle timer)
 
     /* 返回控制块中保存的名称指针。 */
     return timer->name;
+}
+
+/**
+ * @brief 启动软件定时器并按当前 tick 计算下一次到期时间。
+ * @param timer 定时器句柄，不能为空。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示启动成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerStart(timer, 0);
+ */
+MRT_Result MRT_TimerStart(MRT_TimerHandle timer, MRT_Timeout timeout)
+{
+    /* 当前实现直接操作静态控制块，timeout 暂不参与等待。 */
+    (void)timeout;
+
+    /* 定时器句柄不能为空，否则无法访问周期和链表节点。 */
+    if (timer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 确保活动链表已初始化。 */
+    MRT_TimerEnsureInitialized();
+
+    /* 进入临界区，避免 tick 或其他上下文同时修改活动链表。 */
+    MRT_IntState state = MRT_PortEnterCritical();
+
+    /* 按当前 tick 加周期计算下一次到期点并加入有序链表。 */
+    MRT_TimerArmLocked(timer, MRT_KernelGetTick() + timer->period_ticks);
+
+    /* 退出临界区，恢复进入前的中断状态。 */
+    MRT_PortExitCritical(state);
+
+    /* 启动成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 停止软件定时器并从活动定时器链表移除。
+ * @param timer 定时器句柄，不能为空。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示停止成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerStop(timer, 0);
+ */
+MRT_Result MRT_TimerStop(MRT_TimerHandle timer, MRT_Timeout timeout)
+{
+    /* 当前实现直接操作静态控制块，timeout 暂不参与等待。 */
+    (void)timeout;
+
+    /* 定时器句柄不能为空，否则无法访问链表节点。 */
+    if (timer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 确保活动链表已初始化。 */
+    MRT_TimerEnsureInitialized();
+
+    /* 进入临界区保护活动链表。 */
+    MRT_IntState state = MRT_PortEnterCritical();
+
+    /* 将定时器从活动链表移除。 */
+    MRT_TimerDisarmLocked(timer);
+
+    /* 退出临界区。 */
+    MRT_PortExitCritical(state);
+
+    /* 停止成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 重新启动软件定时器并按当前 tick 重新计算到期时间。
+ * @param timer 定时器句柄，不能为空。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示重置成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerReset(timer, 0);
+ */
+MRT_Result MRT_TimerReset(MRT_TimerHandle timer, MRT_Timeout timeout)
+{
+    /* 当前实现直接操作静态控制块，timeout 暂不参与等待。 */
+    (void)timeout;
+
+    /* 定时器句柄不能为空，否则无法访问周期和链表节点。 */
+    if (timer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 确保活动链表已初始化。 */
+    MRT_TimerEnsureInitialized();
+
+    /* 进入临界区保护活动链表。 */
+    MRT_IntState state = MRT_PortEnterCritical();
+
+    /* 按当前 tick 重新装载周期；未活动定时器也会被启动。 */
+    MRT_TimerArmLocked(timer, MRT_KernelGetTick() + timer->period_ticks);
+
+    /* 退出临界区。 */
+    MRT_PortExitCritical(state);
+
+    /* 重置成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 修改软件定时器周期，活动定时器会立即按新周期重算到期时间。
+ * @param timer 定时器句柄，不能为空。
+ * @param new_period_ticks 新周期，单位为 tick，必须大于 0。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示修改成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerChangePeriod(timer, 50, 0);
+ */
+MRT_Result MRT_TimerChangePeriod(MRT_TimerHandle timer, MRT_Tick new_period_ticks, MRT_Timeout timeout)
+{
+    /* 当前实现直接操作静态控制块，timeout 暂不参与等待。 */
+    (void)timeout;
+
+    /* 定时器句柄不能为空，否则无法修改控制块。 */
+    if (timer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 新周期不能为 0，否则会造成定时器在同一 tick 内反复到期。 */
+    if (new_period_ticks == 0u) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 确保活动链表已初始化。 */
+    MRT_TimerEnsureInitialized();
+
+    /* 进入临界区保护周期字段和活动链表。 */
+    MRT_IntState state = MRT_PortEnterCritical();
+
+    /* 保存新的周期。 */
+    timer->period_ticks = new_period_ticks;
+
+    /* 活动定时器需要按新周期重新计算到期点。 */
+    if (timer->active) {
+        /* 以当前 tick 为基准重新加入活动链表。 */
+        MRT_TimerArmLocked(timer, MRT_KernelGetTick() + timer->period_ticks);
+    }
+
+    /* 退出临界区。 */
+    MRT_PortExitCritical(state);
+
+    /* 修改成功。 */
+    return MRT_RESULT_OK;
 }

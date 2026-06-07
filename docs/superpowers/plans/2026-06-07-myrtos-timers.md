@@ -78,12 +78,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for start making a timer active, stop making it inactive, reset recalculating expiry from current tick, change period updating period and expiry for active timers, invalid timer handles, and zero new period rejection.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing control API implementation.
-- [ ] Add a global active timer list sorted by expiry tick.
-- [ ] Implement start/stop/reset/change-period using direct host service semantics and ignore timeout except for API compatibility.
-- [ ] Run `python tools\run_host_tests.py`; expect 35 test targets pass.
-- [ ] Commit `feat: add timer control APIs`.
+- [x] Write failing tests for start making a timer active, stop making it inactive, reset recalculating expiry from current tick, change period updating period and expiry for active timers, invalid timer handles, and zero new period rejection.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing control API implementation.
+- [x] Add a global active timer list sorted by expiry tick.
+- [x] Implement start/stop/reset/change-period using direct host service semantics and ignore timeout except for API compatibility.
+- [x] Run `python tools\run_host_tests.py`; expect 35 test targets pass.
+- [x] Commit `feat: add timer control APIs`.
 
 ## Task 3: Timer Tick Expiry
 

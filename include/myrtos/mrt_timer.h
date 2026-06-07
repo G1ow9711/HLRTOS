@@ -85,6 +85,47 @@ MRT_Result MRT_TimerCreateStatic(const char *name,
                                  MRT_TimerHandle *out_timer);
 
 /**
+ * @brief 启动软件定时器并按当前 tick 计算下一次到期时间。
+ * @param timer 定时器句柄，不能为空。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示启动成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerStart(timer, 0);
+ */
+MRT_Result MRT_TimerStart(MRT_TimerHandle timer, MRT_Timeout timeout);
+
+/**
+ * @brief 停止软件定时器并从活动定时器链表移除。
+ * @param timer 定时器句柄，不能为空。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示停止成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerStop(timer, 0);
+ */
+MRT_Result MRT_TimerStop(MRT_TimerHandle timer, MRT_Timeout timeout);
+
+/**
+ * @brief 重新启动软件定时器并按当前 tick 重新计算到期时间。
+ * @param timer 定时器句柄，不能为空。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示重置成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerReset(timer, 0);
+ */
+MRT_Result MRT_TimerReset(MRT_TimerHandle timer, MRT_Timeout timeout);
+
+/**
+ * @brief 修改软件定时器周期，活动定时器会立即按新周期重算到期时间。
+ * @param timer 定时器句柄，不能为空。
+ * @param new_period_ticks 新周期，单位为 tick，必须大于 0。
+ * @param timeout 等待内部控制资源的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示修改成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TimerChangePeriod(timer, 50, 0);
+ */
+MRT_Result MRT_TimerChangePeriod(MRT_TimerHandle timer, MRT_Tick new_period_ticks, MRT_Timeout timeout);
+
+/**
  * @brief 查询软件定时器是否处于活动状态。
  * @param timer 定时器句柄，不能为空。
  * @param out_active 输出活动状态，不能为空。

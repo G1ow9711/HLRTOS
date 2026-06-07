@@ -117,6 +117,7 @@
 - Events/Notifications Task 9 updates `R-002`, `R-008`, `R-009`, `C-014`, `C-015`, `C-016`, and `C-027`. Event groups and task notifications are now evidenced by 33 passing host targets; timers, stream/message buffers, memory, tickless/trace/assert, ports, manual, static verification, and final report remain future plans.
 - Plan 6 timers will implement deterministic host timer behavior with static timers, direct control APIs, tick-driven expiry, and pending function FIFO. Dedicated timer service task and asynchronous command queue will be reported as partial coverage because the current host scheduler does not execute task entry functions yet.
 - Timer Task 1 adds static software timer creation with caller-provided control block storage. `MRT_TimerCreateStatic` rejects zero periods, null callbacks, null storage, and null output handles; new timers preserve name/period/reload/callback/argument fields and start inactive.
+- Timer Task 2 adds direct timer control APIs. `MRT_TimerStart` and `MRT_TimerReset` compute `expiry_tick = MRT_KernelGetTick() + period_ticks`, insert the timer into a global active list ordered by expiry, and keep callback execution deferred for tick processing. `MRT_TimerStop` unlinks active timers, and `MRT_TimerChangePeriod` updates inactive timers without starting them while rearming active timers from the current tick.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

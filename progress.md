@@ -331,6 +331,8 @@
 | Timer Task 1 RED | `python tools\run_host_tests.py` before timer header | Build fails due to missing header | `fatal error: myrtos/mrt_timer.h: No such file or directory` | Pass |
 | Timer Task 1 GREEN | `python tools\run_host_tests.py` after static timer creation | 34 test targets pass | `[summary] 34 test target(s) passed` | Pass |
 | Timer Task 1 pre-commit verification | `python tools\run_host_tests.py` | 34 test targets pass | `[summary] 34 test target(s) passed` | Pass |
+| Timer Task 2 RED | `python tools\run_host_tests.py` before timer control declarations | Build fails due to missing declarations | `implicit declaration of function 'MRT_TimerStart'`, `MRT_TimerStop`, `MRT_TimerReset`, `MRT_TimerChangePeriod` | Pass |
+| Timer Task 2 GREEN | `python tools\run_host_tests.py` after timer control APIs | 35 test targets pass | `[summary] 35 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
