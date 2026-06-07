@@ -7,8 +7,10 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 option(MRT_BUILD_TESTS "Build MyRTOS host tests" ON)
 
-add_library(myrtos_kernel INTERFACE)
-target_include_directories(myrtos_kernel INTERFACE
+add_library(myrtos_kernel STATIC
+    src/kernel/mrt_list.c
+)
+target_include_directories(myrtos_kernel PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 

@@ -9,3 +9,4 @@ endfunction()
 
 mrt_add_test(test_types_contract unit/test_types_contract.c)
 mrt_add_test(test_config_defaults unit/test_config_defaults.c)
+mrt_add_test(test_list unit/test_list.c)

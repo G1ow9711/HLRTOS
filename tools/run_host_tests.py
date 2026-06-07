@@ -9,6 +9,11 @@ BUILD = ROOT / "build" / "host-tests"
 TESTS = [
     ("test_types_contract", ROOT / "tests" / "unit" / "test_types_contract.c"),
     ("test_config_defaults", ROOT / "tests" / "unit" / "test_config_defaults.c"),
+    ("test_list", ROOT / "tests" / "unit" / "test_list.c"),
+]
+
+KERNEL_SOURCES = [
+    ROOT / "src" / "kernel" / "mrt_list.c",
 ]
 
 
@@ -31,6 +36,7 @@ def main():
             "-Iinclude",
             "-Itests/support",
             str(source),
+            *[str(kernel_source) for kernel_source in KERNEL_SOURCES],
             "-o",
             str(exe),
         ]
