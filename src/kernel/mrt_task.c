@@ -15,6 +15,37 @@ static MRT_Task *g_current_task;
 static bool g_task_kernel_initialized;
 
 /**
+ * @brief 选择当前最高优先级 ready 任务。
+ * @param void 无输入参数。
+ * @return MRT_Task* 返回被选中的任务；没有 ready 任务时返回空指针。
+ * @example
+ * MRT_Task *next = MRT_TaskSelectHighestReady();
+ */
+static MRT_Task *MRT_TaskSelectHighestReady(void)
+{
+    /* 定义最高 ready 优先级输出变量。 */
+    MRT_Priority highest_priority = 0u;
+
+    /* 查询 ready 位图；如果位图为空，则没有可运行任务。 */
+    if (!MRT_PriorityBitmapFindHighest(&g_ready_bitmap, &highest_priority)) {
+        /* 没有 ready 任务可选。 */
+        return 0;
+    }
+
+    /* 获取最高优先级 ready list 的头节点。 */
+    MRT_ListNode *head = MRT_ListGetHead(&g_ready_lists[highest_priority]);
+
+    /* 头节点为空说明位图和链表不一致，保守返回空指针。 */
+    if (head == 0) {
+        /* 没有可选择任务。 */
+        return 0;
+    }
+
+    /* 从链表节点恢复任务控制块指针。 */
+    return (MRT_Task *)head->item;
+}
+
+/**
  * @brief 将任务加入指定优先级 ready list。
  * @param task 待加入 ready list 的任务指针，不能为空。
  * @return void 无返回值。
@@ -67,26 +98,14 @@ void MRT_TaskKernelInitialize(void)
  */
 bool MRT_TaskKernelStartScheduler(void)
 {
-    /* 定义最高 ready 优先级输出变量。 */
-    MRT_Priority highest_priority = 0u;
+    /* 选择当前最高优先级 ready 任务。 */
+    MRT_Task *task = MRT_TaskSelectHighestReady();
 
-    /* 查询 ready 位图；如果位图为空，则没有可运行任务。 */
-    if (!MRT_PriorityBitmapFindHighest(&g_ready_bitmap, &highest_priority)) {
-        /* 没有 ready 任务，调度器不能启动。 */
+    /* 没有 ready 任务时不能启动调度器。 */
+    if (task == 0) {
+        /* 返回 false 告诉内核启动失败。 */
         return false;
     }
-
-    /* 获取最高优先级 ready list 的头节点。 */
-    MRT_ListNode *head = MRT_ListGetHead(&g_ready_lists[highest_priority]);
-
-    /* 头节点为空说明位图和链表不一致，保守返回失败。 */
-    if (head == 0) {
-        /* 没有可选择任务，调度器不能启动。 */
-        return false;
-    }
-
-    /* 从链表节点恢复任务控制块指针。 */
-    MRT_Task *task = (MRT_Task *)head->item;
 
     /* 保存当前任务指针。 */
     g_current_task = task;
@@ -96,6 +115,52 @@ bool MRT_TaskKernelStartScheduler(void)
 
     /* 成功选中第一个运行任务。 */
     return true;
+}
+
+/**
+ * @brief 当前任务主动 yield 时执行一次调度选择。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_TaskKernelYield();
+ */
+void MRT_TaskKernelYield(void)
+{
+    /* 如果当前任务为空，说明调度器尚未启动，无需调度。 */
+    if (g_current_task == 0) {
+        /* 没有当前任务，直接返回。 */
+        return;
+    }
+
+    /* 如果当前任务仍在 ready list 中，则可以参与同优先级轮转。 */
+    if (MRT_ListNodeIsLinked(&g_current_task->state_node)) {
+        /* 将当前任务状态恢复为 ready，表示它让出运行权。 */
+        g_current_task->state = MRT_TASK_STATE_READY;
+
+        /* 从 ready list 当前位置移除当前任务节点。 */
+        MRT_ListRemove(&g_current_task->state_node);
+
+        /* 将当前任务节点插入同优先级 ready list 尾部，实现 FIFO 轮转。 */
+        MRT_ListInsertTail(&g_ready_lists[g_current_task->priority], &g_current_task->state_node);
+    }
+
+    /* 重新选择当前最高优先级 ready 任务。 */
+    MRT_Task *next_task = MRT_TaskSelectHighestReady();
+
+    /* 如果没有可运行任务，则保持当前任务为空。 */
+    if (next_task == 0) {
+        /* 清空当前任务指针。 */
+        g_current_task = 0;
+
+        /* 返回调用方。 */
+        return;
+    }
+
+    /* 保存新选中的当前任务。 */
+    g_current_task = next_task;
+
+    /* 标记新当前任务为 running。 */
+    g_current_task->state = MRT_TASK_STATE_RUNNING;
 }
 
 /**

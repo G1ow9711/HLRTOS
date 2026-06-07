@@ -118,6 +118,9 @@ void MRT_KernelTick(void)
  */
 void MRT_KernelYield(void)
 {
+    /* 先让任务模块执行 ready list 轮转和重新选主。 */
+    MRT_TaskKernelYield();
+
     /* 将主动让出请求转发给端口层。 */
     MRT_PortYield();
 }

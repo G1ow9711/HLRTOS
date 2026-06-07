@@ -12,5 +12,6 @@
 
 void MRT_TaskKernelInitialize(void);
 bool MRT_TaskKernelStartScheduler(void);
+void MRT_TaskKernelYield(void);
 
 #endif
