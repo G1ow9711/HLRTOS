@@ -1,13 +1,41 @@
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
+#include "myrtos/mrt_config.h"
 #include "myrtos/mrt_timer.h"
 #include "mrt_timer_internal.h"
+
+/**
+ * @brief 软件定时器 pending function 队列元素。
+ *
+ * 队列元素保存用户投递的函数指针、指针参数和整数参数。定时器服务路径出队后，
+ * 会在临界区外调用 function(arg, value)。
+ */
+typedef struct MRT_TimerPendingEntry {
+    /** @brief 待执行的 pending function。 */
+    MRT_TimerPendingFunction function;
+    /** @brief 传递给 pending function 的用户参数。 */
+    void *arg;
+    /** @brief 传递给 pending function 的整数值。 */
+    uint32_t value;
+} MRT_TimerPendingEntry;
 
 /** @brief 活动软件定时器链表，节点按 expiry_tick 从小到大排序。 */
 static MRT_List g_timer_active_list;
 
 /** @brief 活动软件定时器链表是否已经完成初始化。 */
 static bool g_timer_list_initialized;
+
+/** @brief pending function 固定长度环形队列。 */
+static MRT_TimerPendingEntry g_timer_pending_queue[MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH];
+
+/** @brief pending function 环形队列读索引。 */
+static uint32_t g_timer_pending_head;
+
+/** @brief pending function 环形队列写索引。 */
+static uint32_t g_timer_pending_tail;
+
+/** @brief pending function 环形队列当前元素数量。 */
+static uint32_t g_timer_pending_count;
 
 /**
  * @brief 判断当前 tick 是否已经到达定时器到期 tick。
@@ -97,6 +125,25 @@ static void MRT_TimerDisarmLocked(MRT_TimerHandle timer)
 }
 
 /**
+ * @brief 清空 pending function 环形队列。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerResetPendingQueue();
+ */
+static void MRT_TimerResetPendingQueue(void)
+{
+    /* 读索引复位到队列起点。 */
+    g_timer_pending_head = 0u;
+
+    /* 写索引复位到队列起点。 */
+    g_timer_pending_tail = 0u;
+
+    /* 当前元素数量清零。 */
+    g_timer_pending_count = 0u;
+}
+
+/**
  * @brief 初始化软件定时器内核内部状态。
  * @param void 无输入参数。
  * @return void 无返回值。
@@ -128,6 +175,9 @@ void MRT_TimerKernelInitialize(void)
 
     /* 初始化或重新初始化活动定时器链表。 */
     MRT_ListInitialize(&g_timer_active_list);
+
+    /* 清空 pending function 队列，避免重新初始化后执行旧投递。 */
+    MRT_TimerResetPendingQueue();
 
     /* 标记链表已经完成初始化。 */
     g_timer_list_initialized = true;
@@ -484,4 +534,112 @@ MRT_Result MRT_TimerChangePeriod(MRT_TimerHandle timer, MRT_Tick new_period_tick
 
     /* 修改成功。 */
     return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 投递一个 pending function 到软件定时器服务队列。
+ * @param function 待延后执行的函数指针，不能为空。
+ * @param arg 传递给 function 的用户参数，允许为空。
+ * @param value 传递给 function 的整数值。
+ * @param timeout 等待队列空位的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示入队成功；函数为空返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         队列满返回 MRT_RESULT_OBJECT_FULL。
+ * @example
+ * MRT_TimerPendFunctionCall(DeferredWork, user, 1, 0);
+ */
+MRT_Result MRT_TimerPendFunctionCall(MRT_TimerPendingFunction function,
+                                     void *arg,
+                                     uint32_t value,
+                                     MRT_Timeout timeout)
+{
+    /* 当前阶段不阻塞等待队列空位，timeout 保留为兼容参数。 */
+    (void)timeout;
+
+    /* pending function 指针不能为空，否则服务路径无法执行。 */
+    if (function == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 确保定时器内部状态已经初始化。 */
+    MRT_TimerEnsureInitialized();
+
+    /* 进入临界区保护环形队列索引和计数。 */
+    MRT_IntState state = MRT_PortEnterCritical();
+
+    /* 队列满时不能再写入新项目。 */
+    if (g_timer_pending_count >= MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH) {
+        /* 退出临界区。 */
+        MRT_PortExitCritical(state);
+
+        /* 告诉调用方 pending 队列已满。 */
+        return MRT_RESULT_OBJECT_FULL;
+    }
+
+    /* 在写索引位置保存函数指针。 */
+    g_timer_pending_queue[g_timer_pending_tail].function = function;
+
+    /* 在写索引位置保存用户指针参数。 */
+    g_timer_pending_queue[g_timer_pending_tail].arg = arg;
+
+    /* 在写索引位置保存整数参数。 */
+    g_timer_pending_queue[g_timer_pending_tail].value = value;
+
+    /* 写索引向后移动并按队列容量回绕。 */
+    g_timer_pending_tail = (g_timer_pending_tail + 1u) % MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH;
+
+    /* 当前元素数量加 1。 */
+    g_timer_pending_count++;
+
+    /* 退出临界区。 */
+    MRT_PortExitCritical(state);
+
+    /* 入队成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 运行并清空当前已投递的 pending function 队列。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerServiceRunPending();
+ */
+void MRT_TimerServiceRunPending(void)
+{
+    /* 确保定时器内部状态已经初始化。 */
+    MRT_TimerEnsureInitialized();
+
+    /* 持续出队直到 pending 队列为空。 */
+    for (;;) {
+        /* 进入临界区保护环形队列。 */
+        MRT_IntState state = MRT_PortEnterCritical();
+
+        /* 如果队列为空，退出循环。 */
+        if (g_timer_pending_count == 0u) {
+            /* 退出临界区。 */
+            MRT_PortExitCritical(state);
+
+            /* 没有待执行函数。 */
+            break;
+        }
+
+        /* 复制当前读索引处的 pending function 项。 */
+        MRT_TimerPendingEntry entry = g_timer_pending_queue[g_timer_pending_head];
+
+        /* 读索引向后移动并按队列容量回绕。 */
+        g_timer_pending_head = (g_timer_pending_head + 1u) % MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH;
+
+        /* 当前元素数量减 1。 */
+        g_timer_pending_count--;
+
+        /* 退出临界区，避免用户函数在关中断状态下执行。 */
+        MRT_PortExitCritical(state);
+
+        /* 如果函数指针有效，则执行用户延后函数。 */
+        if (entry.function != 0) {
+            /* 将保存的指针参数和整数参数传给用户函数。 */
+            entry.function(entry.arg, entry.value);
+        }
+    }
 }

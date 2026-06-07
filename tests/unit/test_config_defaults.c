@@ -29,6 +29,9 @@ int main(void)
     /* 检查默认支持静态分配，便于嵌入式确定性使用。 */
     MRT_TEST_ASSERT_EQ_U32(1u, MRT_CFG_SUPPORT_STATIC_ALLOCATION);
 
+    /* 检查定时器 pending function 队列有足够默认容量覆盖常见延后执行场景。 */
+    MRT_TEST_ASSERT_TRUE(MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH >= 4u);
+
     /* 所有配置断言均通过，返回 0 交给测试运行器统计。 */
     return 0;
 }

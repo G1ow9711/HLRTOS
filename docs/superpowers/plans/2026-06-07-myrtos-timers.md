@@ -117,12 +117,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_TimerPendFunctionCall` FIFO ordering, argument/value delivery, null function rejection, pending queue full returning `MRT_RESULT_OBJECT_FULL`, and `MRT_TimerServiceRunPending` draining queued functions.
-- [ ] Run `python tools\run_host_tests.py`; expected failure is missing pending function API implementation.
-- [ ] Implement a fixed-size pending-function ring buffer controlled by `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH`.
-- [ ] Add a config default for `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH` if it is not already defined.
-- [ ] Run `python tools\run_host_tests.py`; expect 37 test targets pass.
-- [ ] Commit `feat: add timer pending function calls`.
+- [x] Write failing tests for `MRT_TimerPendFunctionCall` FIFO ordering, argument/value delivery, null function rejection, pending queue full returning `MRT_RESULT_OBJECT_FULL`, and `MRT_TimerServiceRunPending` draining queued functions.
+- [x] Run `python tools\run_host_tests.py`; expected failure is missing pending function API implementation.
+- [x] Implement a fixed-size pending-function ring buffer controlled by `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH`.
+- [x] Add a config default for `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH` if it is not already defined.
+- [x] Run `python tools\run_host_tests.py`; expect 37 test targets pass.
+- [x] Commit `feat: add timer pending function calls`.
 
 ## Task 5: Timers Verification Matrix Update
 

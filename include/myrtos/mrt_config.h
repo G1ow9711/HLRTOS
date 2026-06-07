@@ -90,4 +90,14 @@
 #define MRT_CFG_USE_TICKLESS_IDLE 1u
 #endif
 
+/**
+ * @brief 软件定时器 pending function 队列长度。
+ *
+ * pending function 用于把轻量延后执行函数投递到定时器服务路径中。
+ * 默认 8 项适合小型 STM32/DSP 工程；需要更高突发能力时可由用户工程覆盖。
+ */
+#ifndef MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH
+#define MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH 8u
+#endif
+
 #endif

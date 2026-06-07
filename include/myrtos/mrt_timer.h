@@ -126,6 +126,31 @@ MRT_Result MRT_TimerReset(MRT_TimerHandle timer, MRT_Timeout timeout);
 MRT_Result MRT_TimerChangePeriod(MRT_TimerHandle timer, MRT_Tick new_period_ticks, MRT_Timeout timeout);
 
 /**
+ * @brief 投递一个 pending function 到软件定时器服务队列。
+ * @param function 待延后执行的函数指针，不能为空。
+ * @param arg 传递给 function 的用户参数，允许为空。
+ * @param value 传递给 function 的整数值。
+ * @param timeout 等待队列空位的 tick 数；当前阶段为兼容参数，直接忽略。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示入队成功；函数为空返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         队列满返回 MRT_RESULT_OBJECT_FULL。
+ * @example
+ * MRT_TimerPendFunctionCall(DeferredWork, user, 1, 0);
+ */
+MRT_Result MRT_TimerPendFunctionCall(MRT_TimerPendingFunction function,
+                                     void *arg,
+                                     uint32_t value,
+                                     MRT_Timeout timeout);
+
+/**
+ * @brief 运行并清空当前已投递的 pending function 队列。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_TimerServiceRunPending();
+ */
+void MRT_TimerServiceRunPending(void);
+
+/**
  * @brief 查询软件定时器是否处于活动状态。
  * @param timer 定时器句柄，不能为空。
  * @param out_active 输出活动状态，不能为空。

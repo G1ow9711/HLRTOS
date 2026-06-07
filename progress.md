@@ -335,6 +335,8 @@
 | Timer Task 2 GREEN | `python tools\run_host_tests.py` after timer control APIs | 35 test targets pass | `[summary] 35 test target(s) passed` | Pass |
 | Timer Task 3 RED | `python tools\run_host_tests.py` before timer tick processing | Coupling test fails because callbacks are not run on tick expiry | `test_timer_tick_expiry.c:143: expected 1 got 0` | Pass |
 | Timer Task 3 GREEN | `python tools\run_host_tests.py` after kernel tick timer processing | 36 test targets pass | `[summary] 36 test target(s) passed` | Pass |
+| Timer Task 4 RED | `python tools\run_host_tests.py` before pending function API/default config | Build fails due to missing config macro and declarations | `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH undeclared`, `implicit declaration of function 'MRT_TimerPendFunctionCall'`, `MRT_TimerServiceRunPending` | Pass |
+| Timer Task 4 GREEN | `python tools\run_host_tests.py` after pending function FIFO | 37 test targets pass | `[summary] 37 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

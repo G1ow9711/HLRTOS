@@ -43,6 +43,7 @@ TESTS = [
     ("test_timer_create_static", ROOT / "tests" / "unit" / "test_timer_create_static.c"),
     ("test_timer_control", ROOT / "tests" / "unit" / "test_timer_control.c"),
     ("test_timer_tick_expiry", ROOT / "tests" / "coupling" / "test_timer_tick_expiry.c"),
+    ("test_timer_pending_function", ROOT / "tests" / "unit" / "test_timer_pending_function.c"),
 ]
 
 KERNEL_SOURCES = [

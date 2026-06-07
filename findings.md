@@ -119,6 +119,7 @@
 - Timer Task 1 adds static software timer creation with caller-provided control block storage. `MRT_TimerCreateStatic` rejects zero periods, null callbacks, null storage, and null output handles; new timers preserve name/period/reload/callback/argument fields and start inactive.
 - Timer Task 2 adds direct timer control APIs. `MRT_TimerStart` and `MRT_TimerReset` compute `expiry_tick = MRT_KernelGetTick() + period_ticks`, insert the timer into a global active list ordered by expiry, and keep callback execution deferred for tick processing. `MRT_TimerStop` unlinks active timers, and `MRT_TimerChangePeriod` updates inactive timers without starting them while rearming active timers from the current tick.
 - Timer Task 3 couples software timers to the kernel tick path. `MRT_KernelInitialize` now clears timer internal state, and `MRT_KernelTick` calls `MRT_TimerKernelTick` after task delay processing. One-shot timers stop after callback, auto-reload timers rearm before callback so callback code can stop or adjust them, and callbacks run outside the critical section.
+- Timer Task 4 adds pending function support through a fixed-size ring buffer controlled by `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH` (default 8). `MRT_TimerPendFunctionCall` validates null functions and reports `MRT_RESULT_OBJECT_FULL` on capacity exhaustion; `MRT_TimerServiceRunPending` drains FIFO entries outside the critical section.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
