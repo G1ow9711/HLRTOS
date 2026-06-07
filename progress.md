@@ -393,6 +393,13 @@
 - `docs/verification/coupling_test_matrix.md` now marks `C-020`, `C-021`, and `C-022` verified.
 - Remaining large modules are memory managers, tickless/low-power, trace/assertion hooks, STM32/DSP ports, final manual with detailed porting steps, static comment verification, and final report.
 
+## Memory Management Plan Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Worktree creation | `git worktree add .worktrees\memory-management -b feature/memory-management feature/stream-message-buffers` | New branch from stream/message buffer baseline | Worktree created at `F:\My_RTOS\.worktrees\memory-management` | Pass |
+| Baseline | `python tools\run_host_tests.py` in `.worktrees\memory-management` | 44 test targets pass | `[summary] 44 test target(s) passed` | Pass |
+| Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-memory.md` | Plan 8 tasks defined | 7 tasks defined for heap initialization, linear heap, free-list heap, coalescing heap, fixed block pool, dynamic queue allocation, and verification matrix update | Pass |
+
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
@@ -402,11 +409,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Plan 7: stream/message buffer verification matrix update |
-| Where am I going? | Commit Plan 7 verification evidence, push the branch, then continue with memory/tickless/trace/port/manual plans |
+| Where am I? | Plan 8: memory management implementation plan |
+| Where am I going? | Commit the Plan 8 implementation plan, then execute TDD tasks for heap and memory pool |
 | What's the goal? | Build original STM32/DSP-capable RTOS with detailed Chinese comments, manual, and tests |
-| What have I learned? | Stream/message buffers now pass 44 host targets and have verified wrap-around, ISR reader wake, and no-half-packet behavior |
-| What have I done? | Implemented and committed stream/message buffer APIs through Task 6, then updated verification evidence for Task 7 |
+| What have I learned? | Memory plan should verify dynamic allocation failure (`C-007`, `C-023`) and adjacent free block coalescing (`C-024`) without copying FreeRTOS heap implementations |
+| What have I done? | Created `.worktrees\memory-management`, verified the 44-target baseline, and drafted Plan 8 |
 
 ---
 *Update after completing each phase or encountering errors.*
