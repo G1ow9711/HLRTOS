@@ -92,6 +92,7 @@
 - Queue Task 5 uses two task list nodes: `state_node` for ready/delay scheduling and `wait_node` for object wait lists. This lets a queue receive timeout remove the task from both delay and queue wait lists without corrupting either list.
 - Queue Task 6 wakes the highest-priority receiver when a send succeeds. Task-context send immediately reschedules; ISR send only marks the receiver ready and sets `should_yield=true` so the port layer can request a deferred switch.
 - Queue verification matrix now marks `C-004`, `C-005`, and `C-006` verified. `C-007` remains explicitly not implemented because dynamic queue creation and heap failure behavior belong to the later memory-management module.
+- Plan 4 starts semaphore and mutex work on top of the queue object-wait infrastructure. Semaphores can reuse task wait lists directly; mutexes need additional task priority inheritance helpers.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
