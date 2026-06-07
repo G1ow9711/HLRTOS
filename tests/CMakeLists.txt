@@ -4,6 +4,7 @@ function(mrt_add_test test_name test_source)
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/support
     )
+    target_compile_definitions(${test_name} PRIVATE MRT_TESTING=1)
     add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
@@ -17,3 +18,4 @@ mrt_add_test(test_task_create_static sim/test_task_create_static.c)
 mrt_add_test(test_scheduler_start sim/test_scheduler_start.c)
 mrt_add_test(test_scheduler_round_robin sim/test_scheduler_round_robin.c)
 mrt_add_test(test_task_delay sim/test_task_delay.c)
+mrt_add_test(test_task_delay_overflow sim/test_task_delay_overflow.c)

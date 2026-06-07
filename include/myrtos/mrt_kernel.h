@@ -56,6 +56,17 @@ MRT_Tick MRT_KernelGetTick(void);
  */
 void MRT_KernelTick(void);
 
+#if MRT_TESTING
+/**
+ * @brief 测试环境直接设置当前系统 tick。
+ * @param tick 要写入的系统 tick 值。
+ * @return void 无返回值。
+ * @example
+ * MRT_KernelTestSetTick(UINT32_MAX - 1u);
+ */
+void MRT_KernelTestSetTick(MRT_Tick tick);
+#endif
+
 /**
  * @brief 当前任务主动让出 CPU。
  * @param void 无输入参数。

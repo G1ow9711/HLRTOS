@@ -72,6 +72,9 @@
   - Committed scheduler Task 3 as `ac3eda3`.
   - Task scheduler Task 4 RED: `python tools\run_host_tests.py` failed because `MRT_TaskDelay` was not declared.
   - Task scheduler Task 4 GREEN: implemented delayed list, `MRT_TaskDelay`, tick wakeup, and wake preemption; same command passed 10 test targets.
+  - Committed scheduler Task 4 as `6f347c6`.
+  - Task scheduler Task 5 RED: `python tools\run_host_tests.py` failed because `MRT_KernelTestSetTick` was not declared.
+  - Task scheduler Task 5 GREEN: added `MRT_KernelTestSetTick` under `MRT_TESTING`; tick overflow delay test passed; full command passed 11 test targets.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -112,6 +115,7 @@
   - `tests/sim/test_scheduler_start.c` created.
   - `tests/sim/test_scheduler_round_robin.c` created.
   - `tests/sim/test_task_delay.c` created.
+  - `tests/sim/test_task_delay_overflow.c` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -151,6 +155,8 @@
 | Scheduler Task 3 GREEN | `python tools\run_host_tests.py` after ready list tail rotation | 9 test targets pass | `[summary] 9 test target(s) passed` | Pass |
 | Scheduler Task 4 RED | `python tools\run_host_tests.py` before `MRT_TaskDelay` | Build fails due to missing function declaration | `implicit declaration of function 'MRT_TaskDelay'` | Pass |
 | Scheduler Task 4 GREEN | `python tools\run_host_tests.py` after delay list and tick wakeup | 10 test targets pass | `[summary] 10 test target(s) passed` | Pass |
+| Scheduler Task 5 RED | `python tools\run_host_tests.py` before tick test hook | Build fails due to missing function declaration | `implicit declaration of function 'MRT_KernelTestSetTick'` | Pass |
+| Scheduler Task 5 GREEN | `python tools\run_host_tests.py` after tick overflow test hook | 11 test targets pass | `[summary] 11 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

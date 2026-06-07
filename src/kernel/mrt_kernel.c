@@ -112,6 +112,21 @@ void MRT_KernelTick(void)
     MRT_TaskKernelTick(g_kernel_tick);
 }
 
+#if MRT_TESTING
+/**
+ * @brief 测试环境直接设置当前系统 tick。
+ * @param tick 要写入的系统 tick 值。
+ * @return void 无返回值。
+ * @example
+ * MRT_KernelTestSetTick(UINT32_MAX - 1u);
+ */
+void MRT_KernelTestSetTick(MRT_Tick tick)
+{
+    /* 直接写入内核 tick，用于构造 tick 溢出等边界场景。 */
+    g_kernel_tick = tick;
+}
+#endif
+
 /**
  * @brief 当前任务主动让出 CPU。
  * @param void 无输入参数。

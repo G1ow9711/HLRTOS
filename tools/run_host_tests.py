@@ -17,6 +17,7 @@ TESTS = [
     ("test_scheduler_start", ROOT / "tests" / "sim" / "test_scheduler_start.c"),
     ("test_scheduler_round_robin", ROOT / "tests" / "sim" / "test_scheduler_round_robin.c"),
     ("test_task_delay", ROOT / "tests" / "sim" / "test_task_delay.c"),
+    ("test_task_delay_overflow", ROOT / "tests" / "sim" / "test_task_delay_overflow.c"),
 ]
 
 KERNEL_SOURCES = [
@@ -44,6 +45,7 @@ def main():
             "-Wall",
             "-Wextra",
             "-Werror",
+            "-DMRT_TESTING=1",
             "-Iinclude",
             "-Itests/support",
             str(source),
