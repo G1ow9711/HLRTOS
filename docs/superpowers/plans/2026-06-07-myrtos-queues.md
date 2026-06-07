@@ -92,12 +92,12 @@ Steps:
 
 Steps:
 
-- [ ] Write failing test for current task receiving empty queue with 3 tick timeout, then waking with `MRT_RESULT_TIMEOUT`.
-- [ ] Add task wait reason and wait result fields.
-- [ ] Add queue receive wait list using `MRT_List`.
-- [ ] On timeout, remove task from queue wait list and return timeout result through task wait result.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add queue receive timeout coupling`.
+- [x] Write failing test for current task receiving empty queue with 3 tick timeout, then waking with `MRT_RESULT_TIMEOUT`.
+- [x] Add task wait reason and wait result fields.
+- [x] Add queue receive wait list using `MRT_List`.
+- [x] On timeout, remove task from queue wait list and return timeout result through task wait result.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add queue receive timeout coupling`.
 
 ## Task 6: Queue Send Wakes Receiver
 

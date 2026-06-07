@@ -8,11 +8,18 @@
  * 本文件只供内核内部模块使用，不作为用户 API。
  */
 
+#include "myrtos/mrt_list.h"
+#include "myrtos/mrt_task.h"
+
 #include <stdbool.h>
 
 void MRT_TaskKernelInitialize(void);
 bool MRT_TaskKernelStartScheduler(void);
 void MRT_TaskKernelYield(void);
 void MRT_TaskKernelTick(MRT_Tick now);
+MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
+                                              MRT_Tick ticks,
+                                              MRT_TaskWaitReason wait_reason,
+                                              MRT_Result wait_result);
 
 #endif

@@ -41,6 +41,22 @@ typedef enum MRT_TaskState {
 } MRT_TaskState;
 
 /**
+ * @brief 任务当前等待原因。
+ *
+ * 内核在调试、对象等待和超时唤醒时使用该枚举记录任务为何进入 blocked 状态。
+ */
+typedef enum MRT_TaskWaitReason {
+    /** @brief 任务没有等待任何内核对象。 */
+    MRT_TASK_WAIT_REASON_NONE = 0,
+    /** @brief 任务正在执行纯 tick 延时。 */
+    MRT_TASK_WAIT_REASON_DELAY,
+    /** @brief 任务正在等待队列出现可接收数据。 */
+    MRT_TASK_WAIT_REASON_QUEUE_RECEIVE,
+    /** @brief 任务正在等待队列出现可发送空间。 */
+    MRT_TASK_WAIT_REASON_QUEUE_SEND
+} MRT_TaskWaitReason;
+
+/**
  * @brief MyRTOS 任务控制块。
  *
  * 静态创建任务时，用户提供该结构体存储任务元数据。
@@ -65,8 +81,14 @@ typedef struct MRT_Task {
     MRT_TaskState state;
     /** @brief 任务进入 ready/delay 等链表时使用的节点。 */
     MRT_ListNode state_node;
+    /** @brief 任务等待队列、信号量等同步对象时使用的对象等待链表节点。 */
+    MRT_ListNode wait_node;
     /** @brief 阻塞延时到期 tick；ready 状态下该字段无效。 */
     MRT_Tick wake_tick;
+    /** @brief 任务进入 blocked 状态的原因，用于超时清理和调试查询。 */
+    MRT_TaskWaitReason wait_reason;
+    /** @brief 任务从对象等待中恢复时传递给等待 API 的结果。 */
+    MRT_Result wait_result;
     /** @brief 是否使用静态存储创建。 */
     bool static_storage;
 } MRT_Task;

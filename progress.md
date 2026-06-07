@@ -94,6 +94,9 @@
   - Queue Task 4 RED: `python tools\run_host_tests.py` failed because `MRT_QueueSendFromISR` and `MRT_QueueReceiveFromISR` were not declared.
   - Queue Task 4 GREEN: implemented ISR send/receive wrappers with ISR-context validation and conservative `should_yield=false`; same command passed 15 test targets.
   - Committed Queue Task 4 with message `feat: add queue ISR variants`.
+  - Queue Task 5 RED: `python tools\run_host_tests.py` failed in `test_queue_task_timeout` because `MRT_QueueReceive(queue, out, 3)` did not block the current task or switch to the low-priority task.
+  - Queue Task 5 GREEN: added task object-wait node/result/reason fields, queue receive waiting list coupling, and timeout cleanup on tick wake; same command passed 16 test targets.
+  - Queue Task 5 commit message: `feat: add queue receive timeout coupling`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -148,6 +151,10 @@
   - `tests/unit/test_queue_isr.c` created.
   - `include/myrtos/mrt_queue.h` updated with ISR queue API declarations.
   - `src/kernel/mrt_queue.c` updated with ISR queue API implementations.
+  - `tests/coupling/test_queue_task_timeout.c` created.
+  - `include/myrtos/mrt_task.h` updated with task wait reason/result fields.
+  - `src/kernel/mrt_task_internal.h` updated with object-wait blocking API.
+  - `src/kernel/mrt_task.c` updated with object-wait timeout coupling.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -199,6 +206,8 @@
 | Queue Task 3 GREEN | `python tools\run_host_tests.py` after queue variants | 14 test targets pass | `[summary] 14 test target(s) passed` | Pass |
 | Queue Task 4 RED | `python tools\run_host_tests.py` before ISR declarations | Build fails due to missing function declarations | `implicit declaration of function 'MRT_QueueSendFromISR'`, `implicit declaration of function 'MRT_QueueReceiveFromISR'` | Pass |
 | Queue Task 4 GREEN | `python tools\run_host_tests.py` after ISR queue APIs | 15 test targets pass | `[summary] 15 test target(s) passed` | Pass |
+| Queue Task 5 RED | `python tools\run_host_tests.py` before queue receive blocking | Coupling test fails because current task does not block | `assertion failed: MRT_TaskGetCurrent() == low_task` | Pass |
+| Queue Task 5 GREEN | `python tools\run_host_tests.py` after queue receive timeout coupling | 16 test targets pass | `[summary] 16 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

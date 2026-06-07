@@ -1,5 +1,6 @@
 #include "myrtos/mrt_queue.h"
 #include "myrtos/mrt_port.h"
+#include "mrt_task_internal.h"
 
 #include <string.h>
 
@@ -199,8 +200,11 @@ MRT_Result MRT_QueueReceive(MRT_QueueHandle queue, void *out_item, MRT_Timeout t
             return MRT_RESULT_OBJECT_EMPTY;
         }
 
-        /* 阻塞等待尚未在本任务中接入，先用超时结果表达未完成。 */
-        return MRT_RESULT_TIMEOUT;
+        /* 将当前任务挂入队列接收等待链表，并设置 tick 超时。 */
+        return MRT_TaskKernelBlockCurrentOnObject(&queue->waiting_receivers,
+                                                  timeout,
+                                                  MRT_TASK_WAIT_REASON_QUEUE_RECEIVE,
+                                                  MRT_RESULT_TIMEOUT);
     }
 
     /* 根据读下标计算源槽位的字节地址。 */

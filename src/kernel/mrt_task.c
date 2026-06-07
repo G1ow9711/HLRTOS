@@ -260,6 +260,15 @@ void MRT_TaskKernelTick(MRT_Tick now)
         /* 从延时链表移除到期任务。 */
         MRT_ListRemove(&task->state_node);
 
+        /* 如果任务同时挂在某个对象等待链表上，说明对象等待超时，需要同步摘除。 */
+        if (MRT_ListNodeIsLinked(&task->wait_node)) {
+            /* 从队列、信号量等对象等待链表中移除该任务。 */
+            MRT_ListRemove(&task->wait_node);
+        }
+
+        /* 超时唤醒后任务不再等待具体对象。 */
+        task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
+
         /* 将到期任务重新加入 ready list。 */
         MRT_TaskAddReady(task);
 
@@ -291,6 +300,79 @@ void MRT_TaskKernelTick(MRT_Tick now)
  * MRT_TaskHandle led;
  * MRT_TaskCreateStatic("led", LedTask, NULL, 3, led_stack, 256, &led_tcb, &led);
  */
+/**
+ * @brief 将当前任务阻塞到指定内核对象等待链表，并设置 tick 超时。
+ * @param wait_list 队列、信号量等对象的等待链表，不能为空。
+ * @param ticks 最大等待 tick 数；当前调用方应保证大于 0。
+ * @param wait_reason 任务等待原因，用于调试和超时清理。
+ * @param wait_result 等待到期时返回给调用方的结果。
+ * @return MRT_Result 返回 wait_result 表示当前 host 仿真中的等待结局；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TaskKernelBlockCurrentOnObject(&queue->waiting_receivers, 3, MRT_TASK_WAIT_REASON_QUEUE_RECEIVE, MRT_RESULT_TIMEOUT);
+ */
+MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
+                                              MRT_Tick ticks,
+                                              MRT_TaskWaitReason wait_reason,
+                                              MRT_Result wait_result)
+{
+    /* 对象等待链表不能为空，否则无法记录任务正在等待哪个对象。 */
+    if (wait_list == 0) {
+        /* 返回参数错误，提示调用方提供有效等待链表。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 如果当前没有运行任务，host 仿真无法真正挂起调用方，按等待结果返回。 */
+    if (g_current_task == 0) {
+        /* 保持早期非调度上下文行为：非零 timeout 直接表现为等待结果。 */
+        return wait_result;
+    }
+
+    /* 保存需要阻塞的当前任务。 */
+    MRT_Task *task = g_current_task;
+
+    /* 将当前任务从 ready list 移除，使调度器不再选择它运行。 */
+    MRT_TaskRemoveReady(task);
+
+    /* 计算任务等待到期 tick，允许无符号自然回绕。 */
+    task->wake_tick = MRT_KernelGetTick() + ticks;
+
+    /* 标记任务进入 blocked 状态。 */
+    task->state = MRT_TASK_STATE_BLOCKED;
+
+    /* 保存任务等待原因，供调试和对象清理逻辑使用。 */
+    task->wait_reason = wait_reason;
+
+    /* 保存等待结果，host 仿真中立即返回给调用方。 */
+    task->wait_result = wait_result;
+
+    /* 使用唤醒 tick 作为 delay list 排序值。 */
+    task->state_node.value = task->wake_tick;
+
+    /* 使用反向优先级作为对象等待链表排序值，数值越小代表任务优先级越高。 */
+    task->wait_node.value = UINT32_MAX - task->priority;
+
+    /* 如果等待节点意外仍在某个链表中，先摘除，避免重复入链。 */
+    if (MRT_ListNodeIsLinked(&task->wait_node)) {
+        /* 清理旧等待关系。 */
+        MRT_ListRemove(&task->wait_node);
+    }
+
+    /* 将任务加入对象等待链表，后续发送/释放对象时可按优先级唤醒。 */
+    MRT_ListInsertOrdered(wait_list, &task->wait_node);
+
+    /* 将任务加入 delay list，tick 到期时自动超时唤醒。 */
+    MRT_ListInsertOrdered(&g_delayed_list, &task->state_node);
+
+    /* 当前任务已经阻塞，清空当前任务指针。 */
+    g_current_task = 0;
+
+    /* 重新选择下一个最高优先级 ready 任务运行。 */
+    MRT_TaskSwitchToHighestReady();
+
+    /* 返回等待结果；真实端口后续会在任务恢复时从同一 API 继续返回。 */
+    return task->wait_result;
+}
+
 MRT_Result MRT_TaskCreateStatic(const char *name,
                                 MRT_TaskEntry entry,
                                 void *arg,
@@ -360,8 +442,17 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
     /* 初始化任务链表节点，item 指回任务控制块。 */
     MRT_ListNodeInitialize(&storage->state_node, storage, 0u);
 
+    /* 初始化对象等待链表节点，item 同样指回任务控制块。 */
+    MRT_ListNodeInitialize(&storage->wait_node, storage, 0u);
+
     /* 新创建任务尚未阻塞，唤醒 tick 清零。 */
     storage->wake_tick = 0u;
+
+    /* 新任务没有等待任何对象。 */
+    storage->wait_reason = MRT_TASK_WAIT_REASON_NONE;
+
+    /* 新任务没有挂起的等待结果。 */
+    storage->wait_result = MRT_RESULT_OK;
 
     /* 标记该任务使用静态存储。 */
     storage->static_storage = true;
@@ -414,6 +505,12 @@ MRT_Result MRT_TaskDelay(MRT_Tick ticks)
 
     /* 将任务状态设置为 blocked。 */
     task->state = MRT_TASK_STATE_BLOCKED;
+
+    /* 标记当前阻塞原因是纯 tick 延时。 */
+    task->wait_reason = MRT_TASK_WAIT_REASON_DELAY;
+
+    /* 纯延时醒来后没有对象等待错误，结果保持 OK。 */
+    task->wait_result = MRT_RESULT_OK;
 
     /* 使用唤醒 tick 作为延时链表排序值。 */
     task->state_node.value = task->wake_tick;
