@@ -240,3 +240,13 @@ typedef enum MRT_Result {
 - 调用示例。
 - 常见错误。
 
+移植章节必须额外覆盖：
+
+- STM32 Cortex-M4/M7 的 ARM GCC/CMake 工程接入步骤。
+- STM32 启动文件、向量表、SysTick、PendSV、SVC 配置步骤。
+- STM32 中断优先级、临界区、BASEPRI/PRIMASK 选择规则。
+- STM32 链接脚本、任务栈、堆区与 `.bss`/`.data` 注意事项。
+- DSP 工具链、ABI、寄存器保存、栈增长方向、对齐要求。
+- DSP tick 定时器、软件中断上下文切换、嵌套中断策略。
+- STM32 和 DSP smoke test 逐步验收流程。
+

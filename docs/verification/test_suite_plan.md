@@ -87,6 +87,7 @@ python tools/verify/check_original_symbols.py
 
 - `docs/api/myrtos_api_catalog.md` 中每个 public API 在手册出现。
 - 每个 API 条目有“函数原型、参数、返回值、示例、调用上下文”。
+- STM32 和 DSP 移植章节有“工具链、启动文件、向量表、tick、上下文切换、栈布局、临界区、低功耗、示例、排错”。
 - 手册不出现 FreeRTOS API 名作为 MyRTOS API 名。
 
 ### 5.3 原创性扫描

@@ -33,6 +33,13 @@
   - Created foundation kernel TDD implementation plan.
   - Ran implementation-plan self-review scans.
   - User instructed autonomous best-direction decisions and reiterated: reference FreeRTOS only as design input, do not copy.
+  - User added requirement: final Chinese manual must include detailed porting steps.
+  - Created foundation worktree `feature/foundation-kernel`.
+  - Found `cmake` command missing in local environment.
+  - Confirmed GCC 13.1.0 is available.
+  - Added fallback host test runner `tools/run_host_tests.py`.
+  - Task 1 RED: `python tools\run_host_tests.py` failed because `myrtos/mrt_types.h` was missing.
+  - Task 1 GREEN: added `include/myrtos/mrt_types.h`; same command passed 1 test target.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -45,6 +52,12 @@
   - `.gitignore` created.
   - `docs/superpowers/plans/2026-06-07-myrtos-master-implementation.md` created.
   - `docs/superpowers/plans/2026-06-07-myrtos-foundation-kernel.md` created.
+  - `CMakeLists.txt` created in foundation worktree.
+  - `tests/CMakeLists.txt` created.
+  - `tests/support/mrt_test.h` created.
+  - `tests/unit/test_types_contract.c` created.
+  - `tools/run_host_tests.py` created.
+  - `include/myrtos/mrt_types.h` created.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -58,6 +71,13 @@
 | 2026-06-07 | `git status` failed: not a Git repository | 1 | Logged state; continue without worktree. |
 | 2026-06-07 | `git log` failed: not a Git repository | 1 | Logged state; continue without commit history. |
 | 2026-06-07 | PowerShell rejected `&&` command separator | 1 | Switched to separate git commands. |
+| 2026-06-07 | `cmake` command not found | 1 | Used GCC-backed project-local Python runner for host tests and kept CMake files for standard environments. |
+
+## Foundation Kernel Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Task 1 RED | `python tools\run_host_tests.py` before `mrt_types.h` exists | Build fails due to missing header | `fatal error: myrtos/mrt_types.h: No such file or directory` | Pass |
+| Task 1 GREEN | `python tools\run_host_tests.py` after adding `mrt_types.h` | 1 test target passes | `[summary] 1 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

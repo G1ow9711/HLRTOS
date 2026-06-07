@@ -68,6 +68,7 @@ Phase 3: Implementation Plan
 | User approved design | User replied "批准"; proceed to implementation planning and Git baseline. |
 | Split C implementation into plan series | Full C scope covers many subsystems; master plan plus subsystem plans keeps verification auditable. |
 | Autonomous technical decisions | User instructed Codex to choose the best direction, consult FreeRTOS source when unclear, and redesign rather than copy. |
+| Host test fallback | Local environment has GCC but no CMake; keep CMake files for standard environments and use `tools/run_host_tests.py` for current host verification. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -75,6 +76,7 @@ Phase 3: Implementation Plan
 | `git status` failed: not a git repository | 1 | Logged repository state; proceed directly in project directory. |
 | `git log` failed: not a git repository | 1 | Logged repository state; skip commit/worktree steps until repo exists. |
 | PowerShell rejected `&&` command separator | 1 | Re-run git add and git commit as separate PowerShell commands. |
+| `cmake` command not found | 1 | Verified GCC exists; added project-local Python host test runner as fallback while preserving CMake build files. |
 
 ## Notes
 - Re-read this file before major design decisions.
