@@ -91,6 +91,9 @@
   - Queue Task 3 RED: `python tools\run_host_tests.py` failed because `MRT_QueuePeek`, `MRT_QueueSendFront`, `MRT_QueueOverwrite`, and `MRT_QueueReset` were not declared.
   - Queue Task 3 GREEN: implemented peek, send-front, single-slot overwrite, and reset; same command passed 14 test targets.
   - Committed Queue Task 3 with message `feat: add queue variants`.
+  - Queue Task 4 RED: `python tools\run_host_tests.py` failed because `MRT_QueueSendFromISR` and `MRT_QueueReceiveFromISR` were not declared.
+  - Queue Task 4 GREEN: implemented ISR send/receive wrappers with ISR-context validation and conservative `should_yield=false`; same command passed 15 test targets.
+  - Committed Queue Task 4 with message `feat: add queue ISR variants`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -142,6 +145,9 @@
   - `tests/unit/test_queue_variants.c` created.
   - `include/myrtos/mrt_queue.h` updated with queue variant API declarations.
   - `src/kernel/mrt_queue.c` updated with queue variant implementations.
+  - `tests/unit/test_queue_isr.c` created.
+  - `include/myrtos/mrt_queue.h` updated with ISR queue API declarations.
+  - `src/kernel/mrt_queue.c` updated with ISR queue API implementations.
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -191,6 +197,8 @@
 | Queue Task 2 GREEN | `python tools\run_host_tests.py` after FIFO non-blocking send/receive | 13 test targets pass | `[summary] 13 test target(s) passed` | Pass |
 | Queue Task 3 RED | `python tools\run_host_tests.py` before queue variant declarations | Build fails due to missing function declarations | `implicit declaration of function 'MRT_QueuePeek'`, `MRT_QueueSendFront`, `MRT_QueueOverwrite`, `MRT_QueueReset` | Pass |
 | Queue Task 3 GREEN | `python tools\run_host_tests.py` after queue variants | 14 test targets pass | `[summary] 14 test target(s) passed` | Pass |
+| Queue Task 4 RED | `python tools\run_host_tests.py` before ISR declarations | Build fails due to missing function declarations | `implicit declaration of function 'MRT_QueueSendFromISR'`, `implicit declaration of function 'MRT_QueueReceiveFromISR'` | Pass |
+| Queue Task 4 GREEN | `python tools\run_host_tests.py` after ISR queue APIs | 15 test targets pass | `[summary] 15 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

@@ -88,6 +88,7 @@
 - Implementation plan self-review placeholder scan found no `TBD`, `TODO`, `implement later`, `fill in details`, or stale draft-design path strings.
 - Queue Task 2 non-blocking FIFO send/receive is implemented with caller-provided storage, circular byte-copy semantics, empty/full status returns, and temporary nonzero-timeout handling through `MRT_RESULT_TIMEOUT` until queue blocking coupling is implemented.
 - Queue Task 3 queue variants are implemented: `MRT_QueuePeek` preserves queue state, `MRT_QueueSendFront` inserts before existing head, `MRT_QueueOverwrite` is intentionally restricted to one-slot queues, and `MRT_QueueReset` clears count/read/write indexes without clearing backing bytes.
+- Queue Task 4 ISR queue APIs validate ISR context through the port layer, never block, and currently write `should_yield=false` because queue wait-list wakeups are scheduled for the later blocking-coupling tasks.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

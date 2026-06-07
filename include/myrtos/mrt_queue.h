@@ -141,6 +141,32 @@ MRT_Result MRT_QueueOverwrite(MRT_QueueHandle queue, const void *item);
 MRT_Result MRT_QueueReset(MRT_QueueHandle queue);
 
 /**
+ * @brief 在 ISR 上下文将一个元素复制发送到队列尾部。
+ * @param queue 目标队列句柄，不能为空。
+ * @param item 待发送元素地址，不能为空。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空，当前阶段非空时总写入 false。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示发送成功；队列满时返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_QueueSendFromISR(queue, &value, &yield);
+ */
+MRT_Result MRT_QueueSendFromISR(MRT_QueueHandle queue, const void *item, bool *should_yield);
+
+/**
+ * @brief 在 ISR 上下文从队列头部复制接收一个元素。
+ * @param queue 源队列句柄，不能为空。
+ * @param out_item 接收缓冲区地址，不能为空。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空，当前阶段非空时总写入 false。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示接收成功；队列空时返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_QueueReceiveFromISR(queue, &value, &yield);
+ */
+MRT_Result MRT_QueueReceiveFromISR(MRT_QueueHandle queue, void *out_item, bool *should_yield);
+
+/**
  * @brief 查询队列剩余可写空间。
  * @param queue 待查询队列句柄，不能为空。
  * @return size_t 返回剩余可写元素数量；队列为空指针时返回 0。

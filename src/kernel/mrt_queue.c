@@ -1,4 +1,5 @@
 #include "myrtos/mrt_queue.h"
+#include "myrtos/mrt_port.h"
 
 #include <string.h>
 
@@ -395,6 +396,64 @@ MRT_Result MRT_QueueReset(MRT_QueueHandle queue)
 
     /* 队列复位成功完成。 */
     return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 在 ISR 上下文将一个元素复制发送到队列尾部。
+ * @param queue 目标队列句柄，不能为空。
+ * @param item 待发送元素地址，不能为空。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空，当前阶段非空时总写入 false。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示发送成功；队列满时返回 MRT_RESULT_OBJECT_FULL；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_QueueSendFromISR(queue, &value, &yield);
+ */
+MRT_Result MRT_QueueSendFromISR(MRT_QueueHandle queue, const void *item, bool *should_yield)
+{
+    /* 如果调用方提供 yield 输出指针，先写入保守的 false 默认值。 */
+    if (should_yield != 0) {
+        /* 当前尚未接入等待任务唤醒，所以不会请求 ISR 退出切换。 */
+        *should_yield = false;
+    }
+
+    /* FromISR API 必须在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文，提示调用方改用任务上下文 API。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 复用普通非阻塞发送逻辑，timeout 固定为 0。 */
+    return MRT_QueueSend(queue, item, 0u);
+}
+
+/**
+ * @brief 在 ISR 上下文从队列头部复制接收一个元素。
+ * @param queue 源队列句柄，不能为空。
+ * @param out_item 接收缓冲区地址，不能为空。
+ * @param should_yield 输出是否需要在 ISR 退出前触发调度切换；允许为空，当前阶段非空时总写入 false。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示接收成功；队列空时返回 MRT_RESULT_OBJECT_EMPTY；
+ *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT；非 ISR 上下文调用时返回 MRT_RESULT_INVALID_CONTEXT。
+ * @example
+ * bool yield;
+ * MRT_QueueReceiveFromISR(queue, &value, &yield);
+ */
+MRT_Result MRT_QueueReceiveFromISR(MRT_QueueHandle queue, void *out_item, bool *should_yield)
+{
+    /* 如果调用方提供 yield 输出指针，先写入保守的 false 默认值。 */
+    if (should_yield != 0) {
+        /* 当前尚未接入等待发送任务唤醒，所以不会请求 ISR 退出切换。 */
+        *should_yield = false;
+    }
+
+    /* FromISR API 必须在 ISR 上下文调用。 */
+    if (!MRT_PortIsInsideISR()) {
+        /* 返回非法上下文，提示调用方改用任务上下文 API。 */
+        return MRT_RESULT_INVALID_CONTEXT;
+    }
+
+    /* 复用普通非阻塞接收逻辑，timeout 固定为 0。 */
+    return MRT_QueueReceive(queue, out_item, 0u);
 }
 
 size_t MRT_QueueSpacesAvailable(MRT_QueueHandle queue)

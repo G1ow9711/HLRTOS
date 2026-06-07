@@ -21,6 +21,7 @@ TESTS = [
     ("test_queue_create_static", ROOT / "tests" / "unit" / "test_queue_create_static.c"),
     ("test_queue_send_receive", ROOT / "tests" / "unit" / "test_queue_send_receive.c"),
     ("test_queue_variants", ROOT / "tests" / "unit" / "test_queue_variants.c"),
+    ("test_queue_isr", ROOT / "tests" / "unit" / "test_queue_isr.c"),
 ]
 
 KERNEL_SOURCES = [

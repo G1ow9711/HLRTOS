@@ -73,11 +73,11 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for `MRT_QueueSendFromISR` and `MRT_QueueReceiveFromISR`.
-- [ ] Implement ISR send/receive without blocking.
-- [ ] Set `should_yield` only when a receiver/sender wait list is affected; until blocking waits exist, keep false.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add queue ISR variants`.
+- [x] Write failing tests for `MRT_QueueSendFromISR` and `MRT_QueueReceiveFromISR`.
+- [x] Implement ISR send/receive without blocking.
+- [x] Set `should_yield` only when a receiver/sender wait list is affected; until blocking waits exist, keep false.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add queue ISR variants`.
 
 ## Task 5: Queue Blocking and Timeout Coupling
 
