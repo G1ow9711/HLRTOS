@@ -280,6 +280,13 @@
 - `docs/verification/coupling_test_matrix.md` now marks `C-008`, `C-009`, `C-010`, and `C-013` verified; `C-011`, `C-012`, and `C-027` remain explicitly partial or pending where implementation is incomplete.
 - User requirement that the final manual include detailed STM32/DSP porting steps remains captured as `R-011`.
 
+## Events/Notifications Plan Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Baseline | `python tools\run_host_tests.py` in `.worktrees\events-notifications` | 25 test targets pass | `[summary] 25 test target(s) passed` | Pass |
+| Plan placeholder scan | `rg -n "TBD|TODO|implement later|fill in details|appropriate error handling|add validation|Similar to Task" docs\superpowers\plans\2026-06-07-myrtos-events-notifications.md` | No matches | No matches, exit code 1 | Pass |
+| Plan file | Create `docs/superpowers/plans/2026-06-07-myrtos-events-notifications.md` | Plan 5 tasks defined | 9 tasks defined for event groups, task notifications, and verification matrix update | Pass |
+
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |
 |-------|---------|----------|--------|--------|
@@ -289,11 +296,11 @@
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Plan 4 Task 8: semaphore/mutex verification evidence |
-| Where am I going? | Commit synchronization verification evidence, then continue with event groups and task notifications |
+| Where am I? | Plan 5: events and task notifications |
+| Where am I going? | Commit the Plan 5 implementation plan, then execute TDD tasks for event groups and task notifications |
 | What's the goal? | Build original STM32/DSP-capable RTOS with detailed Chinese comments, manual, and tests |
-| What have I learned? | Synchronization APIs now pass 25 host targets; mutex timeout rollback and task deletion coupling remain future work |
-| What have I done? | Implemented and verified semaphores, mutexes, recursive mutex ownership coverage, and updated verification matrices |
+| What have I learned? | New branch starts from `feature/semaphore-mutex` with 25 passing host targets |
+| What have I done? | Created isolated `.worktrees\events-notifications` branch and wrote Plan 5 implementation plan |
 
 ---
 *Update after completing each phase or encountering errors.*

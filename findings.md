@@ -102,6 +102,10 @@
 - Mutex Task 7 adds recursive mutex creation. The existing lock-depth path now has coverage: recursive owners can relock, partial unlock keeps ownership, and final unlock clears ownership.
 - Synchronization Task 8 adds direct recursive mutex non-owner release coverage. `test_mutex_recursive` now checks `MRT_RESULT_OWNER_ERROR`, unchanged owner, and unchanged recursive depth when a non-owner attempts to unlock.
 - Synchronization matrix update marks semaphore ISR, counting semaphore full, mutex priority inheritance, and recursive mutex ownership verified. Mutex timeout priority rollback, task deletion while holding a mutex, and unified assertion-hook behavior remain intentionally marked partial or pending.
+- Plan 5 events/notifications will add `MRT_EventGroupWaitBits` with wait-any, wait-all, clear-on-exit, and timeout behavior, plus task notification actions with set bits, increment, overwrite, and no-overwrite.
+- Event groups need a new internal wake-specific-task helper because existing object helper wakes only the first waiter, while event groups can wake multiple matching waiters from one bit set operation.
+- Task notifications need per-task state fields and a block-current helper without an object wait list because notification waits are attached to the current task rather than a separate kernel object.
+- Final manual requirement remains unchanged: STM32 and DSP sections must include detailed migration steps for toolchain, startup/vector table, tick, context switch, stack layout, critical sections, low power, examples, and troubleshooting.
 
 ---
 *Update this file after every 2 view/browser/search operations.*
