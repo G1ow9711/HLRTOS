@@ -127,6 +127,9 @@
   - Mutex Task 6 RED: `python tools\run_host_tests.py` failed because high-priority mutex wait did not block and did not boost the low-priority owner.
   - Mutex Task 6 GREEN: added task effective-priority helpers, mutex wait blocking, priority inheritance, owner priority restore, and ownership transfer to the highest-priority waiter; same command passed 24 test targets.
   - Mutex Task 6 commit message: `feat: add mutex priority inheritance`.
+  - Mutex Task 7 RED: `python tools\run_host_tests.py` failed because `MRT_MutexCreateRecursiveStatic` was not declared.
+  - Mutex Task 7 GREEN: added recursive mutex creation and verified recursive lock depth, partial unlock, final unlock, and plain mutex relock busy result; same command passed 25 test targets.
+  - Mutex Task 7 commit message: `feat: add recursive mutex`.
 - Files created/modified:
   - `task_plan.md` created.
   - `findings.md` created and updated with FreeRTOS reference findings.
@@ -257,6 +260,8 @@
 | Mutex Task 5 GREEN | `python tools\run_host_tests.py` after mutex ownership | 23 test targets pass | `[summary] 23 test target(s) passed` | Pass |
 | Mutex Task 6 RED | `python tools\run_host_tests.py` before priority inheritance | Coupling test fails because high-priority waiter does not block | `assertion failed: MRT_TaskGetCurrent() == low_task` | Pass |
 | Mutex Task 6 GREEN | `python tools\run_host_tests.py` after priority inheritance | 24 test targets pass | `[summary] 24 test target(s) passed` | Pass |
+| Mutex Task 7 RED | `python tools\run_host_tests.py` before recursive mutex declaration | Build fails due to missing declaration | `implicit declaration of function 'MRT_MutexCreateRecursiveStatic'` | Pass |
+| Mutex Task 7 GREEN | `python tools\run_host_tests.py` after recursive mutex | 25 test targets pass | `[summary] 25 test target(s) passed` | Pass |
 
 ## Plan Self-Review Results
 | Check | Command | Expected | Actual | Status |

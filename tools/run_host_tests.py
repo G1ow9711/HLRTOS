@@ -31,6 +31,7 @@ TESTS = [
     ("test_semaphore_isr", ROOT / "tests" / "unit" / "test_semaphore_isr.c"),
     ("test_mutex_create_lock", ROOT / "tests" / "unit" / "test_mutex_create_lock.c"),
     ("test_mutex_priority_inheritance", ROOT / "tests" / "coupling" / "test_mutex_priority_inheritance.c"),
+    ("test_mutex_recursive", ROOT / "tests" / "unit" / "test_mutex_recursive.c"),
 ]
 
 KERNEL_SOURCES = [

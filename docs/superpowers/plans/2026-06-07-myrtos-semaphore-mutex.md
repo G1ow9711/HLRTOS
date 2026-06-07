@@ -130,10 +130,10 @@ Steps:
 
 Steps:
 
-- [ ] Write failing tests for recursive create, same-owner relock, partial unlock, final unlock, and non-recursive relock returning `MRT_RESULT_OBJECT_BUSY`.
-- [ ] Implement `MRT_MutexCreateRecursiveStatic` and recursive lock-depth behavior.
-- [ ] Run `python tools\run_host_tests.py`; expect all tests pass.
-- [ ] Commit `feat: add recursive mutex`.
+- [x] Write failing tests for recursive create, same-owner relock, partial unlock, final unlock, and non-recursive relock returning `MRT_RESULT_OBJECT_BUSY`.
+- [x] Implement `MRT_MutexCreateRecursiveStatic` and recursive lock-depth behavior.
+- [x] Run `python tools\run_host_tests.py`; expect all tests pass.
+- [x] Commit `feat: add recursive mutex`.
 
 ## Task 8: Synchronization Verification Matrix Update
 

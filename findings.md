@@ -99,6 +99,7 @@
 - Semaphore Task 4 mirrors queue ISR wake semantics: ISR give never switches immediately; it makes the waiter ready and reports `should_yield=true` for the port layer.
 - Mutex Task 5 implements ownership-only mutex behavior. Lock/unlock require a running task; non-owner unlock returns `MRT_RESULT_OWNER_ERROR`; contention blocking and priority inheritance remain for Task 6.
 - Mutex Task 6 implements priority inheritance by adjusting the owner's effective priority while preserving `base_priority`. Unlock restores the old owner and transfers ownership directly to the highest-priority waiter when one exists.
+- Mutex Task 7 adds recursive mutex creation. The existing lock-depth path now has coverage: recursive owners can relock, partial unlock keeps ownership, and final unlock clears ownership.
 
 ---
 *Update this file after every 2 view/browser/search operations.*

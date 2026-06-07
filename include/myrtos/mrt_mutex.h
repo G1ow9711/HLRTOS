@@ -45,6 +45,18 @@ typedef struct MRT_Mutex {
 MRT_Result MRT_MutexCreateStatic(MRT_Mutex *storage, MRT_MutexHandle *out_mutex);
 
 /**
+ * @brief 使用调用方提供的控制块静态创建递归互斥锁。
+ * @param storage 互斥锁控制块存储，不能为空。
+ * @param out_mutex 输出互斥锁句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * static MRT_Mutex mutex_cb;
+ * MRT_MutexHandle mutex;
+ * MRT_MutexCreateRecursiveStatic(&mutex_cb, &mutex);
+ */
+MRT_Result MRT_MutexCreateRecursiveStatic(MRT_Mutex *storage, MRT_MutexHandle *out_mutex);
+
+/**
  * @brief 获取互斥锁。
  * @param mutex 互斥锁句柄，不能为空。
  * @param timeout 等待锁可用的 tick 数；当前任务未运行时不能调用。

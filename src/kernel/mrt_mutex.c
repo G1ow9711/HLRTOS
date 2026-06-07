@@ -48,6 +48,52 @@ MRT_Result MRT_MutexCreateStatic(MRT_Mutex *storage, MRT_MutexHandle *out_mutex)
 }
 
 /**
+ * @brief 使用调用方提供的控制块静态创建递归互斥锁。
+ * @param storage 互斥锁控制块存储，不能为空。
+ * @param out_mutex 输出互斥锁句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示创建成功；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * static MRT_Mutex mutex_cb;
+ * MRT_MutexHandle mutex;
+ * MRT_MutexCreateRecursiveStatic(&mutex_cb, &mutex);
+ */
+MRT_Result MRT_MutexCreateRecursiveStatic(MRT_Mutex *storage, MRT_MutexHandle *out_mutex)
+{
+    /* 互斥锁控制块不能为空，否则无法保存锁状态。 */
+    if (storage == 0) {
+        /* 返回参数错误，提示调用方提供静态控制块。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 输出句柄不能为空，否则创建成功后调用方无法使用对象。 */
+    if (out_mutex == 0) {
+        /* 返回参数错误，提示调用方提供输出句柄地址。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 新递归互斥锁没有拥有者。 */
+    storage->owner = 0;
+
+    /* 新递归互斥锁初始锁定深度为 0。 */
+    storage->lock_count = 0u;
+
+    /* 标记该互斥锁允许同一拥有者递归加锁。 */
+    storage->recursive = true;
+
+    /* 初始化等待加锁任务链表。 */
+    MRT_ListInitialize(&storage->waiting_lockers);
+
+    /* 标记对象使用静态存储创建。 */
+    storage->static_storage = true;
+
+    /* 输出互斥锁句柄给调用方。 */
+    *out_mutex = storage;
+
+    /* 静态递归互斥锁创建成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
  * @brief 获取互斥锁。
  * @param mutex 互斥锁句柄，不能为空。
  * @param timeout 等待锁可用的 tick 数；当前任务未运行时不能调用。

@@ -32,3 +32,4 @@ mrt_add_test(test_semaphore_give_wakes_task coupling/test_semaphore_give_wakes_t
 mrt_add_test(test_semaphore_isr unit/test_semaphore_isr.c)
 mrt_add_test(test_mutex_create_lock unit/test_mutex_create_lock.c)
 mrt_add_test(test_mutex_priority_inheritance coupling/test_mutex_priority_inheritance.c)
+mrt_add_test(test_mutex_recursive unit/test_mutex_recursive.c)
