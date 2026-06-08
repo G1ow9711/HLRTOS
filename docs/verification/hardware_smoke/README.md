@@ -24,7 +24,7 @@ python tools\verify\check_hardware_smoke_evidence.py
 
 - 先阅读 `collection_checklist.md`，按 STM32 或 DSP 对应章节采集原始 UART/trace 日志。
 - 采集前先运行 `check_hardware_smoke_preflight.py`，确认 `hardware_smoke_preflight.json` 不含 TODO/PENDING 等占位符，且 STM32/DSP 都写明芯片、板卡、命令、运行时长和必需字段。`--check-tools` 会额外检查当前机器是否能找到配置里的可执行文件；没有真实工具链或烧录器时不要把该失败解释成板级 smoke 失败。
-- 若原始日志已经包含 `Key: Value` 字段，可先运行 `generate_hardware_smoke_evidence.py` 生成最终证据文件。
+- 若原始日志已经包含 `Key: Value` 字段，可先运行 `generate_hardware_smoke_evidence.py` 生成最终证据文件；生成器会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`。
 - 若不使用生成器，再把模板复制成最终文件名并填写真实结果。
 - 最后运行校验命令。校验失败时，应回到原始日志补证，不要把模板字段改成 `PASS` 规避检查。
 
@@ -35,4 +35,6 @@ python tools\verify\check_hardware_smoke_evidence.py
 - `Runtime-Minutes` 至少 30。
 - `Assert-Failures` 必须为 0。
 - `Heap-Min-Free-Bytes` 必须大于 0。
+- `Raw-Log-Path` 必须指向保留的原始 UART/trace 日志。
+- `Raw-Log-SHA256` 必须等于原始日志文件的 SHA-256；最终校验脚本会读取原始日志并比对。
 - 记录编译器版本、芯片型号、板卡型号、时钟、tick 频率、上下文切换证据和 UART/trace 日志摘要。

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -25,6 +26,8 @@ COMMON_REQUIRED_FIELDS = [
     "Assert-Failures",
     "Heap-Min-Free-Bytes",
     "Trace-Or-UART-Log",
+    "Raw-Log-Path",
+    "Raw-Log-SHA256",
 ]
 
 STM32_REQUIRED_FIELDS = [
@@ -68,6 +71,15 @@ def parse_uint(value: str) -> int | None:
     if not re.fullmatch(r"[0-9]+", value):
         return None
     return int(value)
+
+
+def sha256_file(path: Path) -> str:
+    """计算原始日志文件的 SHA-256 摘要。"""
+    digest = hashlib.sha256()
+    with path.open("rb") as raw_file:
+        for chunk in iter(lambda: raw_file.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def validate_fields(fields: dict[str, str], expected_target: str) -> None:
@@ -162,6 +174,8 @@ def generate_from_raw_log(raw_log_path: Path, output_path: Path, expected_target
     """
     raw_text = raw_log_path.read_text(encoding="utf-8")
     fields = parse_fields(raw_text)
+    fields["Raw-Log-Path"] = str(raw_log_path)
+    fields["Raw-Log-SHA256"] = sha256_file(raw_log_path)
     validate_fields(fields, expected_target)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(render_fields(fields, expected_target), encoding="utf-8")

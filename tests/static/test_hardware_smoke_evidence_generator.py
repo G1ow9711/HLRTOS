@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import tempfile
 from pathlib import Path
@@ -64,6 +65,8 @@ tail noise
         assert text.startswith("MyRTOS-Hardware-Smoke: STM32")
         assert "boot noise" not in text
         assert "tail noise" not in text
+        assert f"Raw-Log-Path: {raw_path}" in text
+        assert f"Raw-Log-SHA256: {hashlib.sha256(raw_path.read_bytes()).hexdigest()}" in text
 
 
 def test_missing_required_field_fails() -> None:

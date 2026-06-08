@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import tempfile
 from pathlib import Path
@@ -27,8 +28,9 @@ def write_text(path: Path, text: str) -> None:
     path.write_text(text.strip() + "\n", encoding="utf-8")
 
 
-def valid_stm32_log() -> str:
+def valid_stm32_log(raw_path: Path) -> str:
     """返回一份满足 STM32 板级 smoke 规则的测试日志。"""
+    digest = hashlib.sha256(raw_path.read_bytes()).hexdigest()
     return """
 MyRTOS-Hardware-Smoke: STM32
 Evidence-Status: PASS
@@ -50,11 +52,14 @@ Runtime-Minutes: 30
 Assert-Failures: 0
 Heap-Min-Free-Bytes: 2048
 Trace-Or-UART-Log: tick=1800000 queue=256 timer=3600
-"""
+Raw-Log-Path: {raw_path}
+Raw-Log-SHA256: {digest}
+""".format(raw_path=raw_path, digest=digest)
 
 
-def valid_dsp_log() -> str:
+def valid_dsp_log(raw_path: Path) -> str:
     """返回一份满足 DSP 板级 smoke 规则的测试日志。"""
+    digest = hashlib.sha256(raw_path.read_bytes()).hexdigest()
     return """
 MyRTOS-Hardware-Smoke: DSP
 Evidence-Status: PASS
@@ -75,7 +80,9 @@ Runtime-Minutes: 30
 Assert-Failures: 0
 Heap-Min-Free-Bytes: 2048
 Trace-Or-UART-Log: tick=1800000 queue=512 timer=3600
-"""
+Raw-Log-Path: {raw_path}
+Raw-Log-SHA256: {digest}
+""".format(raw_path=raw_path, digest=digest)
 
 
 def test_valid_evidence_directory_passes() -> None:
@@ -83,10 +90,31 @@ def test_valid_evidence_directory_passes() -> None:
     checker = load_checker()
     with tempfile.TemporaryDirectory() as temp_dir:
         root = Path(temp_dir)
-        write_text(root / "stm32_board_smoke.md", valid_stm32_log())
-        write_text(root / "dsp_board_smoke.md", valid_dsp_log())
+        write_text(root / "stm32_uart_raw.log", "stm32 raw log\n")
+        write_text(root / "dsp_uart_raw.log", "dsp raw log\n")
+        write_text(root / "stm32_board_smoke.md", valid_stm32_log(root / "stm32_uart_raw.log"))
+        write_text(root / "dsp_board_smoke.md", valid_dsp_log(root / "dsp_uart_raw.log"))
         failures = checker.check_evidence_dir(root)
         assert failures == [], failures
+
+
+def test_mismatched_raw_log_hash_fails() -> None:
+    """楠岃瘉鏈€缁堣瘉鎹笌鍘熷鏃ュ織 SHA-256 涓嶅尮閰嶆椂蹇呴』澶辫触銆?"""
+    checker = load_checker()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        raw_path = root / "stm32_uart_raw.log"
+        write_text(raw_path, "stm32 real raw log\n")
+        text = valid_stm32_log(raw_path).replace(
+            hashlib.sha256(raw_path.read_bytes()).hexdigest(),
+            "0" * 64,
+        )
+        write_text(root / "stm32_board_smoke.md", text)
+        write_text(root / "dsp_uart_raw.log", "dsp raw log\n")
+        write_text(root / "dsp_board_smoke.md", valid_dsp_log(root / "dsp_uart_raw.log"))
+        failures = checker.check_evidence_dir(root)
+        joined = "\n".join(failures)
+        assert "Raw-Log-SHA256 mismatch" in joined
 
 
 def test_missing_and_invalid_evidence_fails() -> None:
@@ -116,6 +144,7 @@ Heap-Min-Free-Bytes: 0
 def main() -> int:
     """运行静态测试。"""
     test_valid_evidence_directory_passes()
+    test_mismatched_raw_log_hash_fails()
     test_missing_and_invalid_evidence_fails()
     return 0
 

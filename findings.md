@@ -308,3 +308,11 @@
 - Manual sections 5.6, 6.6, and 7.4 now instruct users to run the preflight check before raw-log normalization and final evidence validation.
 - Latest default release verification passed with `[release] 11 step(s) passed`; `--require-hardware` still fails only at the real hardware evidence gate.
 - Hardware evidence gap remains unchanged: no real `stm32_board_smoke.md` or `dsp_board_smoke.md` PASS logs exist yet.
+
+## Hardware Evidence Raw-Log Traceability Findings
+- RED evidence: `python tests\\static\\test_hardware_smoke_evidence_generator.py` failed because generated final evidence did not include `Raw-Log-Path` and `Raw-Log-SHA256`.
+- RED evidence: `python tests\\static\\test_hardware_smoke_evidence_checker.py` failed because a final evidence file with mismatched raw-log SHA-256 was accepted.
+- Implementation adds SHA-256 derivation in `tools/verify/generate_hardware_smoke_evidence.py` and SHA-256 comparison in `tools/verify/check_hardware_smoke_evidence.py`.
+- Final real board evidence now must preserve raw UART/trace logs and include a matching `Raw-Log-SHA256`; this strengthens traceability but still does not create real STM32/DSP board evidence.
+- Latest repo-side verification passed: API catalog prototype audit, original-symbol scan, hardware smoke preflight, whitespace check, and `python tools\\verify\\run_release_verification.py` with `[release] 11 step(s) passed`.
+- Hardware-required verification remains correctly gated: `python tools\\verify\\check_hardware_smoke_evidence.py` reports missing real `stm32_board_smoke.md` and `dsp_board_smoke.md`, and `python tools\\verify\\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.

@@ -22,4 +22,5 @@ Runtime-Minutes: 0
 Assert-Failures: 1
 Heap-Min-Free-Bytes: 0
 Trace-Or-UART-Log: TODO
-
+Raw-Log-Path: docs/verification/hardware_smoke/dsp_uart_raw.log
+Raw-Log-SHA256: TODO

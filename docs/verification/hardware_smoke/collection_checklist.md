@@ -8,7 +8,7 @@
 1. 保留原始日志：UART、trace、调试器输出或仿真器控制台日志建议另存为 `stm32_uart_raw.log`、`dsp_uart_raw.log` 或等价文件名。
 2. 运行负载：至少 30 分钟，期间必须覆盖任务切换、ISR 唤醒、软件定时器、tickless、heap 查询和断言 hook。
 3. 填写摘要：把原始日志中的关键结果归纳到 `Key: Value` 字段，不要把模板中的 `PENDING`、`FAIL`、`TODO` 留在最终证据文件中。
-4. 自动生成：若原始日志已经包含完整字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md` 或 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`。
+4. 自动生成：若原始日志已经包含完整字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md` 或 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`。生成器会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`。
 5. 手动填写：若不使用生成器，再从 `stm32_board_smoke.template.md` 复制为 `stm32_board_smoke.md`，或从 `dsp_board_smoke.template.md` 复制为 `dsp_board_smoke.md`，并填入真实板级结果。
 6. 执行校验：运行 `python tools\verify\check_hardware_smoke_evidence.py`。只有该命令通过，真实板级 smoke 才能作为最终验收证据。
 
@@ -43,4 +43,6 @@
 - `Evidence-Status`、`Software-Timer`、`Tickless`、STM32 的 `SysTick`、`PendSV-SVC`、`ISR-Queue`，以及 DSP 的 `Timer-Tick`、`Software-Interrupt-Switch`、`ISR-Nesting`、`Queue-Or-Pool` 只能在真实结果满足条件时填写 `PASS`。
 - `Runtime-Minutes`、`Assert-Failures`、`Heap-Min-Free-Bytes`、`Clock-Hz`、`Tick-Hz`、`NVIC-Priority-Bits` 必须只写十进制整数，不带单位。
 - `Trace-Or-UART-Log` 应写可追溯摘要，例如日志文件名、关键 tick 计数、队列峰值、定时器回调次数和 heap 最小值。
+- `Raw-Log-Path` 必须指向保留的原始 UART/trace 日志；可写仓库相对路径或绝对路径。
+- `Raw-Log-SHA256` 必须写 64 个十六进制字符，且与 `Raw-Log-Path` 指向文件的实际 SHA-256 一致。
 - 不要提交仍含 `PENDING`、`FAIL` 或 `TODO` 的最终证据文件。

@@ -23,7 +23,7 @@
 - 静态脚本：Python，放在 `tools/verify/`，覆盖 `include/`、`src/`、`examples/`、`tests/`。
 - STM32：先提供 ARM GCC 可编译 smoke 示例；真实板级运行结果后续由用户硬件环境补证。
 - DSP：先以端口 mock 证明端口契约；真实 DSP 型号确认后补 ABI 级测试。
-- 真实硬件验收：先按目标板修改 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 并运行 `tools/verify/check_hardware_smoke_preflight.py`，再按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，用 `tools/verify/generate_hardware_smoke_evidence.py` 生成 `stm32_board_smoke.md` 和 `dsp_board_smoke.md`，或按 `docs/verification/hardware_smoke/*.template.md` 手动填写，最后运行 `tools/verify/check_hardware_smoke_evidence.py`。
+- 真实硬件验收：先按目标板修改 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 并运行 `tools/verify/check_hardware_smoke_preflight.py`，再按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，用 `tools/verify/generate_hardware_smoke_evidence.py` 生成含 raw-log SHA-256 的 `stm32_board_smoke.md` 和 `dsp_board_smoke.md`，或按 `docs/verification/hardware_smoke/*.template.md` 手动填写，最后运行 `tools/verify/check_hardware_smoke_evidence.py`。
 
 ## 3. 验收命令设计
 
@@ -121,7 +121,7 @@ python tools/verify/run_release_verification.py --require-hardware
 | DSP 端口 | `tests/port_mock/test_port_dsp_*.c` | `C-030` 到 `C-031` |
 | 手册/注释 | `tests/static/*.py` | `C-032` 到 `C-033` |
 | 烟雾工程 | `examples/stm32/`、`examples/dsp/`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-031` |
-| 真实板级证据 | `docs/verification/hardware_smoke/`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/generate_hardware_smoke_evidence.py`、`tools/verify/check_hardware_smoke_evidence.py` | `R-003`、`R-004`、`R-011` |
+| 真实板级证据 | `docs/verification/hardware_smoke/`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/generate_hardware_smoke_evidence.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tests/static/test_hardware_smoke_evidence_checker.py`、`tests/static/test_hardware_smoke_evidence_generator.py` | `R-003`、`R-004`、`R-011`；包含 raw-log SHA-256 派生与错配拒绝 |
 
 ## 7. 验收报告
 

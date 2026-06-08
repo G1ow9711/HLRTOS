@@ -11,7 +11,7 @@
 - STM32 / DSP 端口契约 helper 已实现。
 - 中文注释覆盖、手册 API 覆盖、原始符号扫描、host 测试和 embedded smoke 脚本都已通过。
 - 手册已补充详细 STM32 / DSP 移植步骤。
-- 真实板级 smoke 证据模板、采集预检配置、原始日志生成器和校验脚本已补充到 `docs/verification/hardware_smoke/`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/generate_hardware_smoke_evidence.py` 与 `tools/verify/check_hardware_smoke_evidence.py`。
+- 真实板级 smoke 证据模板、采集预检配置、原始日志生成器和校验脚本已补充到 `docs/verification/hardware_smoke/`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/generate_hardware_smoke_evidence.py` 与 `tools/verify/check_hardware_smoke_evidence.py`；最终证据还要求 `Raw-Log-Path` 与 `Raw-Log-SHA256` 回溯到原始 UART/trace 日志。
 - 统一 release 验证入口 `tools/verify/run_release_verification.py` 已就位：默认模式可跑 repo-side 验证，`--require-hardware` 会把真实板级 gate 纳入同一链路。
 
 但**仍有一项硬缺口未被证明**：
@@ -33,7 +33,7 @@
 | 手册含详细移植步骤 | 手册第 5、6 节包含移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收和证据生成命令 | 已验证 |
 | 所有功能必须测试 | 70 个 host test target 通过，embedded smoke 脚本通过 | 大部分已验证 |
 | 所有耦合情况测试清楚 | `docs/verification/coupling_test_matrix.md` 已扩展到 `C-037`，对应 host / smoke / 静态证据已落表 | 大部分已验证 |
-| 真实 STM32/DSP 板级 smoke | 目前仅有交叉编译与 host model 证据；`hardware_smoke_preflight.json`、`collection_checklist.md`、模板、`check_hardware_smoke_preflight.py` 和 `check_hardware_smoke_evidence.py` 已就位，但真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 未提交 | 未验证 |
+| 真实 STM32/DSP 板级 smoke | 目前仅有交叉编译与 host model 证据；`hardware_smoke_preflight.json`、`collection_checklist.md`、模板、raw-log SHA-256 校验、`check_hardware_smoke_preflight.py` 和 `check_hardware_smoke_evidence.py` 已就位，但真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 未提交 | 未验证 |
 
 ## 当前可证明的完成面
 
@@ -48,13 +48,14 @@
 - 新增 `tests/static/test_stm32_context_scaffold.py`，并纳入 `tools/verify/run_release_verification.py` 默认 release 链路。
 - `tools/verify/check_embedded_smoke_projects.py` 已把 `.S` 和 STM32 初始栈帧写回 TCB 的 C 接线纳入 ARM GCC 交叉编译；该证据证明入口骨架可构建，不证明真实板级上下文切换已运行。
 - 新增 `tools/verify/check_hardware_smoke_preflight.py`、`tests/static/test_hardware_smoke_preflight.py` 和 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，用于在采集真实板级日志前检查 STM32/DSP 目标配置、运行时长、必需字段和可选工具链可用性。
+- 新增 raw log 追溯规则：`tools/verify/generate_hardware_smoke_evidence.py` 会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`，`tools/verify/check_hardware_smoke_evidence.py` 会读取原始日志并拒绝 SHA-256 错配证据。
 
 ## 仍待补证
 
 1. 真实 STM32 板卡运行 `examples/stm32` 派生工程。
 2. 真实 DSP 板卡运行 `examples/dsp` 派生工程。
 3. 采集前按真实板卡修改 `hardware_smoke_preflight.json` 并运行 `python tools\verify\check_hardware_smoke_preflight.py`；在实机采集环境上可追加 `--check-tools`。
-4. 保留原始 UART/trace 日志，并用 `tools/verify/generate_hardware_smoke_evidence.py` 生成最终证据文件，或按 `docs/verification/hardware_smoke/*.template.md` 手动填写真实板级日志、编译器版本、芯片型号、时钟、tick 频率、PendSV/SVC 或软件中断汇编证据。
+4. 保留原始 UART/trace 日志，并用 `tools/verify/generate_hardware_smoke_evidence.py` 生成最终证据文件，或按 `docs/verification/hardware_smoke/*.template.md` 手动填写真实板级日志、编译器版本、芯片型号、时钟、tick 频率、PendSV/SVC 或软件中断汇编证据；最终文件必须含匹配的 `Raw-Log-Path` 与 `Raw-Log-SHA256`。
 5. 运行 `python tools\verify\check_hardware_smoke_evidence.py`，让真实硬件证据 gate 通过。
 
 ## 建议下一步

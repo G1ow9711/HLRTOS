@@ -762,3 +762,27 @@
   - `python tools\verify\check_hardware_smoke_evidence.py` -> expected failure on missing real `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> expected `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
 - Remaining: collect real STM32 and DSP board logs, generate/fill final evidence files, and pass the hardware evidence gate.
+
+## Hardware Evidence Raw-Log Traceability
+- Added RED assertions in `tests\static\test_hardware_smoke_evidence_generator.py` requiring generated evidence to contain `Raw-Log-Path` and `Raw-Log-SHA256`.
+- Added RED checker case in `tests\static\test_hardware_smoke_evidence_checker.py` requiring SHA-256 mismatch against the retained raw log to fail.
+- First RED runs:
+  - `python tests\static\test_hardware_smoke_evidence_generator.py` failed at missing `Raw-Log-Path`
+  - `python tests\static\test_hardware_smoke_evidence_checker.py` failed because `Raw-Log-SHA256 mismatch` was not reported
+- Implemented SHA-256 derivation in `tools\verify\generate_hardware_smoke_evidence.py`.
+- Implemented `Raw-Log-Path` resolution and SHA-256 comparison in `tools\verify\check_hardware_smoke_evidence.py`.
+- GREEN checks:
+  - `python tests\static\test_hardware_smoke_evidence_generator.py`
+  - `python tests\static\test_hardware_smoke_evidence_checker.py`
+- Updated STM32/DSP evidence templates, manual evidence sections, hardware smoke README/checklist, final verification report, completion audit, test suite plan, requirements matrix, coupling matrix, and task plan.
+- Follow-up focused checks passed:
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_original_symbols.py` -> no banned FreeRTOS-style public symbols
+  - `python tools\verify\check_hardware_smoke_preflight.py` -> hardware smoke preflight config accepted
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 70 test target(s) passed`; `[release] 11 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+- Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -28,6 +29,8 @@ COMMON_REQUIRED_FIELDS = [
     "Assert-Failures",
     "Heap-Min-Free-Bytes",
     "Trace-Or-UART-Log",
+    "Raw-Log-Path",
+    "Raw-Log-SHA256",
 ]
 
 STM32_REQUIRED_FIELDS = [
@@ -162,6 +165,48 @@ def require_date(fields: dict[str, str], label: str) -> list[str]:
     return []
 
 
+def sha256_file(path: Path) -> str:
+    """计算原始日志文件的 SHA-256 摘要。"""
+    digest = hashlib.sha256()
+    with path.open("rb") as raw_file:
+        for chunk in iter(lambda: raw_file.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def resolve_raw_log_path(raw_value: str, evidence_dir: Path) -> Path | None:
+    """按绝对路径、仓库根路径和证据目录路径解析原始日志位置。"""
+    raw_path = Path(raw_value)
+    if raw_path.is_absolute():
+        candidates = [raw_path]
+    else:
+        candidates = [ROOT / raw_path, evidence_dir / raw_path, evidence_dir / raw_path.name]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def require_raw_log_hash(fields: dict[str, str], label: str, evidence_dir: Path) -> list[str]:
+    """检查最终证据中的原始日志路径和 SHA-256 是否匹配。"""
+    failures: list[str] = []
+    raw_value = fields.get("Raw-Log-Path", "")
+    expected_hash = fields.get("Raw-Log-SHA256", "")
+    if not raw_value or not expected_hash:
+        return failures
+    if not re.fullmatch(r"[0-9a-fA-F]{64}", expected_hash):
+        failures.append(f"{label}: Raw-Log-SHA256 must be 64 hex characters")
+        return failures
+    raw_path = resolve_raw_log_path(raw_value, evidence_dir)
+    if raw_path is None:
+        failures.append(f"{label}: Raw-Log-Path file not found")
+        return failures
+    actual_hash = sha256_file(raw_path)
+    if actual_hash.lower() != expected_hash.lower():
+        failures.append(f"{label}: Raw-Log-SHA256 mismatch")
+    return failures
+
+
 def check_file(path: Path, expected_target: str, extra_fields: list[str]) -> list[str]:
     """检查单个硬件 smoke 证据文件。"""
     label = path.name
@@ -180,6 +225,7 @@ def check_file(path: Path, expected_target: str, extra_fields: list[str]) -> lis
     failures.extend(require_pass(fields, label))
     failures.extend(require_date(fields, label))
     failures.extend(require_numeric_rules(fields, label))
+    failures.extend(require_raw_log_hash(fields, label, path.parent))
 
     return failures
 

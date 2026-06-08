@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 17 complete for repo-side tooling: hardware smoke preflight config/tool is implemented, documented, and wired into release verification; overall goal still awaits real STM32/DSP board logs
+Phase 18 in progress: hardware evidence now gains raw-log path/SHA-256 traceability so final STM32/DSP board logs must link back to retained UART/trace files; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -215,3 +215,13 @@ Phase 17 complete for repo-side tooling: hardware smoke preflight config/tool is
 - [x] Re-run full release verification after documentation sync
 - [ ] Replace templates with real `stm32_board_smoke.md` and `dsp_board_smoke.md` after actual board runs
 - **Status:** complete for repo-side preflight tooling; real hardware evidence remains pending
+
+## Phase 18: Hardware Evidence Raw-Log Traceability
+- [x] Add failing generator coverage requiring final evidence to include `Raw-Log-Path` and `Raw-Log-SHA256`
+- [x] Add failing checker coverage requiring SHA-256 mismatch to be rejected
+- [x] Update `tools/verify/generate_hardware_smoke_evidence.py` to derive raw log path and SHA-256 from `--input`
+- [x] Update `tools/verify/check_hardware_smoke_evidence.py` to require raw log traceability fields and compare SHA-256 against the retained raw log
+- [x] Update STM32/DSP hardware evidence templates and docs to require raw log path/hash
+- [x] Re-run release verification and expected hardware-gate failure after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
+- **Status:** complete for repo-side raw-log traceability; real hardware evidence remains pending

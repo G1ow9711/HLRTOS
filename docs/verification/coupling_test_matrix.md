@@ -61,6 +61,7 @@
 ## 最新增量证据：硬件 smoke 预检配置
 
 - `C-032`：新增 `tools/verify/check_hardware_smoke_preflight.py`、`tests/static/test_hardware_smoke_preflight.py` 和 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，用于在真实 STM32/DSP 采集前检查目标配置、采集命令、最短运行时长、必需日志字段和可选工具链可用性；该检查只证明采集前置配置完整，不替代真实板级运行证据。
+- `C-032`：`tools/verify/generate_hardware_smoke_evidence.py` 现在从原始日志派生 `Raw-Log-Path` 和 `Raw-Log-SHA256`，`tools/verify/check_hardware_smoke_evidence.py` 会读取原始日志并拒绝 SHA-256 错配；`tests/static/test_hardware_smoke_evidence_generator.py` 与 `tests/static/test_hardware_smoke_evidence_checker.py` 覆盖该追溯链路。
 
 ## 后续落地
 
