@@ -7,6 +7,8 @@
 - `stm32_board_smoke.md`：真实 STM32 板级日志
 - `dsp_board_smoke.md`：真实 DSP 板级日志
 - `raw_log_schema.md`：真实 UART/trace 原始日志字段契约，规定 `Key: Value` 字段名、取值和示例。
+- `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`：板级 C 输出端可复用的字段名常量。
+- `examples/hardware_smoke/mrt_hardware_smoke_log.h`：不依赖 `printf` 的 `Key: Value` 输出 helper，适合绑定 UART、SWO、trace 或仿真器单字符输出。
 - `hardware_smoke_preflight.json`：真实板级采集前置配置，记录目标芯片、板卡、编译命令、烧录命令、采集命令、原始日志路径、最终证据路径、最短运行时长和必须出现的日志字段。
 - `*.template.md`：填写前的模板，不可直接当作最终证据
 
@@ -27,6 +29,7 @@ python tools\verify\check_hardware_smoke_evidence.py
 ## 采集指南
 
 - 先阅读 `raw_log_schema.md` 和 `collection_checklist.md`，按 STM32 或 DSP 对应章节采集原始 UART/trace 日志。
+- 板级输出代码可同时使用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 和 `examples/hardware_smoke/mrt_hardware_smoke_log.h`：前者提供 `MRT_SMOKE_FIELD_*` 字段名，后者通过 `MRT_SmokeLogWriter.write_char` 回调输出 `Key: Value\n` 行和十进制整数字段。
 - 采集前先运行 `check_hardware_smoke_preflight.py`，确认 `hardware_smoke_preflight.json` 不含 TODO/PENDING 等占位符，且 STM32/DSP 都写明芯片、板卡、命令、运行时长和必需字段。`--check-tools` 会额外检查当前机器是否能找到配置里的可执行文件；没有真实工具链或烧录器时不要把该失败解释成板级 smoke 失败。
 - 可先运行 `run_hardware_smoke_capture.py --target STM32` 或 `--target DSP` 做 dry-run，确认预检、编译、构建、烧录、采集、证据生成和目标级证据校验顺序。只有确认命令会连接真实板卡并产出 `raw_log` 后，才追加 `--execute`。
 - `hardware_smoke_preflight.json` 中的 `capture_command` 应优先配置为能保留原始 UART/trace 日志的采集命令；执行器随后会调用 `generate_hardware_smoke_evidence.py` 生成最终证据。若 `capture_command` 本身已经调用该生成器，执行器不会追加第二次生成步骤，只会继续做目标级证据校验。

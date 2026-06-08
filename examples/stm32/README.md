@@ -39,5 +39,5 @@
 - 任务栈必须 8 字节对齐。
 - 队列 ISR 只能做短时间复制和唤醒。
 - 软件定时器控制命令必须先进入服务队列，再由服务路径执行。
-- 真实板级 UART/trace 原始日志必须按 `docs/verification/hardware_smoke/raw_log_schema.md` 输出字段；可复用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 中的字段常量。
+- 真实板级 UART/trace 原始日志必须按 `docs/verification/hardware_smoke/raw_log_schema.md` 输出字段；可复用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 中的字段常量，并可用 `examples/hardware_smoke/mrt_hardware_smoke_log.h` 把 UART/SWO 单字符发送函数封装成 `Key: Value` 行输出。
 - 当前示例只证明接线和编译链路，不替代真实板级跑测。

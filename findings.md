@@ -348,3 +348,12 @@
 - Focused GREEN checks now pass: `python tests\\static\\test_hardware_smoke_raw_log_schema.py`, `python tests\\static\\test_release_verification_runner.py`, and `python tools\\verify\\check_hardware_smoke_raw_log_schema.py`.
 - Full default release verification now passes with `[release] 15 step(s) passed`; `--require-hardware` still fails only at `hardware-smoke-evidence` because real STM32/DSP board evidence files are absent.
 - This phase improves real-board readiness and field consistency, but still does not create or replace real `stm32_board_smoke.md` or `dsp_board_smoke.md` evidence.
+
+## Hardware Smoke Log Output Helper Findings
+- RED evidence: direct compile of `tests/unit/test_hardware_smoke_log.c` failed first because `examples/hardware_smoke/mrt_hardware_smoke_log.h` did not exist.
+- Implementation adds `mrt_hardware_smoke_log.h` as a header-only helper with `MRT_SmokeLogWriter`, `MRT_SmokeLogWritePair()`, and `MRT_SmokeLogWriteU32()`.
+- Design boundary: helper writes schema-compliant `Key: Value\n` and decimal integer lines through a board-provided single-character callback; it does not use `printf`, does not judge PASS/FAIL, and does not generate final evidence.
+- `test_hardware_smoke_log` covers string field output, decimal `uint32_t` output, and invalid arguments returning `MRT_SMOKE_LOG_INVALID_ARGUMENT` without leaving partial log bytes.
+- Fresh verification after documentation sync passed: `python tools\run_host_tests.py` reported `[summary] 71 test target(s) passed`; Chinese comment, API manual coverage, API prototype, original-symbol, raw-log schema, hardware preflight, embedded smoke, and `git diff --check` all passed.
+- Full default release verification passed with `[release] 15 step(s) passed`.
+- Hardware-required verification remains correctly gated: `python tools\verify\check_hardware_smoke_evidence.py` reports missing `stm32_board_smoke.md` and `dsp_board_smoke.md`, and `python tools\verify\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.

@@ -38,6 +38,6 @@
 - ISR 中只能做短时间复制、状态记录和延迟切换请求。
 - 定时器/队列/任务的耦合优先在 host model 上验证。
 - 真实 TI 工具链和板级 smoke 仍是后续落地项。
-- 真实板级 UART/trace 原始日志必须按 `docs/verification/hardware_smoke/raw_log_schema.md` 输出字段；可复用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 中的字段常量。
+- 真实板级 UART/trace 原始日志必须按 `docs/verification/hardware_smoke/raw_log_schema.md` 输出字段；可复用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 中的字段常量，并可用 `examples/hardware_smoke/mrt_hardware_smoke_log.h` 把 DSP UART/trace 单字符发送函数封装成 `Key: Value` 行输出。
 - 汇编骨架只证明保存/恢复顺序已经形成可审计模板，不替代真实 DSP 板级 smoke；真实验收仍必须提交 `dsp_board_smoke.md` 和匹配 raw log。
 - C2000 工程骨架只证明启动/链接/ISR glue 文件清单和接线顺序已经可审计，不替代真实 DSP 板级 smoke；真实验收必须使用目标 TI 工具链编译、烧录并提交 raw log。
