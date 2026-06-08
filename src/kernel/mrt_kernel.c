@@ -1,5 +1,6 @@
 #include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_port.h"
+#include "mrt_mutex_internal.h"
 #include "mrt_task_internal.h"
 #include "mrt_timer_internal.h"
 
@@ -35,6 +36,9 @@ MRT_Result MRT_KernelInitialize(void)
 
     /* 初始化任务调度器内部 ready/delay 状态。 */
     MRT_TaskKernelInitialize();
+
+    /* 初始化互斥锁内部注册表，清除上一次运行残留的对象登记。 */
+    MRT_MutexKernelInitialize();
 
     /* 初始化软件定时器内部活动链表状态。 */
     MRT_TimerKernelInitialize();

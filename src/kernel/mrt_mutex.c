@@ -6,6 +6,88 @@
 
 #include <stddef.h>
 
+/** @brief 已创建互斥锁注册表，用于生命周期策略检查。 */
+static MRT_List g_mutex_registry;
+
+/** @brief 互斥锁注册表是否已经初始化。 */
+static bool g_mutex_registry_initialized;
+
+/**
+ * @brief 确保互斥锁内部注册表已经初始化。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_MutexEnsureRegistryInitialized();
+ */
+static void MRT_MutexEnsureRegistryInitialized(void)
+{
+    /* 已经初始化时直接返回。 */
+    if (g_mutex_registry_initialized) {
+        /* 避免重复初始化清空已注册对象。 */
+        return;
+    }
+
+    /* 初始化互斥锁全局注册表。 */
+    MRT_ListInitialize(&g_mutex_registry);
+
+    /* 标记注册表可用。 */
+    g_mutex_registry_initialized = true;
+}
+
+/**
+ * @brief 初始化互斥锁模块内部注册表。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * MRT_MutexKernelInitialize();
+ */
+void MRT_MutexKernelInitialize(void)
+{
+    /* 初始化注册表链表，清除前一次测试或系统重启留下的注册关系。 */
+    MRT_ListInitialize(&g_mutex_registry);
+
+    /* 标记注册表已经初始化。 */
+    g_mutex_registry_initialized = true;
+}
+
+/**
+ * @brief 把互斥锁加入内部注册表。
+ * @param mutex 互斥锁句柄，不能为空。
+ * @return void 无返回值。
+ * @example
+ * MRT_MutexRegister(mutex);
+ */
+static void MRT_MutexRegister(MRT_MutexHandle mutex)
+{
+    /* 确保注册表存在。 */
+    MRT_MutexEnsureRegistryInitialized();
+
+    /* 初始化注册节点，节点 item 指回互斥锁控制块。 */
+    MRT_ListNodeInitialize(&mutex->registry_node, mutex, 0u);
+
+    /* 将互斥锁追加到注册表尾部。 */
+    MRT_ListInsertTail(&g_mutex_registry, &mutex->registry_node);
+}
+
+/**
+ * @brief 从内部注册表移除互斥锁。
+ * @param mutex 互斥锁句柄，不能为空。
+ * @return void 无返回值。
+ * @example
+ * MRT_MutexUnregister(mutex);
+ */
+static void MRT_MutexUnregister(MRT_MutexHandle mutex)
+{
+    /* 未入链时无需移除。 */
+    if (!MRT_ListNodeIsLinked(&mutex->registry_node)) {
+        /* 对象不在注册表中。 */
+        return;
+    }
+
+    /* 从注册表摘除该互斥锁。 */
+    MRT_ListRemove(&mutex->registry_node);
+}
+
 /**
  * @brief 根据互斥锁剩余等待者重新计算拥有者有效优先级。
  * @param mutex 互斥锁句柄，不能为空且必须仍有拥有者。
@@ -85,6 +167,52 @@ void MRT_MutexKernelHandleLockTimeout(MRT_List *waiting_lockers)
 }
 
 /**
+ * @brief 判断任务是否可以安全删除。
+ * @param task 待删除任务句柄，不能为空。
+ * @return bool 返回 true 表示任务未持有互斥锁，可以继续删除；返回 false 表示任务仍持有互斥锁。
+ * @example
+ * if (!MRT_MutexKernelCanDeleteTask(task)) { return MRT_RESULT_OBJECT_BUSY; }
+ */
+bool MRT_MutexKernelCanDeleteTask(MRT_TaskHandle task)
+{
+    /* 空任务句柄不能通过删除检查。 */
+    if (task == 0) {
+        /* 调用方应先处理参数错误。 */
+        return false;
+    }
+
+    /* 确保注册表已初始化，避免调度启动前创建互斥锁时漏查。 */
+    MRT_MutexEnsureRegistryInitialized();
+
+    /* 从注册表头部开始扫描所有已创建互斥锁。 */
+    MRT_ListNode *node = MRT_ListGetHead(&g_mutex_registry);
+
+    /* 遍历注册表，查找是否有互斥锁仍由目标任务持有。 */
+    while (node != 0) {
+        /* 从注册节点恢复互斥锁句柄。 */
+        MRT_MutexHandle mutex = (MRT_MutexHandle)node->item;
+
+        /* 如果目标任务仍是拥有者，删除必须被拒绝。 */
+        if ((mutex->owner == task) && (mutex->lock_count != 0u)) {
+            /* 持锁任务不能安全删除。 */
+            return false;
+        }
+
+        /* 到达注册表尾部后结束遍历。 */
+        if (node->next == &g_mutex_registry.sentinel) {
+            /* 没有更多互斥锁。 */
+            break;
+        }
+
+        /* 继续扫描下一个互斥锁。 */
+        node = MRT_ListGetNext(node);
+    }
+
+    /* 未发现目标任务持有互斥锁，可以继续执行删除。 */
+    return true;
+}
+
+/**
  * @brief 使用调用方提供的控制块静态创建普通互斥锁。
  * @param storage 互斥锁控制块存储，不能为空。
  * @param out_mutex 输出互斥锁句柄，不能为空。
@@ -122,6 +250,9 @@ MRT_Result MRT_MutexCreateStatic(MRT_Mutex *storage, MRT_MutexHandle *out_mutex)
 
     /* 标记对象使用静态存储创建。 */
     storage->static_storage = true;
+
+    /* 将互斥锁登记到内部注册表，供任务删除策略检查。 */
+    MRT_MutexRegister(storage);
 
     /* 输出互斥锁句柄给调用方。 */
     *out_mutex = storage;
@@ -168,6 +299,9 @@ MRT_Result MRT_MutexCreateRecursiveStatic(MRT_Mutex *storage, MRT_MutexHandle *o
 
     /* 标记对象使用静态存储创建。 */
     storage->static_storage = true;
+
+    /* 将递归互斥锁登记到内部注册表，供任务删除策略检查。 */
+    MRT_MutexRegister(storage);
 
     /* 输出互斥锁句柄给调用方。 */
     *out_mutex = storage;
@@ -323,6 +457,9 @@ MRT_Result MRT_MutexDelete(MRT_MutexHandle mutex)
         /* 返回对象忙。 */
         return MRT_RESULT_OBJECT_BUSY;
     }
+
+    /* 从内部注册表摘除该动态互斥锁。 */
+    MRT_MutexUnregister(mutex);
 
     /* 动态互斥锁控制块就是堆块起始地址。 */
     return MRT_Free(mutex);

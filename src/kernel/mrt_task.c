@@ -1133,6 +1133,12 @@ MRT_Result MRT_TaskDelete(MRT_TaskHandle task)
     /* 记录任务是否由动态堆创建。 */
     bool dynamic_storage = !task->static_storage;
 
+    /* 如果任务仍持有任何互斥锁，删除会破坏所有权语义。 */
+    if (!MRT_MutexKernelCanDeleteTask(task)) {
+        /* 返回对象忙，要求调用方先释放互斥锁。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
     /* 从 ready、delay 和对象等待链表中摘除任务。 */
     MRT_TaskUnlinkFromScheduling(task);
 

@@ -211,3 +211,10 @@
 - Implementation approach: `MRT_TaskKernelTick` now preserves timeout wait reason and object wait list before removing the waiter node, and mutex timeout cleanup recalculates owner effective priority from the remaining mutex waiters.
 - Current verification: `python tools\run_host_tests.py` reports `[summary] 66 test target(s) passed`.
 - Manual update: mutex lock section now states timeout-driven waiter removal triggers owner priority recalculation, and `MRT_MutexGetOwner` prototype in the manual now matches source.
+
+## Held Mutex Delete Policy Findings
+- Branch `feature/held-mutex-delete-policy` starts from `feature/mutex-timeout-rollback` at `680e4ae`.
+- RED evidence: `test_mutex_task_delete_policy` failed because `MRT_TaskDelete(owner_task)` returned `MRT_RESULT_OK` while the task still owned a mutex; failure line showed `expected 5 got 0`.
+- Policy decision: deleting a task that owns a mutex is rejected with `MRT_RESULT_OBJECT_BUSY`; MyRTOS does not silently release application locks during task deletion.
+- Implementation approach: mutex objects are tracked in an internal registry; `MRT_TaskDelete` checks the registry before unlinking/freeing a task; `MRT_KernelInitialize` resets the registry for deterministic test/system restart behavior.
+- Current verification: `python tools\run_host_tests.py` reports `[summary] 67 test target(s) passed`.

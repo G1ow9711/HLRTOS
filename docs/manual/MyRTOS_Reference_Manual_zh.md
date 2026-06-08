@@ -170,15 +170,15 @@ int main(void)
 
 ### MRT_TaskDelete
 - 函数原型：`MRT_Result MRT_TaskDelete(MRT_TaskHandle task);`
-- 功能说明：删除指定任务，将其从 ready/delay/object wait 链表摘除；动态任务会释放 TCB 和栈所在堆块，静态任务只改变调度状态。
+- 功能说明：删除指定任务；若任务未持有互斥锁，则将其从 ready/delay/object wait 链表摘除；动态任务会释放 TCB 和栈所在堆块，静态任务只改变调度状态。若目标任务仍持有任意互斥锁，删除会被拒绝，避免互斥锁变成无有效拥有者的上锁状态。
 - 参数：`task` 为目标任务句柄，不能为空。
-- 返回值：成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；重复删除返回 `MRT_RESULT_OBJECT_BUSY`；ISR 上下文返回 `MRT_RESULT_INVALID_CONTEXT`。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；重复删除或目标任务仍持有互斥锁时返回 `MRT_RESULT_OBJECT_BUSY`；ISR 上下文返回 `MRT_RESULT_INVALID_CONTEXT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：删除当前任务会触发调度。
 - ISR 限制：禁止在 ISR 中调用。
 - 配置宏：动态释放依赖 heap 配置。
 - 调用示例：`MRT_TaskDelete(task);`
-- 常见错误：删除仍持有互斥锁的任务；当前版本不会自动释放该任务持有的互斥锁。
+- 常见错误：未先释放互斥锁就删除任务；正确流程是先让任务解锁或进入可清理状态，再调用 `MRT_TaskDelete`。
 
 ### MRT_TaskSuspend
 - 函数原型：`MRT_Result MRT_TaskSuspend(MRT_TaskHandle task);`

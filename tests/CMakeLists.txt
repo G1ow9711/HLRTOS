@@ -39,6 +39,7 @@ mrt_add_test(test_sync_dynamic_allocation coupling/test_sync_dynamic_allocation.
 mrt_add_test(test_mutex_create_lock unit/test_mutex_create_lock.c)
 mrt_add_test(test_mutex_priority_inheritance coupling/test_mutex_priority_inheritance.c)
 mrt_add_test(test_mutex_timeout_rollback coupling/test_mutex_timeout_rollback.c)
+mrt_add_test(test_mutex_task_delete_policy coupling/test_mutex_task_delete_policy.c)
 mrt_add_test(test_mutex_recursive unit/test_mutex_recursive.c)
 mrt_add_test(test_event_group_create_bits unit/test_event_group_create_bits.c)
 mrt_add_test(test_event_group_wait_immediate unit/test_event_group_wait_immediate.c)

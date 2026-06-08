@@ -30,6 +30,8 @@ typedef struct MRT_Mutex {
     MRT_List waiting_lockers;
     /** @brief 是否使用静态存储创建。 */
     bool static_storage;
+    /** @brief 内核内部互斥锁注册表节点，应用代码不得访问。 */
+    MRT_ListNode registry_node;
 } MRT_Mutex;
 
 /**

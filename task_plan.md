@@ -58,6 +58,7 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 - [x] Run static checks where available
 - [x] Produce verification report
 - [x] Close mutex timeout priority rollback coupling (`C-011`)
+- [x] Close held-mutex task deletion policy coupling (`C-012`)
 - **Status:** complete
 
 ## Key Questions
@@ -86,6 +87,7 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 | Runtime stats tick model | Current portable preview records task runtime in kernel ticks; high-resolution STM32/DSP counters remain a port enhancement without changing `MRT_StatsGetTaskRuntime`. |
 | Porting manual detail | STM32/DSP manual chapters now include concrete migration steps, handler skeletons, smoke-test guidance, troubleshooting, and acceptance checklists. |
 | Mutex timeout rollback | When a mutex waiter times out, the owner effective priority is recalculated from remaining waiters and restored to base priority if no higher waiter remains. |
+| Held mutex deletion policy | `MRT_TaskDelete` rejects deletion of a task that still owns a mutex, preserving owner, waiters, and task state until the application releases the lock explicitly. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

@@ -2,6 +2,14 @@
 
 ## Session: 2026-06-07
 
+### Held Mutex Delete Policy Branch
+- Created worktree `F:\My_RTOS\.worktrees\held-mutex-delete-policy` on branch `feature/held-mutex-delete-policy` from `feature/mutex-timeout-rollback`.
+- Added `tests/coupling/test_mutex_task_delete_policy.c` and registered it in CMake plus `tools/run_host_tests.py`.
+- RED run: `python tools\run_host_tests.py` failed in `test_mutex_task_delete_policy.c` because deleting a task that still owned a mutex returned `MRT_RESULT_OK` instead of `MRT_RESULT_OBJECT_BUSY`.
+- Implemented mutex object registry, kernel registry reset, dynamic mutex unregister, and `MRT_TaskDelete` guard through `MRT_MutexKernelCanDeleteTask`.
+- GREEN run: `python tools\run_host_tests.py` reported `[summary] 67 test target(s) passed`.
+- Updated manual, coupling matrix, requirement matrix, final report, and branch plan for `C-012`.
+
 ### Mutex Timeout Rollback Branch Resume
 - Created worktree `F:\My_RTOS\.worktrees\mutex-timeout-rollback` on branch `feature/mutex-timeout-rollback` from `feature/runtime-stats-api`.
 - Added coupling test `tests/coupling/test_mutex_timeout_rollback.c` and registered it in `tests/CMakeLists.txt` and `tools/run_host_tests.py`.
