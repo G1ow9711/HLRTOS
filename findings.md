@@ -204,3 +204,10 @@
 - Runtime stats implementation is now covered by 65 passing host targets. `MRT_StatsGetTaskRuntime` has public header/source, task TCB storage, kernel tick accumulation, and coupling tests for high/low task runtime attribution plus invalid/deleted-task arguments.
 - Current API catalog/source implementation gap count is 0 for the 125 public API entries in `docs/api/myrtos_api_catalog.md`. Remaining work is system-level: real STM32/DSP smoke, mutex timeout rollback, held-mutex task deletion policy, timer service task, and broader comment scanning.
 - Manual porting chapters have been strengthened beyond API reference coverage: STM32 and DSP sections now include minimum handler/application skeletons, smoke-test expectations, troubleshooting points, and explicit acceptance checklists for build, tick, context switch, ISR wakeup, low power, ABI, stack, and memory placement.
+
+## Mutex Timeout Rollback Findings
+- Branch `feature/mutex-timeout-rollback` starts from `feature/runtime-stats-api` at `37281c5`.
+- Baseline verification before the fix: `python tools\run_host_tests.py` showed the new `test_mutex_timeout_rollback` failing with `expected 1 got 5`, proving owner priority was not restored after waiter timeout.
+- Implementation approach: `MRT_TaskKernelTick` now preserves timeout wait reason and object wait list before removing the waiter node, and mutex timeout cleanup recalculates owner effective priority from the remaining mutex waiters.
+- Current verification: `python tools\run_host_tests.py` reports `[summary] 66 test target(s) passed`.
+- Manual update: mutex lock section now states timeout-driven waiter removal triggers owner priority recalculation, and `MRT_MutexGetOwner` prototype in the manual now matches source.

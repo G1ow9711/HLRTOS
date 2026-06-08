@@ -2,6 +2,15 @@
 
 ## Session: 2026-06-07
 
+### Mutex Timeout Rollback Branch Resume
+- Created worktree `F:\My_RTOS\.worktrees\mutex-timeout-rollback` on branch `feature/mutex-timeout-rollback` from `feature/runtime-stats-api`.
+- Added coupling test `tests/coupling/test_mutex_timeout_rollback.c` and registered it in `tests/CMakeLists.txt` and `tools/run_host_tests.py`.
+- RED run: first failed because test setup started the higher-priority waiter before the owner held the mutex; fixed by creating the waiter after the owner locked the mutex.
+- RED run 2: `test_mutex_timeout_rollback` failed with `expected 1 got 5`, proving owner priority did not roll back after timeout.
+- Implemented mutex timeout rollback by preserving timeout wait reason in `MRT_TaskKernelTick`, adding internal mutex cleanup helper, and recalculating owner effective priority from remaining waiters.
+- Updated manual and verification matrices to mark `C-011` verified.
+- Final verification: `python tools\run_host_tests.py` reported `[summary] 66 test target(s) passed`.
+
 ### Runtime Stats Branch Resume Verification
 - Recovered active worktree `F:\My_RTOS\.worktrees\runtime-stats-api` on branch `feature/runtime-stats-api`.
 - Static verification passed: `check_api_manual_coverage.py` covered 125 API sections, `check_chinese_comments.py` covered include/src function comments, and `check_original_symbols.py` found no banned FreeRTOS-style public symbols.

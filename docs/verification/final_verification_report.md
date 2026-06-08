@@ -10,7 +10,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 当前自动化证据显示：
 
-- Host C 测试：65 个测试目标通过。
+- Host C 测试：66 个测试目标通过。
 - API 手册覆盖：125 个 API 条目均有中文手册章节。
 - 中文注释覆盖：`include/` 与 `src/` 函数注释通过静态扫描。
 - 原创符号扫描：未发现 banned FreeRTOS-style public symbols。
@@ -26,7 +26,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 | 命令 | 结果 |
 |------|------|
-| `python tools\run_host_tests.py` | `[summary] 65 test target(s) passed` |
+| `python tools\run_host_tests.py` | `[summary] 66 test target(s) passed` |
 | `python tools\verify\check_api_manual_coverage.py` | `[manual-coverage] 125 API section(s) covered` |
 | `python tools\verify\check_chinese_comments.py` | `[chinese-comments] include/src function comments covered` |
 | `python tools\verify\check_original_symbols.py` | `[original-symbols] no banned FreeRTOS-style public symbols found` |
@@ -42,8 +42,8 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | R-005 | 部分验证 | include/src 函数头中文 Doxygen 字段通过扫描 | 历史测试文件未纳入严格扫描范围 |
 | R-006 | 部分验证 | include/src 函数体附近中文步骤注释通过扫描 | 后续可扩大到 tests/examples |
 | R-007 | 部分验证 | 中文参考手册已写，125 API 条目覆盖 | API 实现状态变化后需同步手册 |
-| R-008 | 部分验证 | 65 个 host 测试目标通过，新增运行统计测试 | 真实硬件测试待补 |
-| R-009 | 部分验证 | C-001 到 C-034 中大量耦合项已有自动化证据，新增 runtime stats + tick + scheduler 切换耦合 | C-011、C-012 持锁删除策略、C-017、C-018 和真实端口项仍有部分/待硬件补证 |
+| R-008 | 部分验证 | 66 个 host 测试目标通过，新增运行统计测试和 mutex timeout rollback 测试 | 真实硬件测试待补 |
+| R-009 | 部分验证 | C-001 到 C-034 中大量耦合项已有自动化证据，新增 runtime stats + tick + scheduler 切换耦合，以及 mutex timeout rollback | C-012 持锁删除策略、C-017、C-018 和真实端口项仍有部分/待硬件补证 |
 | R-010 | 部分实现 | 高级模块包含 stream/message buffer、多 heap、tickless、trace、runtime stats、assert、动态对象创建 | MPU 和真实板级端口后续补齐 |
 | R-011 | 部分验证 | 手册第 5、6 节包含 STM32/DSP 详细移植步骤 | 真实移植完成后补板级截图/日志 |
 
@@ -58,7 +58,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 部分验证或待补项：
 
-- `C-011`：互斥锁等待者 timeout 后优先级回滚仍需专门实现和测试。
+- `C-011`：互斥锁等待者 timeout 后优先级回滚已实现并由 `test_mutex_timeout_rollback` 覆盖。
 - `C-012`：基础任务删除 API 已完成；持锁任务删除时互斥锁释放、等待者处理和优先级恢复策略待补。
 - `C-017`、`C-018`：当前为 deterministic timer service shim；独立 timer service task 和异步命令队列待补。
 - `C-028`、`C-029`：STM32 helper 已验证，真实 SysTick/PendSV/SVC 与 BASEPRI/PRIMASK 硬件行为待板级 smoke。
@@ -78,7 +78,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 ## 6. 建议下一步
 
-1. 补互斥锁 timeout 优先级回滚与持锁任务删除策略。
+1. 补持锁任务删除策略。
 2. 实现独立 timer service task 和异步 timer command queue。
 3. 增加 STM32 ARM GCC smoke 工程，至少覆盖 LED、UART ISR 队列、软件定时器、tickless idle。
 4. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke。

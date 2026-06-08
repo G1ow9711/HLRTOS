@@ -4,6 +4,7 @@
 #include "myrtos/mrt_port.h"
 #include "myrtos/mrt_priority.h"
 #include "myrtos/mrt_trace.h"
+#include "mrt_mutex_internal.h"
 #include "mrt_task_internal.h"
 
 #include <stdint.h>
@@ -386,10 +387,22 @@ void MRT_TaskKernelTick(MRT_Tick now)
         /* 从延时链表移除到期任务。 */
         MRT_ListRemove(&task->state_node);
 
+        /* 保存超时前的等待原因，摘除对象节点后仍要按对象类型做清理。 */
+        MRT_TaskWaitReason timeout_reason = task->wait_reason;
+
+        /* 保存对象等待链表指针，节点移除后 owner 字段会被清空。 */
+        MRT_List *timeout_wait_list = task->wait_node.owner;
+
         /* 如果任务同时挂在某个对象等待链表上，说明对象等待超时，需要同步摘除。 */
         if (MRT_ListNodeIsLinked(&task->wait_node)) {
             /* 从队列、信号量等对象等待链表中移除该任务。 */
             MRT_ListRemove(&task->wait_node);
+
+            /* 互斥锁等待者超时离开后，需要重新计算拥有者的继承优先级。 */
+            if (timeout_reason == MRT_TASK_WAIT_REASON_MUTEX_LOCK) {
+                /* 通知互斥锁模块按剩余等待者回滚或保留继承优先级。 */
+                MRT_MutexKernelHandleLockTimeout(timeout_wait_list);
+            }
         }
 
         /* 超时唤醒后任务不再等待具体对象。 */

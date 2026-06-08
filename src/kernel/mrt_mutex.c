@@ -1,7 +1,88 @@
 #include "myrtos/mrt_mutex.h"
 #include "myrtos/mrt_config.h"
 #include "myrtos/mrt_heap.h"
+#include "mrt_mutex_internal.h"
 #include "mrt_task_internal.h"
+
+#include <stddef.h>
+
+/**
+ * @brief 根据互斥锁剩余等待者重新计算拥有者有效优先级。
+ * @param mutex 互斥锁句柄，不能为空且必须仍有拥有者。
+ * @return void 无返回值。
+ * @example
+ * MRT_MutexRecalculateOwnerPriority(mutex);
+ */
+static void MRT_MutexRecalculateOwnerPriority(MRT_MutexHandle mutex)
+{
+    /* 互斥锁句柄不能为空。 */
+    if (mutex == 0) {
+        /* 无目标对象时直接返回。 */
+        return;
+    }
+
+    /* 没有拥有者时不存在优先级继承关系。 */
+    if (mutex->owner == 0) {
+        /* 无拥有者时直接返回。 */
+        return;
+    }
+
+    /* 以拥有者基础优先级作为回滚下限。 */
+    MRT_Priority target_priority = mutex->owner->base_priority;
+
+    /* 从等待链表头部开始扫描剩余等待者。 */
+    MRT_ListNode *node = MRT_ListGetHead(&mutex->waiting_lockers);
+
+    /* 遍历所有剩余等待者，找到最高有效优先级。 */
+    while (node != 0) {
+        /* 从等待节点恢复任务句柄。 */
+        MRT_TaskHandle waiter = (MRT_TaskHandle)node->item;
+
+        /* 读取当前等待者有效优先级。 */
+        MRT_Priority waiter_priority = 0u;
+        (void)MRT_TaskGetPriority(waiter, &waiter_priority);
+
+        /* 如果等待者优先级高于当前目标值，则更新继承目标。 */
+        if (waiter_priority > target_priority) {
+            /* 保存更高的等待者优先级。 */
+            target_priority = waiter_priority;
+        }
+
+        /* 到达链表尾部后结束遍历。 */
+        if (node->next == &mutex->waiting_lockers.sentinel) {
+            /* 没有更多真实节点。 */
+            break;
+        }
+
+        /* 继续扫描下一个等待节点。 */
+        node = MRT_ListGetNext(node);
+    }
+
+    /* 按剩余等待者计算结果设置拥有者有效优先级。 */
+    MRT_TaskKernelSetEffectivePriority(mutex->owner, target_priority);
+}
+
+/**
+ * @brief 处理互斥锁等待任务因 tick 超时而离开等待链表后的优先级回滚。
+ * @param waiting_lockers 已经移除超时任务后的互斥锁等待链表，不能为空。
+ * @return void 无返回值。
+ * @example
+ * MRT_MutexKernelHandleLockTimeout(wait_list);
+ */
+void MRT_MutexKernelHandleLockTimeout(MRT_List *waiting_lockers)
+{
+    /* 等待链表不能为空。 */
+    if (waiting_lockers == 0) {
+        /* 参数非法时无法定位互斥锁。 */
+        return;
+    }
+
+    /* waiting_lockers 是 MRT_Mutex 内嵌字段，可由字段地址反推出互斥锁控制块地址。 */
+    MRT_MutexHandle mutex = (MRT_MutexHandle)((char *)waiting_lockers - offsetof(MRT_Mutex, waiting_lockers));
+
+    /* 根据剩余等待者重新计算拥有者继承优先级；无剩余等待者时会回落到基础优先级。 */
+    MRT_MutexRecalculateOwnerPriority(mutex);
+}
 
 /**
  * @brief 使用调用方提供的控制块静态创建普通互斥锁。

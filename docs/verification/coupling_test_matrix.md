@@ -25,7 +25,7 @@
 | C-008 | 二值信号量 + ISR | ISR give 信号量 | 等待任务唤醒 | host/mock ISR | 已验证：`test_semaphore_isr` 覆盖无等待者 give 后计数增加且不切换、满信号量返回 `MRT_RESULT_OBJECT_FULL`、任务上下文调用返回 `MRT_RESULT_INVALID_CONTEXT`、唤醒等待任务并设置 `should_yield=true` |
 | C-009 | 计数信号量 + 边界 | give 超过最大计数 | 返回对象状态错误或饱和策略结果 | host 单测 | 已验证：`test_semaphore_take_give` 覆盖计数信号量 give 成功增加计数和满计数返回 `MRT_RESULT_OBJECT_FULL`；`test_semaphore_create_static` 覆盖初始计数大于最大计数时拒绝创建 |
 | C-010 | 互斥锁 + 优先级继承 | 低优先级持锁，高优先级等待 | 持锁任务继承高优先级 | 调度仿真 | 已验证：`test_mutex_priority_inheritance` 覆盖低优先级持锁、高优先级等待、拥有者有效优先级提升、解锁后所有权转交和基础优先级恢复 |
-| C-011 | 互斥锁 + 超时 | 高优先级等待互斥锁超时 | 持锁任务优先级正确回滚 | 调度仿真 | 部分覆盖：`test_mutex_priority_inheritance` 覆盖等待者阻塞和解锁恢复；等待者 tick 超时后拥有者优先级回滚尚未实现，后续需补 `mutex timeout rollback` 测试 |
+| C-011 | 互斥锁 + 超时 | 高优先级等待互斥锁超时 | 持锁任务优先级正确回滚 | 调度仿真 | 已验证：`test_mutex_timeout_rollback` 覆盖低优先级任务持锁、高优先级任务等待并触发优先级继承、等待者 3 tick 超时离开等待链表、拥有者有效优先级回落到基础值且互斥锁所有权保持不变 |
 | C-012 | 互斥锁 + 任务删除 | 删除持锁任务 | 互斥锁状态和等待任务处理符合规则 | 调度仿真 | 部分验证：`test_task_lifecycle` 覆盖删除当前任务、移出 ready list、切换到下一个 ready 任务；持锁任务删除时互斥锁释放、等待者处理和优先级恢复策略仍待 mutex 生命周期增强测试 |
 | C-013 | 递归互斥锁 + 所有权 | 非拥有者释放 | 返回非法状态，不改变计数 | host 单测 | 已验证：`test_mutex_recursive` 覆盖递归互斥锁非拥有者释放返回 `MRT_RESULT_OWNER_ERROR`，拥有者保持不变，递归深度保持 2 |
 | C-014 | 事件组 + 多等待者 | set bits 满足多个任务条件 | 所有满足条件任务被唤醒 | host 单测 | 已验证：`test_event_group_set_wakes_tasks` 覆盖同一事件组上 wait-any 与 wait-all 多等待者，`MRT_EventGroupSetBits` 基于置位后快照唤醒所有匹配任务，并让最高优先级等待者抢占 |

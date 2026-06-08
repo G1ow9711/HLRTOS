@@ -638,7 +638,7 @@ int main(void)
 
 ### MRT_MutexLock
 - 函数原型：`MRT_Result MRT_MutexLock(MRT_MutexHandle mutex, MRT_Timeout timeout);`
-- 功能说明：获取互斥锁，必要时对拥有者执行优先级继承。
+- 功能说明：获取互斥锁，必要时对拥有者执行优先级继承；等待者因 tick 超时离开等待链表后，拥有者有效优先级会按剩余等待者重新计算，若无更高优先级等待者则回落到基础优先级。
 - 参数：互斥锁句柄和等待 tick。
 - 返回值：成功返回 `MRT_RESULT_OK`；超时、上下文非法或所有权错误返回相应错误。
 - 调用上下文：任务上下文。
@@ -661,15 +661,15 @@ int main(void)
 - 常见错误：由非拥有任务释放互斥锁。
 
 ### MRT_MutexGetOwner
-- 函数原型：`MRT_TaskHandle MRT_MutexGetOwner(MRT_MutexHandle mutex);`
+- 函数原型：`MRT_Result MRT_MutexGetOwner(MRT_MutexHandle mutex, MRT_TaskHandle *out_owner);`
 - 功能说明：查询当前互斥锁拥有者。
-- 参数：互斥锁句柄。
-- 返回值：返回拥有者任务；无拥有者或参数非法时返回空。
+- 参数：互斥锁句柄和输出拥有者指针。
+- 返回值：查询成功返回 `MRT_RESULT_OK`，并通过 `out_owner` 写出拥有者任务；无拥有者时写出空；参数非法返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文或诊断代码。
 - 阻塞行为：不阻塞。
 - ISR 限制：ISR 中仅建议用于诊断。
 - 配置宏：无特殊依赖。
-- 调用示例：`MRT_TaskHandle owner = MRT_MutexGetOwner(mutex);`
+- 调用示例：`MRT_TaskHandle owner; MRT_MutexGetOwner(mutex, &owner);`
 - 常见错误：用 owner 轮询替代锁操作。
 
 ### MRT_EventGroupCreateStatic
