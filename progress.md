@@ -32,6 +32,7 @@
   - `python tests\static\test_hardware_smoke_evidence_checker.py` -> pass
   - `git diff --check` -> exit 0 with expected CRLF warnings only
   - `python tools\verify\check_hardware_smoke_evidence.py` -> expected failure because real `stm32_board_smoke.md` and `dsp_board_smoke.md` are still absent
+- Committed checklist/doc updates as `2ea379b` with message `docs: add hardware smoke capture checklist`.
 
 ## Session: 2026-06-08 Embedded Smoke Projects
 - Added dynamic `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` lifecycle APIs with heap-release, null-argument, and static-object rejection coverage.
