@@ -41,6 +41,7 @@
 - Hardware-required release run failed only at the real board log gate: `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` with missing `stm32_board_smoke.md` and `dsp_board_smoke.md`.
 - Manual/test-suite/final-report/completion-audit/requirements docs now point at the unified release entrypoint.
 - Final report summary now records the default pass and hardware-required failure, and `hardware_smoke/README.md` now points users at the unified release runner first.
+- Committed unified release runner work as `3f169e6` with message `feat: add unified release verification runner`, then pushed to `origin/feature/embedded-smoke-projects`.
 
 ## Session: 2026-06-08 Embedded Smoke Projects
 - Added dynamic `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` lifecycle APIs with heap-release, null-argument, and static-object rejection coverage.
