@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 11 complete: Hardware smoke evidence gate and manual porting proof; overall goal still awaits real STM32/DSP board logs
+Phase 12 complete: Hardware smoke capture checklist; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -104,6 +104,15 @@ Phase 11 complete: Hardware smoke evidence gate and manual porting proof; overal
 - [ ] Replace templates with real `stm32_board_smoke.md` and `dsp_board_smoke.md` after actual board runs
 - **Status:** complete for repo-side gate/template work; real hardware evidence remains pending
 
+### Phase 12: Hardware Smoke Capture Checklist
+- [x] Add `docs/verification/hardware_smoke/collection_checklist.md`
+- [x] Document STM32 evidence capture steps: build, flash, tick, PendSV/SVC, ISR queue, critical section, timer, tickless, heap, assert
+- [x] Document DSP evidence capture steps: ABI, stack, timer tick, software interrupt switch, ISR nesting, queue/pool, timer, tickless, heap, assert
+- [x] Link the checklist from the manual, verification plan, completion audit, final report, and requirement matrix
+- [x] Re-run manual/static checks after documentation updates
+- [ ] Replace templates with real `stm32_board_smoke.md` and `dsp_board_smoke.md` after actual board runs
+- **Status:** complete for repo-side guide/docs; real hardware evidence remains pending
+
 ## Key Questions
 1. Which first target should drive the port: STM32 Cortex-M3/M4/M7, Cortex-M0/M0+, or a specific DSP family?
 2. Should first release be a compact teaching/industrial kernel, or a broad FreeRTOS-like feature clone?
@@ -135,6 +144,7 @@ Phase 11 complete: Hardware smoke evidence gate and manual porting proof; overal
 | Buffer writer wait model | Stream buffer write wait records 1 byte because partial send is allowed; message buffer write wait records full record length (`4 + payload`) so wakeup only happens when a whole message can fit. |
 | API prototype verifier | Public API catalog must match public headers and source definitions; test-only `MRT_PortMock*`/`MRT_KernelTest*`, list primitives, priority bitmap helpers, and `MRT_ASSERT` macro are handled explicitly. |
 | Hardware evidence templates | Do not commit fake PASS board logs. Keep templates under `docs/verification/hardware_smoke/` and require real `stm32_board_smoke.md` / `dsp_board_smoke.md` before final hardware completion. |
+| Hardware capture checklist | Keep real-board collection steps separate from templates so users capture UART/trace proof first, then fill evidence files. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

@@ -32,7 +32,7 @@
 | 手册含详细移植步骤 | 手册第 5、6 节包含移植前准备、工程分层、关键接入顺序、首次联调、板级验收 | 已验证 |
 | 所有功能必须测试 | 69 个 host test target 通过，embedded smoke 脚本通过 | 大部分已验证 |
 | 所有耦合情况测试清楚 | `docs/verification/coupling_test_matrix.md` 已扩展到 `C-037`，对应 host / smoke / 静态证据已落表 | 大部分已验证 |
-| 真实 STM32/DSP 板级 smoke | 目前仅有交叉编译与 host model 证据；模板和 `check_hardware_smoke_evidence.py` 已就位，但真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 未提交 | 未验证 |
+| 真实 STM32/DSP 板级 smoke | 目前仅有交叉编译与 host model 证据；`collection_checklist.md`、模板和 `check_hardware_smoke_evidence.py` 已就位，但真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 未提交 | 未验证 |
 
 ## 当前可证明的完成面
 

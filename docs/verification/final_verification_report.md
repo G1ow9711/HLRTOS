@@ -38,6 +38,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | `python tools\verify\check_chinese_comments.py` | `[chinese-comments] include/src/examples/tests function comments covered` |
 | `python tools\verify\check_original_symbols.py` | `[original-symbols] no banned FreeRTOS-style public symbols found` |
 | `python tests\static\test_hardware_smoke_evidence_checker.py` | 硬件证据校验脚本规则单测通过 |
+| `docs/verification/hardware_smoke/collection_checklist.md` | 实机日志采集流程和字段填写规则 |
 | `python tools\verify\check_hardware_smoke_evidence.py` | 当前预期失败：真实 `stm32_board_smoke.md` 与 `dsp_board_smoke.md` 尚未提交 |
 
 ## 3. 需求状态摘要
@@ -89,7 +90,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 ## 6. 建议下一步
 
-1. 在真实 STM32 板卡运行 `examples/stm32` 派生工程，记录 LED、UART ISR 队列、软件定时器、tickless idle、PendSV/SVC 汇编证据，并填写 `docs/verification/hardware_smoke/stm32_board_smoke.md`。
-2. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke，并填写 `docs/verification/hardware_smoke/dsp_board_smoke.md`。
+1. 在真实 STM32 板卡运行 `examples/stm32` 派生工程，按 `docs/verification/hardware_smoke/collection_checklist.md` 记录 LED、UART ISR 队列、软件定时器、tickless idle、PendSV/SVC 汇编证据，并填写 `docs/verification/hardware_smoke/stm32_board_smoke.md`。
+2. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke，按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，并填写 `docs/verification/hardware_smoke/dsp_board_smoke.md`。
 3. 运行 `python tools\verify\check_hardware_smoke_evidence.py`，确认真实 STM32/DSP 板级日志通过最终 gate。
 4. 如后续需要真实内核自动创建服务任务，可把 `MRT_TimerServiceRunPending` 绑定到调度器管理的专用任务入口。

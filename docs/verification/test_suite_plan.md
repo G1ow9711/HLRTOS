@@ -14,7 +14,7 @@
 | `tests/static/` | 静态检查 | 注释覆盖、API 手册覆盖、符号原创性 |
 | `examples/stm32/` | STM32 smoke test | LED、UART、ISR 队列、定时器 |
 | `examples/dsp/` | DSP smoke/mock test | tick、软件中断、栈初始化 |
-| `docs/verification/hardware_smoke/` | 真实板级 smoke 证据 | STM32/DSP 实机日志与最终验收模板 |
+| `docs/verification/hardware_smoke/` | 真实板级 smoke 证据 | STM32/DSP 实机日志、采集清单与最终验收模板 |
 
 ## 2. 测试框架建议
 
@@ -23,7 +23,7 @@
 - 静态脚本：Python，放在 `tools/verify/`，覆盖 `include/`、`src/`、`examples/`、`tests/`。
 - STM32：先提供 ARM GCC 可编译 smoke 示例；真实板级运行结果后续由用户硬件环境补证。
 - DSP：先以端口 mock 证明端口契约；真实 DSP 型号确认后补 ABI 级测试。
-- 真实硬件验收：按 `docs/verification/hardware_smoke/*.template.md` 生成 `stm32_board_smoke.md` 和 `dsp_board_smoke.md`，再运行 `tools/verify/check_hardware_smoke_evidence.py`。
+- 真实硬件验收：按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，再由 `docs/verification/hardware_smoke/*.template.md` 生成 `stm32_board_smoke.md` 和 `dsp_board_smoke.md`，最后运行 `tools/verify/check_hardware_smoke_evidence.py`。
 
 ## 3. 验收命令设计
 

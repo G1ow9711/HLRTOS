@@ -14,6 +14,12 @@
 python tools\verify\check_hardware_smoke_evidence.py
 ```
 
+## 采集指南
+
+- 先阅读 `collection_checklist.md`，按 STM32 或 DSP 对应章节采集原始 UART/trace 日志。
+- 再把模板复制成最终文件名并填写真实结果。
+- 最后运行校验命令。校验失败时，应回到原始日志补证，不要把模板字段改成 `PASS` 规避检查。
+
 ## 填写要求
 
 - 日志必须来自真实板卡运行，不接受仅 host model 或交叉编译结果。
@@ -22,4 +28,3 @@ python tools\verify\check_hardware_smoke_evidence.py
 - `Assert-Failures` 必须为 0。
 - `Heap-Min-Free-Bytes` 必须大于 0。
 - 记录编译器版本、芯片型号、板卡型号、时钟、tick 频率、上下文切换证据和 UART/trace 日志摘要。
-

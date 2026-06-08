@@ -259,9 +259,11 @@
 ## Hardware Smoke Evidence Gate Findings
 - `tools/verify/check_hardware_smoke_evidence.py` now defines the machine-checkable final evidence contract for real STM32 and DSP boards.
 - The checker expects `docs/verification/hardware_smoke/stm32_board_smoke.md` and `docs/verification/hardware_smoke/dsp_board_smoke.md`.
+- `docs/verification/hardware_smoke/collection_checklist.md` now describes the real STM32/DSP log collection flow, raw log retention, and field filling rules before the final evidence file is produced.
 - `tests/static/test_hardware_smoke_evidence_checker.py` covers valid STM32/DSP evidence plus missing/invalid evidence. The first run failed because the checker returned immediately after missing required fields and hid present-but-failing `Evidence-Status`, runtime, assert, and heap fields.
 - Checker behavior is now improved: missing required fields are reported, but present failing status and numeric fields are still validated.
 - Added templates only: `docs/verification/hardware_smoke/stm32_board_smoke.template.md` and `docs/verification/hardware_smoke/dsp_board_smoke.template.md`. No fake PASS logs are committed.
-- Manual sections 5.6 and 6.6 now describe real-board evidence archival steps. Section 7.4 lists `python tools\verify\check_hardware_smoke_evidence.py`.
+- Manual sections 5.6 and 6.6 now describe real-board evidence archival steps and point at the collection checklist. Section 7.4 lists the verification commands, including `python tools\verify\check_hardware_smoke_evidence.py`.
+- Latest repo-side recheck after checklist update: manual coverage 135, API prototype alignment 135, embedded smoke passed, hardware checker unit test passed, and `git diff --check` stayed clean apart from expected CRLF warnings.
 - Current hardware evidence gate intentionally fails with missing `stm32_board_smoke.md` and `dsp_board_smoke.md`; this is the remaining real-hardware proof gap, not a software test failure.
 - Latest repo-side verification: host tests 69 passed; manual coverage 135; API prototype alignment 135; Chinese comments, originality, embedded smoke, and hardware checker unit test pass; `git diff --check` exits 0 with expected CRLF warnings only.

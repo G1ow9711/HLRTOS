@@ -19,6 +19,20 @@
 - Committed verified repo-side smoke/evidence work as `59b154f` with message `feat: add embedded smoke verification`.
 - Pushed branch `feature/embedded-smoke-projects` to `origin`; GitHub PR URL suggested by remote: `https://github.com/G1ow9711/HLRTOS/pull/new/feature/embedded-smoke-projects`.
 
+## Session: 2026-06-08 Hardware Smoke Capture Checklist
+- Added `docs/verification/hardware_smoke/collection_checklist.md` with real STM32 and DSP log collection steps.
+- Expanded `docs/verification/hardware_smoke/README.md` so users collect raw UART/trace logs before filling final evidence files.
+- Updated manual sections 5.6 and 6.6 to point at the collection checklist before `stm32_board_smoke.md` and `dsp_board_smoke.md` are filled.
+- Updated manual section 7.4 to list the full repo-side verification commands plus the hardware evidence gate.
+- Updated `docs/verification/test_suite_plan.md`, `docs/verification/final_verification_report.md`, `docs/verification/completion_audit.md`, and `docs/verification/requirements_traceability_matrix.md` to reference the collection checklist.
+- Verification after checklist update:
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
+  - `python tests\static\test_hardware_smoke_evidence_checker.py` -> pass
+  - `git diff --check` -> exit 0 with expected CRLF warnings only
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> expected failure because real `stm32_board_smoke.md` and `dsp_board_smoke.md` are still absent
+
 ## Session: 2026-06-08 Embedded Smoke Projects
 - Added dynamic `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` lifecycle APIs with heap-release, null-argument, and static-object rejection coverage.
 - RED: direct compile of `test_buffer_dynamic_allocation` failed on implicit declarations for `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete`.
