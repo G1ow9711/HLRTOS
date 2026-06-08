@@ -57,6 +57,7 @@
 | C-040 | 硬件 smoke 原始日志 schema + 证据生成器 + 示例 C 头文件 | 真实板级 UART/trace 字段由文档、生成器和板级输出端共同使用 | `COMMON_REQUIRED_FIELDS`、STM32/DSP 专属字段、`raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h` 和采集指南必须保持一致；release 默认链路必须包含该检查 | 静态检查 | 已验证：`test_hardware_smoke_raw_log_schema.py` 和 `check_hardware_smoke_raw_log_schema.py` 覆盖字段存在性、指南链接和 release runner 步骤；该检查只证明字段契约一致，不替代真实板级 smoke |
 | C-041 | 硬件 smoke 日志输出 helper + raw-log schema | STM32/DSP 板级代码需要输出 `Key: Value` 字符串字段和十进制整数字段 | helper 输出必须精确为 `Key: Value\n`；十进制整数不带单位；非法参数必须返回错误且不留下半行日志，避免误导证据生成器 | host 单测 | 已验证：`test_hardware_smoke_log` 覆盖 `MRT_SmokeLogWritePair()`、`MRT_SmokeLogWriteU32()`、字段常量联用和非法参数无输出；该 helper 只格式化日志，不判断 PASS/FAIL，也不替代真实 STM32/DSP 板级 smoke |
 | C-042 | 硬件 smoke 完整报告 emitter + raw-log schema | STM32/DSP 板级代码一次性输出 common 字段和目标专属字段 | emitter 必须先完整校验所有字符串字段，再输出通用字段和 STM32/DSP 专属字段；缺字段或空 writer 时必须返回错误且不留下半份 raw log | host 单测 | 已验证：`test_hardware_smoke_report` 覆盖 `MRT_SmokeEmitStm32Report()` 输出 STM32 全部必填字段、`MRT_SmokeEmitDspReport()` 输出 DSP 全部必填字段、非法参数无输出；该 emitter 只序列化调用方提供的结果，不生成真实板级 PASS |
+| C-043 | 硬件 smoke 采集执行器 + 目标级预检 | 用户只连接 STM32 或只连接 DSP 时，未选目标可能仍处于占位配置 | `--target STM32` 只预检 STM32 节点并执行 STM32 采集；`--target DSP` 只预检 DSP 节点；`--target all` 仍拒绝任一目标占位或缺字段 | 静态工具测试 | 已验证：`test_hardware_smoke_capture_runner.py` 覆盖未选 DSP 节点含 TODO 时 STM32 单目标执行仍可生成可追溯证据，并覆盖 `all` 目标会拒绝该错误；该测试不执行真实硬件命令 |
 
 ## 最新增量证据：STM32 上下文切换入口
 
@@ -115,4 +116,10 @@
 - `C-042`：新增 `tests/unit/test_hardware_smoke_report.c` 并纳入 host test runner 与 CMake，验证 STM32/DSP 必填字段全集输出和非法参数无半份报告输出。
 - `C-042`：`tools/verify/check_hardware_smoke_raw_log_schema.py` 现在同时检查 `mrt_hardware_smoke_report.h` 是否引用生成器要求的全部 `MRT_SMOKE_FIELD_*` 字段常量，避免后续新增 raw-log 字段时 report emitter 漏同步。
 - `C-042`：该 emitter 只减少真机采集漏字段风险，不判断 `Evidence-Status`，不替代真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 和匹配 raw log。
+
+## 最新增量证据：硬件 smoke 目标级预检
+
+- `C-043`：`tools/verify/check_hardware_smoke_preflight.py` 新增 `--target STM32|DSP|all`，默认仍检查全部目标；单目标模式只检查被选目标配置，适合先调通一块板。
+- `C-043`：`tools/verify/run_hardware_smoke_capture.py` 的 preflight 步骤现在把当前 `--target` 传给预检；dry-run 输出也显示目标级预检命令。
+- `C-043`：`tests/static/test_hardware_smoke_capture_runner.py` 覆盖单目标忽略未选目标占位配置，以及 `all` 目标拒绝任一目标占位配置。
 

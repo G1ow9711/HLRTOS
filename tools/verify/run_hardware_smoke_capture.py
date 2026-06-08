@@ -127,10 +127,12 @@ def build_capture_plan(config_path: Path, target: str, check_tools: bool = False
         f"{quote_path(Path(sys.executable))} {quote_path(VERIFY_DIR / 'check_hardware_smoke_preflight.py')} "
         f"--config {quote_path(config_path)}"
     )
+    if target != "all":
+        preflight_command += f" --target {target}"
     if check_tools:
         preflight_command += " --check-tools"
 
-    steps = [CaptureStep("preflight", "all", "preflight", preflight_command)]
+    steps = [CaptureStep("preflight", target, "preflight", preflight_command)]
     for target_name in selected_targets(target):
         target_config = require_target_config(config, target_name)
         capture_command = str(target_config["capture_command"])
@@ -162,10 +164,11 @@ def print_dry_run(steps: list[CaptureStep]) -> None:
     print("[hardware-capture] dry-run only; add --execute to run hardware commands")
 
 
-def run_config_preflight(config_path: Path, check_tools: bool) -> int:
+def run_config_preflight(config_path: Path, check_tools: bool, target: str) -> int:
     """运行预检规则并输出失败信息。"""
     preflight = load_module("check_hardware_smoke_preflight", VERIFY_DIR / "check_hardware_smoke_preflight.py")
-    failures = preflight.check_config_file(config_path, check_tools=check_tools)
+    target_filter = None if target == "all" else (target,)
+    failures = preflight.check_config_file(config_path, check_tools=check_tools, target_filter=target_filter)
     if failures:
         for failure in failures:
             print(f"[hardware-capture] preflight: {failure}")
@@ -198,7 +201,7 @@ def run_command(step: CaptureStep) -> int:
 def run_step(step: CaptureStep, config_path: Path, check_tools: bool) -> int:
     """执行单个采集流水线步骤。"""
     if step.action == "preflight":
-        return run_config_preflight(config_path, check_tools)
+        return run_config_preflight(config_path, check_tools, step.target)
     if step.action == "verify-evidence":
         return run_target_evidence_check(config_path, step.target)
     return run_command(step)

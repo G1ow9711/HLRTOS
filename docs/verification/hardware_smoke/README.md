@@ -18,6 +18,8 @@
 ```powershell
 python tools\verify\run_release_verification.py
 python tools\verify\check_hardware_smoke_preflight.py
+python tools\verify\check_hardware_smoke_preflight.py --target STM32
+python tools\verify\check_hardware_smoke_preflight.py --target DSP
 python tools\verify\check_hardware_smoke_preflight.py --check-tools
 python tools\verify\check_hardware_smoke_raw_log_schema.py
 python tools\verify\run_hardware_smoke_capture.py --target STM32
@@ -31,7 +33,7 @@ python tools\verify\check_hardware_smoke_evidence.py
 
 - 先阅读 `raw_log_schema.md` 和 `collection_checklist.md`，按 STM32 或 DSP 对应章节采集原始 UART/trace 日志。
 - 板级输出代码可同时使用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h` 和 `examples/hardware_smoke/mrt_hardware_smoke_report.h`：字段常量保证名称一致，日志 helper 输出 `Key: Value\n` 行，完整报告 emitter 输出 STM32/DSP 必填字段全集。
-- 采集前先运行 `check_hardware_smoke_preflight.py`，确认 `hardware_smoke_preflight.json` 不含 TODO/PENDING 等占位符，且 STM32/DSP 都写明芯片、板卡、命令、运行时长和必需字段。`--check-tools` 会额外检查当前机器是否能找到配置里的可执行文件；没有真实工具链或烧录器时不要把该失败解释成板级 smoke 失败。
+- 采集前先运行 `check_hardware_smoke_preflight.py`，确认 `hardware_smoke_preflight.json` 不含 TODO/PENDING 等占位符，且 STM32/DSP 都写明芯片、板卡、命令、运行时长和必需字段。若只调试单块板，可追加 `--target STM32` 或 `--target DSP`，这样未选目标的占位配置不会阻塞当前目标；不带 `--target` 时默认检查全部目标。`--check-tools` 会额外检查当前机器是否能找到配置里的可执行文件；没有真实工具链或烧录器时不要把该失败解释成板级 smoke 失败。
 - 可先运行 `run_hardware_smoke_capture.py --target STM32` 或 `--target DSP` 做 dry-run，确认预检、编译、构建、烧录、采集、证据生成和目标级证据校验顺序。只有确认命令会连接真实板卡并产出 `raw_log` 后，才追加 `--execute`。
 - `hardware_smoke_preflight.json` 中的 `capture_command` 应优先配置为能保留原始 UART/trace 日志的采集命令；执行器随后会调用 `generate_hardware_smoke_evidence.py` 生成最终证据。若 `capture_command` 本身已经调用该生成器，执行器不会追加第二次生成步骤，只会继续做目标级证据校验。
 - 若原始日志已经包含 `Key: Value` 字段，可先运行 `generate_hardware_smoke_evidence.py` 生成最终证据文件；生成器会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`。

@@ -367,6 +367,14 @@
 - Full default release verification passed with `[release] 15 step(s) passed`.
 - Hardware-required verification remains correctly gated: `python tools\verify\check_hardware_smoke_evidence.py` reports missing `stm32_board_smoke.md` and `dsp_board_smoke.md`, and `python tools\verify\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.
 
+## Target-Scoped Hardware Smoke Preflight Findings
+- RED evidence: `python tests\static\test_hardware_smoke_capture_runner.py` failed when `runner.run_capture(config_path, "STM32", execute=True, check_tools=False)` rejected an unselected DSP placeholder board value.
+- Desired behavior is target-scoped: selecting `STM32` or `DSP` validates only that target so one real board can be captured while the other board configuration is still being prepared.
+- Strict behavior remains for `all`: a bad STM32 or DSP section must still reject the run before any hardware commands execute.
+- Implementation adds `normalize_target_filter()` plus `target_filter` support to `check_config_data()` and `check_config_file()`, exposes `--target all|STM32|DSP` on the preflight CLI, and makes `run_hardware_smoke_capture.py` pass the selected target into preflight.
+- Focused/static/full verification passed after docs sync, including target-scoped preflight commands, target-specific capture dry-runs, manual coverage, Chinese comment coverage, and default release verification with `[release] 15 step(s) passed`.
+- This improves real-board bring-up ergonomics only; it still does not create or accept real STM32/DSP board evidence files.
+
 ## Hardware Smoke Report Schema Drift Findings
 - RED evidence: after adding `REPORT_HEADER` coverage to `tests/static/test_hardware_smoke_raw_log_schema.py`, `python tests\static\test_hardware_smoke_raw_log_schema.py` failed because `tools/verify/check_hardware_smoke_raw_log_schema.py` did not mention `mrt_hardware_smoke_report.h`.
 - Implementation adds `REPORT_HEADER`, `field_macro_token()`, and `check_report_header_coverage()` to the schema checker. It now verifies every generator-required STM32/DSP raw-log field maps to a `MRT_SMOKE_FIELD_*` token used by `mrt_hardware_smoke_report.h`.

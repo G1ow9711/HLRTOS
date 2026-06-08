@@ -987,3 +987,40 @@
 - Hardware-required verification remains correctly gated:
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`.
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`.
+
+## Target-Scoped Hardware Smoke Preflight
+- Continued Phase 26 on `feature/embedded-smoke-projects` with existing uncommitted code/docs changes.
+- RED coverage already added to `tests\static\test_hardware_smoke_capture_runner.py`:
+  - single-target execute with `STM32` must ignore a bad unselected DSP config.
+  - `all` target execute must reject the same bad DSP config.
+- GREEN implementation already present:
+  - `tools\verify\check_hardware_smoke_preflight.py` supports target filtering and CLI `--target all|STM32|DSP`.
+  - `tools\verify\run_hardware_smoke_capture.py` builds and runs target-specific preflight commands.
+- Documentation sync updated manual, hardware smoke README/checklist, coupling matrix, test suite plan, requirements matrix, final verification report, and completion audit.
+- Planning sync updated `task_plan.md`, `findings.md`, and this progress log.
+- Next verification batch:
+  - `python tests\static\test_hardware_smoke_capture_runner.py`
+  - `python tools\verify\check_hardware_smoke_preflight.py`
+  - `python tools\verify\check_hardware_smoke_preflight.py --target STM32`
+  - `python tools\verify\check_hardware_smoke_preflight.py --target DSP`
+  - `python tools\verify\run_hardware_smoke_capture.py --target STM32`
+  - `python tools\verify\run_hardware_smoke_capture.py --target DSP`
+  - `python tools\verify\run_release_verification.py`
+  - hardware-required checks are expected to fail only because real STM32/DSP board evidence files are still absent.
+- Focused checks passed:
+  - `python tests\static\test_hardware_smoke_capture_runner.py`
+  - `python tools\verify\check_hardware_smoke_preflight.py`
+  - `python tools\verify\check_hardware_smoke_preflight.py --target STM32`
+  - `python tools\verify\check_hardware_smoke_preflight.py --target DSP`
+  - `python tools\verify\run_hardware_smoke_capture.py --target STM32`
+  - `python tools\verify\run_hardware_smoke_capture.py --target DSP`
+- Static checks passed:
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 72 test target(s) passed`; `[release] 15 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`

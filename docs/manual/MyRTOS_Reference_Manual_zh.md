@@ -1797,7 +1797,7 @@ STM32 移植验收清单：
 ### 5.6 真实板级证据归档
 
 1. 采集前先看 `docs/verification/hardware_smoke/raw_log_schema.md` 和 `docs/verification/hardware_smoke/collection_checklist.md`，按字段契约输出 `Key: Value` 原始 UART/trace 日志，建议命名为 `docs/verification/hardware_smoke/stm32_uart_raw.log`。
-2. 修改或确认 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 中的 STM32 节点：`chip`、`board`、`compiler_command`、`build_command`、`flash_command`、`capture_command`、`raw_log`、`evidence_output`、`minimum_runtime_minutes` 和 `expected_fields` 都必须是当前板卡的真实信息。然后运行 `python tools\verify\check_hardware_smoke_preflight.py`；若要同时检查本机工具链、烧录器和采集命令是否在 PATH 中，再运行 `python tools\verify\check_hardware_smoke_preflight.py --check-tools`。
+2. 修改或确认 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 中的 STM32 节点：`chip`、`board`、`compiler_command`、`build_command`、`flash_command`、`capture_command`、`raw_log`、`evidence_output`、`minimum_runtime_minutes` 和 `expected_fields` 都必须是当前板卡的真实信息。然后运行 `python tools\verify\check_hardware_smoke_preflight.py --target STM32`；若要同时检查本机工具链、烧录器和采集命令是否在 PATH 中，再运行 `python tools\verify\check_hardware_smoke_preflight.py --target STM32 --check-tools`。默认不带 `--target` 时会检查 STM32 和 DSP 两个节点。
 3. 运行 `python tools\verify\check_hardware_smoke_raw_log_schema.py`，确认生成器常量、`raw_log_schema.md`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 和采集指南中的字段契约没有漂移。板级 UART/SWO/trace 输出代码可同时引入 `examples/hardware_smoke/mrt_hardware_smoke_log.h`，把 `MRT_SmokeLogWriter.write_char` 绑定到真实单字符发送函数，再用 `MRT_SmokeLogWritePair()` 与 `MRT_SmokeLogWriteU32()` 输出符合 schema 的 `Key: Value` 行；若希望降低漏字段风险，可使用 `examples/hardware_smoke/mrt_hardware_smoke_report.h` 的 `MRT_SmokeEmitStm32Report()` 一次输出 STM32 必填字段全集。上述 helper 只负责格式化，不替代真实 PASS/FAIL 判定。
 4. 运行 `python tools\verify\run_hardware_smoke_capture.py --target STM32` 预演完整顺序；确认 `capture_command` 会保留原始 UART/trace 日志后，再追加 `--execute` 真正执行编译、烧录、采集、证据生成和目标级证据校验。若 `capture_command` 本身已经调用 `generate_hardware_smoke_evidence.py`，执行器不会重复生成证据。
 5. 若原始日志已经包含 `Key: Value` 格式字段，也可单独运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
@@ -1937,7 +1937,7 @@ DSP 移植验收清单：
 ### 6.6 真实板级证据归档
 
 1. 采集前先看 `docs/verification/hardware_smoke/raw_log_schema.md` 和 `docs/verification/hardware_smoke/collection_checklist.md`，按字段契约输出 `Key: Value` 原始 UART/trace 日志，建议命名为 `docs/verification/hardware_smoke/dsp_uart_raw.log`。
-2. 修改或确认 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 中的 DSP 节点：`chip`、`board`、`compiler_command`、`build_command`、`flash_command`、`capture_command`、`raw_log`、`evidence_output`、`minimum_runtime_minutes`、`expected_fields`、`abi`、`stack_direction`、`timer_source` 和 `context_switch` 都必须是当前 DSP 工程的真实信息。然后运行 `python tools\verify\check_hardware_smoke_preflight.py`；若要同时检查本机 TI/ADI/目标 DSP 工具链和烧录采集工具是否在 PATH 中，再运行 `python tools\verify\check_hardware_smoke_preflight.py --check-tools`。
+2. 修改或确认 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 中的 DSP 节点：`chip`、`board`、`compiler_command`、`build_command`、`flash_command`、`capture_command`、`raw_log`、`evidence_output`、`minimum_runtime_minutes`、`expected_fields`、`abi`、`stack_direction`、`timer_source` 和 `context_switch` 都必须是当前 DSP 工程的真实信息。然后运行 `python tools\verify\check_hardware_smoke_preflight.py --target DSP`；若要同时检查本机 TI/ADI/目标 DSP 工具链和烧录采集工具是否在 PATH 中，再运行 `python tools\verify\check_hardware_smoke_preflight.py --target DSP --check-tools`。默认不带 `--target` 时会检查 STM32 和 DSP 两个节点。
 3. 运行 `python tools\verify\check_hardware_smoke_raw_log_schema.py`，确认生成器常量、`raw_log_schema.md`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 和采集指南中的字段契约没有漂移。DSP UART/trace/仿真器输出代码可同时引入 `examples/hardware_smoke/mrt_hardware_smoke_log.h`，把 `MRT_SmokeLogWriter.write_char` 绑定到目标 DSP 的单字符输出函数，再用 `MRT_SmokeLogWritePair()` 与 `MRT_SmokeLogWriteU32()` 输出符合 schema 的 `Key: Value` 行；若希望降低漏字段风险，可使用 `examples/hardware_smoke/mrt_hardware_smoke_report.h` 的 `MRT_SmokeEmitDspReport()` 一次输出 DSP 必填字段全集。上述 helper 只负责格式化，不替代真实 PASS/FAIL 判定。
 4. 运行 `python tools\verify\run_hardware_smoke_capture.py --target DSP` 预演完整顺序；确认 `capture_command` 会保留原始 UART/trace 日志后，再追加 `--execute` 真正执行编译、烧录、采集、证据生成和目标级证据校验。若 `capture_command` 本身已经调用 `generate_hardware_smoke_evidence.py`，执行器不会重复生成证据。
 5. 若原始日志已经包含 `Key: Value` 格式字段，也可单独运行 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
@@ -1992,6 +1992,8 @@ DSP 移植验收清单：
   ```powershell
   python tools\verify\run_release_verification.py
   python tools\verify\check_hardware_smoke_preflight.py
+  python tools\verify\check_hardware_smoke_preflight.py --target STM32
+  python tools\verify\check_hardware_smoke_preflight.py --target DSP
   python tools\verify\check_hardware_smoke_raw_log_schema.py
   python tools\verify\run_hardware_smoke_capture.py --target STM32
   python tools\verify\run_release_verification.py --require-hardware

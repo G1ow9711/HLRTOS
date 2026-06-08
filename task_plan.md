@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 25 repo-side complete: raw-log schema checker now covers complete report emitter drift; overall goal still awaits real STM32/DSP board logs
+Phase 26 repo-side complete: hardware smoke capture/preflight supports target-scoped validation; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -160,6 +160,7 @@ Phase 25 repo-side complete: raw-log schema checker now covers complete report e
 | Hardware smoke log output helper | Board code may use `mrt_hardware_smoke_log.h` with a single-character UART/SWO/trace callback to output schema-compliant `Key: Value` lines without `printf`; the helper formats logs only and never decides PASS/FAIL. |
 | Hardware smoke complete report emitter | Board code may use `mrt_hardware_smoke_report.h` to validate and output STM32/DSP required field sets in one call, reducing real-board raw-log omissions while still leaving PASS/FAIL decisions to board tests. |
 | Report emitter schema coverage | `check_hardware_smoke_raw_log_schema.py` must inspect `mrt_hardware_smoke_report.h` so generator field additions cannot leave the complete report emitter stale. |
+| Target-scoped hardware preflight | Single-target smoke capture should validate only the selected STM32 or DSP target so one board can be brought up while the other target configuration is still incomplete; `all` remains strict across both targets. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -297,3 +298,12 @@ Phase 25 repo-side complete: raw-log schema checker now covers complete report e
 - [x] Re-run focused/static/full release verification after documentation sync
 - [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
 - **Status:** complete for repo-side schema/report drift coverage; real hardware evidence remains pending
+
+## Phase 26: Target-Scoped Hardware Smoke Preflight
+- [x] Add failing capture-runner coverage proving `--target STM32 --execute` ignores invalid DSP config, while `--target all` still rejects it
+- [x] Add target filtering to `check_hardware_smoke_preflight.py`
+- [x] Wire capture runner preflight steps to pass the selected target into the preflight checker and dry-run command text
+- [x] Update manual, hardware smoke docs, requirement matrix, coupling matrix, test-suite plan, completion audit, final report, findings, and progress
+- [x] Re-run focused/static/full release verification after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
+- **Status:** complete for repo-side target-scoped capture/preflight; real hardware evidence remains pending

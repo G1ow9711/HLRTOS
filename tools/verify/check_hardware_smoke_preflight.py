@@ -41,6 +41,30 @@ REQUIRED_EXPECTED_FIELDS = {
 }
 
 
+def normalize_target_filter(target_filter: tuple[str, ...] | list[str] | None) -> tuple[str, ...]:
+    """规整需要预检的目标集合。
+    参数:
+        target_filter: 目标名列表；为 None 时表示检查全部 STM32/DSP 目标。
+    返回值:
+        返回按固定顺序去重后的目标元组。
+    调用示例:
+        `targets = normalize_target_filter(["STM32"])`
+    """
+    if target_filter is None:
+        return TARGETS
+
+    ordered: list[str] = []
+    for target in target_filter:
+        normalized = str(target).upper()
+        if normalized not in TARGETS:
+            raise ValueError(f"unsupported target: {target}")
+        if normalized not in ordered:
+            ordered.append(normalized)
+    if not ordered:
+        raise ValueError("target filter must not be empty")
+    return tuple(ordered)
+
+
 def is_placeholder(value: str) -> bool:
     """判断字符串是否仍像待替换占位内容。
 
@@ -259,7 +283,9 @@ def validate_target(target_config: Any, target: str, check_tools: bool) -> list[
     return failures
 
 
-def check_config_data(data: Any, check_tools: bool) -> list[str]:
+def check_config_data(data: Any,
+                      check_tools: bool,
+                      target_filter: tuple[str, ...] | list[str] | None = None) -> list[str]:
     """检查已解析 JSON 数据是否满足硬件 smoke 预检规则。
 
     参数:
@@ -270,6 +296,11 @@ def check_config_data(data: Any, check_tools: bool) -> list[str]:
     调用示例:
         `failures = check_config_data(json_data, check_tools=False)`
     """
+    try:
+        targets_to_check = normalize_target_filter(target_filter)
+    except ValueError as exc:
+        return [str(exc)]
+
     root, failures = require_mapping(data, "root")
     if root is None:
         return failures
@@ -279,7 +310,7 @@ def check_config_data(data: Any, check_tools: bool) -> list[str]:
     if targets is None:
         return failures
 
-    for target in TARGETS:
+    for target in targets_to_check:
         if target not in targets:
             failures.append(f"missing target {target}")
             continue
@@ -287,7 +318,9 @@ def check_config_data(data: Any, check_tools: bool) -> list[str]:
     return failures
 
 
-def check_config_file(config_path: Path, check_tools: bool) -> list[str]:
+def check_config_file(config_path: Path,
+                      check_tools: bool,
+                      target_filter: tuple[str, ...] | list[str] | None = None) -> list[str]:
     """读取并检查硬件 smoke 预检配置文件。
 
     参数:
@@ -304,7 +337,7 @@ def check_config_file(config_path: Path, check_tools: bool) -> list[str]:
         data = json.loads(config_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         return [f"{config_path}: invalid JSON at line {exc.lineno}: {exc.msg}"]
-    return check_config_data(data, check_tools=check_tools)
+    return check_config_data(data, check_tools=check_tools, target_filter=target_filter)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -320,6 +353,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check hardware smoke preflight configuration")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG), help="hardware smoke preflight JSON path")
     parser.add_argument("--check-tools", action="store_true", help="verify command executables are on PATH")
+    parser.add_argument("--target", default="all", choices=["all", "STM32", "DSP"], help="target section to check")
     return parser.parse_args(argv)
 
 
@@ -334,7 +368,8 @@ def main(argv: list[str] | None = None) -> int:
         `raise SystemExit(main())`
     """
     args = parse_args(argv)
-    failures = check_config_file(Path(args.config), check_tools=args.check_tools)
+    target_filter = None if args.target == "all" else (args.target,)
+    failures = check_config_file(Path(args.config), check_tools=args.check_tools, target_filter=target_filter)
     if failures:
         for failure in failures:
             print(f"[hardware-preflight] {failure}")

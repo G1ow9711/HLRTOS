@@ -206,11 +206,39 @@ def test_generator_capture_command_is_not_duplicated() -> None:
         assert names[-1] == "STM32.verify-evidence"
 
 
+def test_single_target_execute_ignores_unselected_target_config() -> None:
+    """单目标采集只应预检被选目标，不能被未选目标占位配置阻塞。"""
+    runner = load_capture_runner()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        config, raw_log, evidence = valid_config(root)
+        config["targets"]["DSP"]["board"] = "TODO-DSP-BOARD"
+        config_path = root / "hardware_smoke_preflight.json"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        assert runner.run_capture(config_path, "STM32", execute=True, check_tools=False) == 0
+        assert raw_log.exists()
+        assert evidence.exists()
+
+
+def test_all_target_execute_rejects_any_target_config_error() -> None:
+    """全目标采集仍必须拒绝任意 STM32/DSP 目标里的占位配置。"""
+    runner = load_capture_runner()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        root = Path(temp_dir)
+        config, _, _ = valid_config(root)
+        config["targets"]["DSP"]["board"] = "TODO-DSP-BOARD"
+        config_path = root / "hardware_smoke_preflight.json"
+        config_path.write_text(json.dumps(config), encoding="utf-8")
+        assert runner.run_capture(config_path, "all", execute=True, check_tools=False) == 1
+
+
 def main() -> int:
     """运行硬件 smoke 采集执行器静态测试。"""
     test_capture_plan_has_ordered_target_steps()
     test_execute_runs_capture_and_generates_traceable_evidence()
     test_generator_capture_command_is_not_duplicated()
+    test_single_target_execute_ignores_unselected_target_config()
+    test_all_target_execute_rejects_any_target_config_error()
     return 0
 
 
