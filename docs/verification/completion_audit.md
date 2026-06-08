@@ -11,7 +11,7 @@
 - STM32 / DSP 端口契约 helper 已实现。
 - 中文注释覆盖、手册 API 覆盖、原始符号扫描、host 测试和 embedded smoke 脚本都已通过。
 - 手册已补充详细 STM32 / DSP 移植步骤。
-- 真实板级 smoke 证据模板、raw-log schema、采集预检配置、采集执行器、原始日志生成器、日志输出 helper 和校验脚本已补充到 `docs/verification/hardware_smoke/`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_raw_log_schema.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/generate_hardware_smoke_evidence.py` 与 `tools/verify/check_hardware_smoke_evidence.py`；最终证据还要求 `Raw-Log-Path` 与 `Raw-Log-SHA256` 回溯到原始 UART/trace 日志。
+- 真实板级 smoke 证据模板、raw-log schema、采集预检配置、采集执行器、原始日志生成器、日志输出 helper、完整报告 emitter 和校验脚本已补充到 `docs/verification/hardware_smoke/`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`examples/hardware_smoke/mrt_hardware_smoke_report.h`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_raw_log_schema.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/generate_hardware_smoke_evidence.py` 与 `tools/verify/check_hardware_smoke_evidence.py`；最终证据还要求 `Raw-Log-Path` 与 `Raw-Log-SHA256` 回溯到原始 UART/trace 日志。
 - 统一 release 验证入口 `tools/verify/run_release_verification.py` 已就位：默认模式可跑 repo-side 验证，`--require-hardware` 会把真实板级 gate 纳入同一链路。
 
 但**仍有一项硬缺口未被证明**：
@@ -31,9 +31,9 @@
 | 专业详细中文注释 | `check_chinese_comments.py` 通过，覆盖 `include/`、`src/`、`examples/`、`tests/` | 已验证 |
 | 类 FreeRTOS 官方风格中文手册 | `check_api_manual_coverage.py` 通过，135 个 API 条目覆盖；`check_api_catalog_prototypes.py` 通过，135 个 API 原型对齐 | 已验证 |
 | 手册含详细移植步骤 | 手册第 5、6 节包含移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收、raw-log schema 和证据生成命令 | 已验证 |
-| 所有功能必须测试 | 71 个 host test target 通过，embedded smoke 脚本通过 | 大部分已验证 |
-| 所有耦合情况测试清楚 | `docs/verification/coupling_test_matrix.md` 已扩展到 `C-041`，对应 host / smoke / 静态证据已落表 | 大部分已验证 |
-| 真实 STM32/DSP 板级 smoke | 目前仅有交叉编译与 host model 证据；`raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h`、`mrt_hardware_smoke_log.h`、`hardware_smoke_preflight.json`、`collection_checklist.md`、模板、采集执行器、raw-log SHA-256 校验、`check_hardware_smoke_preflight.py`、`check_hardware_smoke_raw_log_schema.py` 和 `check_hardware_smoke_evidence.py` 已就位，但真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 未提交 | 未验证 |
+| 所有功能必须测试 | 72 个 host test target 通过，embedded smoke 脚本通过 | 大部分已验证 |
+| 所有耦合情况测试清楚 | `docs/verification/coupling_test_matrix.md` 已扩展到 `C-042`，对应 host / smoke / 静态证据已落表 | 大部分已验证 |
+| 真实 STM32/DSP 板级 smoke | 目前仅有交叉编译与 host model 证据；`raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h`、`mrt_hardware_smoke_log.h`、`mrt_hardware_smoke_report.h`、`hardware_smoke_preflight.json`、`collection_checklist.md`、模板、采集执行器、raw-log SHA-256 校验、`check_hardware_smoke_preflight.py`、`check_hardware_smoke_raw_log_schema.py` 和 `check_hardware_smoke_evidence.py` 已就位，但真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 未提交 | 未验证 |
 
 ## 当前可证明的完成面
 
@@ -54,6 +54,7 @@
 - 新增 raw log 追溯规则：`tools/verify/generate_hardware_smoke_evidence.py` 会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`，`tools/verify/check_hardware_smoke_evidence.py` 会读取原始日志并拒绝 SHA-256 错配证据。
 - 新增 raw-log schema 契约：`docs/verification/hardware_smoke/raw_log_schema.md` 集中列出 STM32/DSP 原始日志字段，`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 提供 C 输出端字段常量，`tools/verify/check_hardware_smoke_raw_log_schema.py` 和 `tests/static/test_hardware_smoke_raw_log_schema.py` 防止生成器、文档、示例头文件和采集指南字段漂移。
 - 新增硬件 smoke 日志输出 helper：`examples/hardware_smoke/mrt_hardware_smoke_log.h` 使用板级单字符回调输出 `Key: Value\n` 和十进制整数字段，`tests/unit/test_hardware_smoke_log.c` 覆盖正常输出与非法参数无半行输出。
+- 新增硬件 smoke 完整报告 emitter：`examples/hardware_smoke/mrt_hardware_smoke_report.h` 输出 STM32/DSP 必填字段全集，`tests/unit/test_hardware_smoke_report.c` 覆盖完整字段和非法参数无半份报告输出。
 
 ## 仍待补证
 
@@ -61,7 +62,7 @@
 2. 真实 DSP 板卡运行 `examples/dsp` 派生工程。
 3. 采集前按真实板卡修改 `hardware_smoke_preflight.json` 并运行 `python tools\verify\check_hardware_smoke_preflight.py`；在实机采集环境上可追加 `--check-tools`。
 4. 运行 `python tools\verify\run_hardware_smoke_capture.py --target STM32` 或 `--target DSP` 预演采集流水线；确认命令会连接真实板卡并产出 raw log 后，再追加 `--execute`。
-5. 按 `docs/verification/hardware_smoke/raw_log_schema.md` 输出或整理原始 UART/trace 字段，必要时复用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 中的字段常量和 `examples/hardware_smoke/mrt_hardware_smoke_log.h` 中的 `Key: Value` 输出 helper。
+5. 按 `docs/verification/hardware_smoke/raw_log_schema.md` 输出或整理原始 UART/trace 字段，必要时复用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 中的字段常量、`examples/hardware_smoke/mrt_hardware_smoke_log.h` 中的 `Key: Value` 输出 helper，以及 `examples/hardware_smoke/mrt_hardware_smoke_report.h` 中的完整报告 emitter。
 6. 保留原始 UART/trace 日志，并用 `tools/verify/generate_hardware_smoke_evidence.py` 生成最终证据文件，或按 `docs/verification/hardware_smoke/*.template.md` 手动填写真实板级日志、编译器版本、芯片型号、时钟、tick 频率、PendSV/SVC 或软件中断汇编证据；最终文件必须含匹配的 `Raw-Log-Path` 与 `Raw-Log-SHA256`。
 7. 运行 `python tools\verify\check_hardware_smoke_evidence.py`，让真实硬件证据 gate 通过。
 

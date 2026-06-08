@@ -56,6 +56,7 @@
 | C-039 | DSP C2000 smoke 工程 + 启动/链接/ISR glue | 从 host DSP model 迁移到真实 C2000 板级工程 | 启动向量、CPU Timer0 tick、软件中断上下文切换、ADC/DMA FromISR 队列、RTOS heap/任务栈/DMA/trace 分区均有可审计骨架，且明确不替代真实板级 smoke | 静态检查/smoke 路径检查 | 已验证：`test_dsp_c2000_project_scaffold.py` 检查 `startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c`、`linker_c28x.cmd` 的入口符号、tick/FromISR/软件中断接线和 RTOS 分区标记；`check_embedded_smoke_projects.py` 把这些文件纳入 required path 检查；真实 TI 工具链编译和 DSP 板级运行仍待补证 |
 | C-040 | 硬件 smoke 原始日志 schema + 证据生成器 + 示例 C 头文件 | 真实板级 UART/trace 字段由文档、生成器和板级输出端共同使用 | `COMMON_REQUIRED_FIELDS`、STM32/DSP 专属字段、`raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h` 和采集指南必须保持一致；release 默认链路必须包含该检查 | 静态检查 | 已验证：`test_hardware_smoke_raw_log_schema.py` 和 `check_hardware_smoke_raw_log_schema.py` 覆盖字段存在性、指南链接和 release runner 步骤；该检查只证明字段契约一致，不替代真实板级 smoke |
 | C-041 | 硬件 smoke 日志输出 helper + raw-log schema | STM32/DSP 板级代码需要输出 `Key: Value` 字符串字段和十进制整数字段 | helper 输出必须精确为 `Key: Value\n`；十进制整数不带单位；非法参数必须返回错误且不留下半行日志，避免误导证据生成器 | host 单测 | 已验证：`test_hardware_smoke_log` 覆盖 `MRT_SmokeLogWritePair()`、`MRT_SmokeLogWriteU32()`、字段常量联用和非法参数无输出；该 helper 只格式化日志，不判断 PASS/FAIL，也不替代真实 STM32/DSP 板级 smoke |
+| C-042 | 硬件 smoke 完整报告 emitter + raw-log schema | STM32/DSP 板级代码一次性输出 common 字段和目标专属字段 | emitter 必须先完整校验所有字符串字段，再输出通用字段和 STM32/DSP 专属字段；缺字段或空 writer 时必须返回错误且不留下半份 raw log | host 单测 | 已验证：`test_hardware_smoke_report` 覆盖 `MRT_SmokeEmitStm32Report()` 输出 STM32 全部必填字段、`MRT_SmokeEmitDspReport()` 输出 DSP 全部必填字段、非法参数无输出；该 emitter 只序列化调用方提供的结果，不生成真实板级 PASS |
 
 ## 最新增量证据：STM32 上下文切换入口
 
@@ -107,4 +108,10 @@
 - `C-041`：新增 `examples/hardware_smoke/mrt_hardware_smoke_log.h`，提供不依赖 `printf` 的轻量字符输出 helper，板级 UART/SWO/trace 回调只需实现单字符写入。
 - `C-041`：新增 `tests/unit/test_hardware_smoke_log.c` 并纳入 host test runner 与 CMake，验证字符串字段、十进制整数和非法参数路径，确保失败路径不会写出半行 `Key: Value` 日志。
 - `C-041`：该 helper 与 `mrt_hardware_smoke_log_schema.h` 联用，只负责格式化字段；真实 `Evidence-Status: PASS` 仍必须来自实际 STM32/DSP 板级运行和硬件证据 gate。
+
+## 最新增量证据：硬件 smoke 完整报告 emitter
+
+- `C-042`：新增 `examples/hardware_smoke/mrt_hardware_smoke_report.h`，把 common 字段、STM32 专属字段和 DSP 专属字段组织成可复用结构体，并复用日志 helper 输出完整 raw log。
+- `C-042`：新增 `tests/unit/test_hardware_smoke_report.c` 并纳入 host test runner 与 CMake，验证 STM32/DSP 必填字段全集输出和非法参数无半份报告输出。
+- `C-042`：该 emitter 只减少真机采集漏字段风险，不判断 `Evidence-Status`，不替代真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 和匹配 raw log。
 

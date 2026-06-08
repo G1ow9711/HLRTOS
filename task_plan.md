@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 23 repo-side complete: hardware smoke log output helper is tested and documented; overall goal still awaits real STM32/DSP board logs
+Phase 24 repo-side complete: hardware smoke complete report emitter is tested and documented; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -158,6 +158,7 @@ Phase 23 repo-side complete: hardware smoke log output helper is tested and docu
 | TCB stack-top contract | Task creation initializes `stack_top`, STM32 smoke task setup writes the port-initialized PSP back into each TCB, scheduler records the task being switched out, and STM32 PendSV smoke hook uses `MRT_TaskKernelSwitchStackTop()` to save old PSP and return current PSP. |
 | Hardware raw-log schema contract | The generator constants, `raw_log_schema.md`, `mrt_hardware_smoke_log_schema.h`, capture guides, and release runner must stay aligned so real STM32/DSP board logs do not miss required fields. |
 | Hardware smoke log output helper | Board code may use `mrt_hardware_smoke_log.h` with a single-character UART/SWO/trace callback to output schema-compliant `Key: Value` lines without `printf`; the helper formats logs only and never decides PASS/FAIL. |
+| Hardware smoke complete report emitter | Board code may use `mrt_hardware_smoke_report.h` to validate and output STM32/DSP required field sets in one call, reducing real-board raw-log omissions while still leaving PASS/FAIL decisions to board tests. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -277,3 +278,13 @@ Phase 23 repo-side complete: hardware smoke log output helper is tested and docu
 - [x] Re-run focused/static/full release verification after documentation sync
 - [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
 - **Status:** complete for repo-side helper; real hardware evidence remains pending
+
+## Phase 24: Hardware Smoke Complete Report Emitter
+- [x] Add failing host coverage for STM32/DSP complete raw-log report output
+- [x] Add `examples/hardware_smoke/mrt_hardware_smoke_report.h`
+- [x] Add `tests/unit/test_hardware_smoke_report.c` and wire it into `tools/run_host_tests.py` plus `tests/CMakeLists.txt`
+- [x] Verify STM32/DSP required field sets are emitted and invalid arguments produce no partial report
+- [x] Update manual, hardware smoke docs, STM32/DSP READMEs, requirement matrix, coupling matrix, test-suite plan, completion audit, final report, findings, and progress
+- [x] Re-run focused/static/full release verification after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
+- **Status:** complete for repo-side report emitter; real hardware evidence remains pending

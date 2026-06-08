@@ -70,6 +70,7 @@ TESTS = [
     ("test_heap_coalescing", ROOT / "tests" / "unit" / "test_heap_coalescing.c"),
     ("test_memory_pool", ROOT / "tests" / "unit" / "test_memory_pool.c"),
     ("test_hardware_smoke_log", ROOT / "tests" / "unit" / "test_hardware_smoke_log.c"),
+    ("test_hardware_smoke_report", ROOT / "tests" / "unit" / "test_hardware_smoke_report.c"),
     ("test_assert_hook", ROOT / "tests" / "unit" / "test_assert_hook.c"),
     ("test_queue_dynamic_allocation", ROOT / "tests" / "coupling" / "test_queue_dynamic_allocation.c"),
     ("test_task_dynamic_allocation", ROOT / "tests" / "coupling" / "test_task_dynamic_allocation.c"),

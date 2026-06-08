@@ -6,12 +6,13 @@
 - 让最终证据文件能被 `tools/verify/check_hardware_smoke_evidence.py` 校验。
 - 让 STM32/DSP 示例工程在输出日志时使用统一字段名。
 - 让板级 C 代码可选用 `examples/hardware_smoke/mrt_hardware_smoke_log.h` 输出 `Key: Value` 行，减少裸机环境对 `printf` 的依赖。
+- 让板级 C 代码可选用 `examples/hardware_smoke/mrt_hardware_smoke_report.h` 一次输出目标必填字段全集，减少真实采集漏字段。
 
 ## 基本规则
 
 - 原始日志必须来自真实板卡运行，不接受 host model、交叉编译日志或人工伪造结果。
 - 每行采用 `Key: Value`；字段名大小写和连字符必须与本文档完全一致。
-- 推荐板级代码使用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 的 `MRT_SMOKE_FIELD_*` 常量作为字段名，并用 `examples/hardware_smoke/mrt_hardware_smoke_log.h` 的 `MRT_SmokeLogWritePair()` / `MRT_SmokeLogWriteU32()` 输出字段行；该 helper 只保证格式，不判断验收状态。
+- 推荐板级代码使用 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 的 `MRT_SMOKE_FIELD_*` 常量作为字段名，并用 `examples/hardware_smoke/mrt_hardware_smoke_log.h` 的 `MRT_SmokeLogWritePair()` / `MRT_SmokeLogWriteU32()` 输出字段行；如需一次输出全集，可用 `examples/hardware_smoke/mrt_hardware_smoke_report.h` 的 `MRT_SmokeEmitStm32Report()` 或 `MRT_SmokeEmitDspReport()`。这些 helper 只保证格式，不判断验收状态。
 - 最终证据不得保留 `PENDING`、`FAIL`、`TODO`、`TBD`、`PLACEHOLDER` 或空值。
 - `Raw-Log-Path` 必须指向保留的原始 UART/trace 日志。
 - `Raw-Log-SHA256` 必须等于 `Raw-Log-Path` 指向文件的实际 SHA-256。

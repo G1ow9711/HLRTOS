@@ -357,3 +357,12 @@
 - Fresh verification after documentation sync passed: `python tools\run_host_tests.py` reported `[summary] 71 test target(s) passed`; Chinese comment, API manual coverage, API prototype, original-symbol, raw-log schema, hardware preflight, embedded smoke, and `git diff --check` all passed.
 - Full default release verification passed with `[release] 15 step(s) passed`.
 - Hardware-required verification remains correctly gated: `python tools\verify\check_hardware_smoke_evidence.py` reports missing `stm32_board_smoke.md` and `dsp_board_smoke.md`, and `python tools\verify\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.
+
+## Hardware Smoke Complete Report Emitter Findings
+- RED evidence: `python tools\run_host_tests.py` failed at `test_hardware_smoke_report` because `examples/hardware_smoke/mrt_hardware_smoke_report.h` did not exist.
+- Implementation adds `mrt_hardware_smoke_report.h` with `MRT_SmokeCommonReport`, `MRT_SmokeStm32Report`, `MRT_SmokeDspReport`, validation helpers, `MRT_SmokeEmitCommonReport()`, `MRT_SmokeEmitStm32Report()`, and `MRT_SmokeEmitDspReport()`.
+- Design boundary: the emitter validates strings and writes all required raw-log fields, but does not compute PASS/FAIL, does not hash logs, and does not generate final evidence files.
+- `test_hardware_smoke_report` covers STM32 required field output, DSP required field output, and invalid arguments returning `MRT_SMOKE_LOG_INVALID_ARGUMENT` without partial report output.
+- Fresh verification after documentation sync passed: `python tools\run_host_tests.py` reported `[summary] 72 test target(s) passed`; Chinese comment, API manual coverage, API prototype, original-symbol, raw-log schema, hardware preflight, embedded smoke, and `git diff --check` all passed.
+- Full default release verification passed with `[release] 15 step(s) passed`.
+- Hardware-required verification remains correctly gated: `python tools\verify\check_hardware_smoke_evidence.py` reports missing `stm32_board_smoke.md` and `dsp_board_smoke.md`, and `python tools\verify\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.

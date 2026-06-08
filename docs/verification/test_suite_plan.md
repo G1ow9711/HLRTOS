@@ -7,15 +7,15 @@
 
 | 目录 | 作用 | 覆盖对象 |
 |------|------|----------|
-| `tests/unit/` | 单模块与基础算法测试 | 链表、位图、heap、队列、事件组、缓冲、硬件 smoke 日志输出 helper |
+| `tests/unit/` | 单模块与基础算法测试 | 链表、位图、heap、队列、事件组、缓冲、硬件 smoke 日志输出 helper、硬件 smoke 完整报告 emitter |
 | `tests/sim/` | 调度仿真测试 | 任务切换、tick、阻塞、超时、优先级继承、TCB 运行期栈顶保存契约 |
-| `tests/coupling/` | 跨模块耦合测试 | 矩阵 `C-001` 到 `C-041` |
+| `tests/coupling/` | 跨模块耦合测试 | 矩阵 `C-001` 到 `C-042` |
 | `tests/port_mock/` | 端口抽象 mock 测试 | STM32/DSP 栈、临界区、tickless、ISR |
 | `tests/static/` | 静态检查 | 注释覆盖、API 手册覆盖、符号原创性、STM32 汇编骨架接线 |
 | `examples/stm32/` | STM32 smoke test | LED、UART、ISR 队列、定时器 |
 | `examples/dsp/` | DSP smoke/mock test | tick、软件中断、栈初始化 |
 | `docs/verification/hardware_smoke/` | 真实板级 smoke 证据 | STM32/DSP 实机日志、raw-log schema、采集前置配置、采集清单与最终验收模板 |
-| `examples/hardware_smoke/` | 板级 smoke 日志字段常量与日志格式 helper | STM32/DSP UART/trace 输出端可复用字段名，并可用单字符回调输出 `Key: Value` 行 |
+| `examples/hardware_smoke/` | 板级 smoke 日志字段常量、日志格式 helper 与完整报告 emitter | STM32/DSP UART/trace 输出端可复用字段名，可用单字符回调输出 `Key: Value` 行，也可一次输出目标必填字段全集 |
 
 ## 2. 测试框架建议
 
@@ -41,7 +41,7 @@ python tools/verify/run_hardware_smoke_capture.py --target STM32
 python tools/verify/run_release_verification.py --require-hardware
 ```
 
-`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、DSP 汇编骨架、DSP C2000 工程骨架、embedded smoke、硬件 smoke 预检配置、硬件 raw-log schema 对齐、硬件日志输出 helper 单测、硬件采集执行器自测、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
+`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、DSP 汇编骨架、DSP C2000 工程骨架、embedded smoke、硬件 smoke 预检配置、硬件 raw-log schema 对齐、硬件日志输出 helper 和完整报告 emitter 单测、硬件采集执行器自测、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
 
 ## 4. 测试分层策略
 
@@ -124,7 +124,7 @@ python tools/verify/run_release_verification.py --require-hardware
 | DSP 端口 | `tests/port_mock/test_port_dsp_*.c`、`tests/static/test_dsp_context_scaffold.py`、`tests/static/test_dsp_c2000_project_scaffold.py` | `C-030` 到 `C-031`、`C-039`；包含 C28x 汇编骨架和 C2000 启动/链接/ISR glue 骨架静态检查 |
 | 手册/注释 | `tests/static/*.py` | `C-032` 到 `C-033` |
 | 烟雾工程 | `examples/stm32/`、`examples/dsp/`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-031`、`C-039` |
-| 真实板级证据 | `docs/verification/hardware_smoke/`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_raw_log_schema.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/generate_hardware_smoke_evidence.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tests/unit/test_hardware_smoke_log.c`、`tests/static/test_hardware_smoke_capture_runner.py`、`tests/static/test_hardware_smoke_raw_log_schema.py`、`tests/static/test_hardware_smoke_evidence_checker.py`、`tests/static/test_hardware_smoke_evidence_generator.py` | `R-003`、`R-004`、`R-011`、`C-038`、`C-040` 到 `C-041`；包含 dry-run/execute 采集顺序、raw-log 字段 schema 对齐、板级输出 helper、raw-log SHA-256 派生与错配拒绝 |
+| 真实板级证据 | `docs/verification/hardware_smoke/`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`examples/hardware_smoke/mrt_hardware_smoke_report.h`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_raw_log_schema.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/generate_hardware_smoke_evidence.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tests/unit/test_hardware_smoke_log.c`、`tests/unit/test_hardware_smoke_report.c`、`tests/static/test_hardware_smoke_capture_runner.py`、`tests/static/test_hardware_smoke_raw_log_schema.py`、`tests/static/test_hardware_smoke_evidence_checker.py`、`tests/static/test_hardware_smoke_evidence_generator.py` | `R-003`、`R-004`、`R-011`、`C-038`、`C-040` 到 `C-042`；包含 dry-run/execute 采集顺序、raw-log 字段 schema 对齐、板级输出 helper、完整报告 emitter、raw-log SHA-256 派生与错配拒绝 |
 
 ## 7. 验收报告
 

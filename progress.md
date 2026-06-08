@@ -921,3 +921,33 @@
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
 - Remaining: commit/push repo-side helper, then collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
+
+## Hardware Smoke Complete Report Emitter
+- Added RED host coverage:
+  - `tests\unit\test_hardware_smoke_report.c` first failed because `examples\hardware_smoke\mrt_hardware_smoke_report.h` was missing.
+- Added `examples\hardware_smoke\mrt_hardware_smoke_report.h`.
+  - `MRT_SmokeCommonReport` captures common raw-log fields.
+  - `MRT_SmokeStm32Report` adds STM32 fields.
+  - `MRT_SmokeDspReport` adds DSP fields.
+  - `MRT_SmokeEmitStm32Report()` and `MRT_SmokeEmitDspReport()` validate all required strings before output, then write the field set through the existing single-character writer.
+- Wired `test_hardware_smoke_report` into `tools\run_host_tests.py` and `tests\CMakeLists.txt`.
+- Initial GREEN check:
+  - `python tools\run_host_tests.py` -> `[summary] 72 test target(s) passed`
+- Updated manual, hardware smoke README, raw-log schema, STM32/DSP READMEs, final report, requirement matrix, coupling matrix, test-suite plan, completion audit, findings, progress, and task plan so the emitter is documented as field-set serialization only, not real-board evidence.
+- Fresh focused checks passed:
+  - `python tools\run_host_tests.py` -> `[summary] 72 test target(s) passed`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_original_symbols.py` -> `[original-symbols] no banned FreeRTOS-style public symbols found`
+  - `python tests\static\test_hardware_smoke_raw_log_schema.py` -> pass
+  - `python tools\verify\check_hardware_smoke_raw_log_schema.py` -> `[hardware-raw-log-schema] schema fields aligned`
+  - `python tools\verify\check_hardware_smoke_preflight.py` -> `[hardware-preflight] hardware smoke preflight config accepted`
+  - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 72 test target(s) passed`; `[release] 15 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+- Remaining: commit/push repo-side report emitter, then collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.

@@ -6,15 +6,15 @@
 
 ## 1. 结论摘要
 
-MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度、任务生命周期 API、动态任务创建、动态同步对象、动态事件组、动态软件定时器、动态流/消息缓冲创建、队列、信号量、互斥锁、事件组、任务通知、软件定时器服务命令队列、流缓冲、消息缓冲、heap、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、STM32 SVC/PendSV 汇编入口骨架、DSP C28x 风格端口契约 helper、DSP C28x 上下文汇编骨架、DSP C2000 启动/链接/ISR glue 骨架、STM32/DSP smoke 工程、硬件 smoke 日志格式 helper、中文参考手册和静态验证脚本。
+MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度、任务生命周期 API、动态任务创建、动态同步对象、动态事件组、动态软件定时器、动态流/消息缓冲创建、队列、信号量、互斥锁、事件组、任务通知、软件定时器服务命令队列、流缓冲、消息缓冲、heap、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、STM32 SVC/PendSV 汇编入口骨架、DSP C28x 风格端口契约 helper、DSP C28x 上下文汇编骨架、DSP C2000 启动/链接/ISR glue 骨架、STM32/DSP smoke 工程、硬件 smoke 日志格式 helper、完整报告 emitter、中文参考手册和静态验证脚本。
 
 当前自动化证据显示：
 
-- Host C 测试：71 个测试目标通过。
+- Host C 测试：72 个测试目标通过。
 - Embedded smoke：STM32 smoke 可由 ARM GCC 交叉编译，其中包含 `mrt_port_stm32_cm_context.S` 的 SVC/PendSV 汇编入口骨架、初始任务栈帧写回 TCB 的 C 接线；DSP smoke/model 可在 host 上编译并运行，`mrt_port_dsp_c28x_context.asm` 已作为真实 DSP ABI 汇编骨架接受静态审计，`startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c` 和 `linker_c28x.cmd` 已作为 C2000 板级工程骨架接受静态审计。
 - 真实硬件证据 gate：`tools/verify/check_hardware_smoke_evidence.py` 已提供，证据模板位于 `docs/verification/hardware_smoke/`，并要求最终证据中的 `Raw-Log-Path` 与 `Raw-Log-SHA256` 能回溯到保留的原始日志。
 - 原始日志生成器：`tools/verify/generate_hardware_smoke_evidence.py` 已提供，可把含 `Key: Value` 字段的 UART/trace 原始日志规范化为最终板级证据文件，并自动写入原始日志路径和 SHA-256。
-- 原始日志字段 schema 与输出 helper：`docs/verification/hardware_smoke/raw_log_schema.md`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h` 和 `tools/verify/check_hardware_smoke_raw_log_schema.py` 已提供，用于防止生成器、文档、示例头文件和采集指南字段漂移，并让真实板级 UART/trace 代码按 `Key: Value` 输出字段。
+- 原始日志字段 schema、输出 helper 与完整报告 emitter：`docs/verification/hardware_smoke/raw_log_schema.md`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`examples/hardware_smoke/mrt_hardware_smoke_report.h` 和 `tools/verify/check_hardware_smoke_raw_log_schema.py` 已提供，用于防止生成器、文档、示例头文件和采集指南字段漂移，并让真实板级 UART/trace 代码按 `Key: Value` 输出字段全集。
 - 硬件 smoke 预检配置：`tools/verify/check_hardware_smoke_preflight.py` 已提供，默认检查 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，确认 STM32/DSP 板级采集命令、最短运行时长和必需日志字段无占位符。
 - 硬件 smoke 采集执行器：`tools/verify/run_hardware_smoke_capture.py` 已提供，默认 dry-run 只打印预检、编译、构建、烧录、采集、证据生成和目标级证据校验顺序；只有显式 `--execute` 才运行真实命令。
 - 统一 release 入口：`tools/verify/run_release_verification.py` 默认模式已通过，`--require-hardware` 在真实板级日志缺失处失败。
@@ -36,7 +36,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 | 命令 | 结果 |
 |------|------|
-| `python tools\run_host_tests.py` | `[summary] 71 test target(s) passed` |
+| `python tools\run_host_tests.py` | `[summary] 72 test target(s) passed` |
 | `python tools\verify\check_embedded_smoke_projects.py` | `[embedded-smoke] STM32 cross build and DSP model smoke passed` |
 | `python tests\static\test_dsp_context_scaffold.py` | DSP C28x 汇编骨架静态契约通过 |
 | `python tests\static\test_dsp_c2000_project_scaffold.py` | DSP C2000 启动、链接和 ISR glue 工程骨架静态契约通过 |
@@ -68,10 +68,10 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | R-005 | 部分验证 | include/src/examples/tests 函数头中文 Doxygen 字段通过扫描 | 历史测试文件已纳入严格扫描范围 |
 | R-006 | 部分验证 | include/src/examples/tests 函数体附近中文步骤注释通过扫描 | 后续可继续扩展到更多辅助脚本 |
 | R-007 | 部分验证 | 中文参考手册已写，135 API 条目覆盖；API 目录、头文件、源码原型一致性检查通过 | API 实现状态变化后需同步手册 |
-| R-008 | 部分验证 | 71 个 host 测试目标通过；embedded smoke 脚本通过；新增 timer service command queue、运行统计、mutex timeout rollback、持锁任务删除策略、TCB 栈顶保存契约、STM32/DSP smoke 验证、DSP 汇编骨架静态检查、DSP C2000 工程骨架静态检查、硬件 smoke 日志格式 helper；stream/message buffer 动态删除与写者等待保护也已测试 | 真实硬件测试待补 |
-| R-009 | 部分验证 | C-001 到 C-041 中大量耦合项已有自动化证据，新增 STM32 cross-build smoke、STM32 SVC/PendSV 汇编骨架静态检查、初始 PSP 写回 TCB 接线、TCB 栈顶保存/恢复契约、STM32 MPU helper、DSP host model smoke、DSP C28x 汇编骨架、DSP C2000 工程骨架、硬件 raw-log schema 和硬件日志 helper 静态/host 证据；动态 buffer delete 生命周期和写者等待 busy 删除保护已落表 | 真实端口项仍待硬件补证 |
+| R-008 | 部分验证 | 72 个 host 测试目标通过；embedded smoke 脚本通过；新增 timer service command queue、运行统计、mutex timeout rollback、持锁任务删除策略、TCB 栈顶保存契约、STM32/DSP smoke 验证、DSP 汇编骨架静态检查、DSP C2000 工程骨架静态检查、硬件 smoke 日志格式 helper 和完整报告 emitter；stream/message buffer 动态删除与写者等待保护也已测试 | 真实硬件测试待补 |
+| R-009 | 部分验证 | C-001 到 C-042 中大量耦合项已有自动化证据，新增 STM32 cross-build smoke、STM32 SVC/PendSV 汇编骨架静态检查、初始 PSP 写回 TCB 接线、TCB 栈顶保存/恢复契约、STM32 MPU helper、DSP host model smoke、DSP C28x 汇编骨架、DSP C2000 工程骨架、硬件 raw-log schema、硬件日志 helper 和完整报告 emitter 静态/host 证据；动态 buffer delete 生命周期和写者等待 busy 删除保护已落表 | 真实端口项仍待硬件补证 |
 | R-010 | 部分实现 | 高级模块包含 stream/message buffer、多 heap、tickless、trace、runtime stats、assert、动态对象创建/删除，以及 STM32 MPU 区域规整 helper | 真实板级端口后续补齐 |
-| R-011 | 部分验证 | 手册第 5、6 节包含 STM32/DSP 详细移植步骤、移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收、smoke 工程落地步骤、真实板级证据归档步骤、硬件证据模板、采集执行器 dry-run/execute 命令、原始日志 schema、`Key: Value` 日志输出 helper、原始日志生成器命令和 raw log SHA-256 追溯要求 | 真实移植完成后补 `stm32_board_smoke.md`、`dsp_board_smoke.md` 和原始板级日志 |
+| R-011 | 部分验证 | 手册第 5、6 节包含 STM32/DSP 详细移植步骤、移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收、smoke 工程落地步骤、真实板级证据归档步骤、硬件证据模板、采集执行器 dry-run/execute 命令、原始日志 schema、`Key: Value` 日志输出 helper、完整报告 emitter、原始日志生成器命令和 raw log SHA-256 追溯要求 | 真实移植完成后补 `stm32_board_smoke.md`、`dsp_board_smoke.md` 和原始板级日志 |
 
 ## 4. 耦合状态摘要
 
@@ -101,7 +101,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | Host 测试 | `tests/unit/`、`tests/sim/`、`tests/coupling/`、`tests/port_mock/` |
 | 中文手册 | `docs/manual/MyRTOS_Reference_Manual_zh.md` |
 | 静态/烟雾验证 | `tools/verify/run_release_verification.py`、`tools/verify/check_api_manual_coverage.py`、`tools/verify/check_api_catalog_prototypes.py`、`tools/verify/check_chinese_comments.py`、`tools/verify/check_original_symbols.py`、`tools/verify/check_embedded_smoke_projects.py`、`tests/static/test_dsp_context_scaffold.py`、`tests/static/test_dsp_c2000_project_scaffold.py`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_raw_log_schema.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tools/verify/generate_hardware_smoke_evidence.py` |
-| 真实硬件证据模板、schema 与日志 helper | `docs/verification/hardware_smoke/`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h` |
+| 真实硬件证据模板、schema、日志 helper 与完整报告 emitter | `docs/verification/hardware_smoke/`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`examples/hardware_smoke/mrt_hardware_smoke_report.h` |
 | 追踪矩阵 | `docs/verification/requirements_traceability_matrix.md`、`docs/verification/coupling_test_matrix.md` |
 
 ## 6. 建议下一步
