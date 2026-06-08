@@ -62,6 +62,11 @@ def build_steps(require_hardware: bool = False) -> list[Step]:
             description="检查 STM32 Cortex-M SVC/PendSV 汇编骨架和 smoke 构建接线",
         ),
         Step(
+            name="dsp-context-scaffold",
+            command=[sys.executable, str(ROOT / "tests" / "static" / "test_dsp_context_scaffold.py")],
+            description="检查 DSP C28x 上下文切换汇编骨架和真实移植边界",
+        ),
+        Step(
             name="embedded-smoke",
             command=[sys.executable, str(ROOT / "tools" / "verify" / "check_embedded_smoke_projects.py")],
             description="检查 STM32/DSP embedded smoke 工程",

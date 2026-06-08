@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 19 in progress: hardware smoke capture runner now provides dry-run/execute orchestration for preflight, build, flash, capture, evidence generation, and target evidence validation; overall goal still awaits real STM32/DSP board logs
+Phase 20 repo-side complete: DSP C28x context assembly scaffold now provides a static-audited save/restore template; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -235,3 +235,12 @@ Phase 19 in progress: hardware smoke capture runner now provides dry-run/execute
 - [x] Re-run focused/static/full release verification after documentation sync
 - [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
 - **Status:** complete for repo-side capture runner; real hardware evidence remains pending
+
+## Phase 20: DSP C28x Context Assembly Scaffold
+- [x] Add failing static coverage for missing DSP C28x context assembly scaffold
+- [x] Add `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` with first-task, yield, software-interrupt switch, save/restore markers, and C hook handoff symbols
+- [x] Add `dsp-context-scaffold` to the default release verification runner
+- [x] Update DSP README, manual, requirement matrix, coupling matrix, test-suite plan, completion audit, and final report
+- [x] Re-run focused/static/full release verification after documentation sync
+- [ ] Replace scaffold proof with real DSP board runtime evidence after actual hardware smoke
+- **Status:** complete for repo-side DSP scaffold; real DSP board evidence remains pending

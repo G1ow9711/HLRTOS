@@ -39,7 +39,7 @@ python tools/verify/run_hardware_smoke_capture.py --target STM32
 python tools/verify/run_release_verification.py --require-hardware
 ```
 
-`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、embedded smoke、硬件 smoke 预检配置、硬件采集执行器自测、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
+`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、DSP 汇编骨架、embedded smoke、硬件 smoke 预检配置、硬件采集执行器自测、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
 
 ## 4. 测试分层策略
 
@@ -119,7 +119,7 @@ python tools/verify/run_release_verification.py --require-hardware
 | 内存 | `tests/unit/test_heap_*.c`、`tests/coupling/test_buffer_dynamic_allocation.c` | `C-023` 到 `C-024` |
 | trace/断言 | `tests/unit/test_trace_*.c`、`tests/port_mock/test_assert_context_*.c` | `C-025` 到 `C-027` |
 | STM32 端口 | `tests/port_mock/test_port_stm32_*.c`、`tests/port_mock/test_port_stm32_mpu.c`、`tests/sim/test_task_stack_top.c`、`tests/static/test_stm32_context_scaffold.py`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-029`、`C-035`；包含初始 PSP 写回 TCB 和 PendSV helper 接线 |
-| DSP 端口 | `tests/port_mock/test_port_dsp_*.c` | `C-030` 到 `C-031` |
+| DSP 端口 | `tests/port_mock/test_port_dsp_*.c`、`tests/static/test_dsp_context_scaffold.py` | `C-030` 到 `C-031`；包含 C28x 汇编骨架静态检查 |
 | 手册/注释 | `tests/static/*.py` | `C-032` 到 `C-033` |
 | 烟雾工程 | `examples/stm32/`、`examples/dsp/`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-031` |
 | 真实板级证据 | `docs/verification/hardware_smoke/`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/generate_hardware_smoke_evidence.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tests/static/test_hardware_smoke_capture_runner.py`、`tests/static/test_hardware_smoke_evidence_checker.py`、`tests/static/test_hardware_smoke_evidence_generator.py` | `R-003`、`R-004`、`R-011`、`C-038`；包含 dry-run/execute 采集顺序、raw-log SHA-256 派生与错配拒绝 |

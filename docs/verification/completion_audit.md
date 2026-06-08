@@ -47,6 +47,7 @@
 - STM32 端口新增 `src/portable/stm32_cm/mrt_port_stm32_cm_context.S`，提供 SVC/PendSV/首任务启动汇编入口骨架；任务 TCB 现在保存运行期 `stack_top`，`examples/stm32/main.c` 会把 `MRT_PortStm32CmInitializeStack()` 返回的初始 PSP 写入 TCB，`MRT_PortStm32CmPendSvHook()` 已接入 `MRT_TaskKernelSwitchStackTop()` 的 PSP 保存/恢复契约。
 - 新增 `tests/static/test_stm32_context_scaffold.py`，并纳入 `tools/verify/run_release_verification.py` 默认 release 链路。
 - `tools/verify/check_embedded_smoke_projects.py` 已把 `.S` 和 STM32 初始栈帧写回 TCB 的 C 接线纳入 ARM GCC 交叉编译；该证据证明入口骨架可构建，不证明真实板级上下文切换已运行。
+- DSP 端口新增 `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm`，提供 C28x 风格首任务启动、软件中断 yield、软件中断切换入口、寄存器保存/恢复和 C 钩子交接骨架；新增 `tests/static/test_dsp_context_scaffold.py` 并纳入默认 release 链路。该证据证明 DSP 汇编保存/恢复顺序已有可审计模板，不证明具体 DSP 工具链编译或真实板级上下文切换已运行。
 - 新增 `tools/verify/check_hardware_smoke_preflight.py`、`tests/static/test_hardware_smoke_preflight.py` 和 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，用于在采集真实板级日志前检查 STM32/DSP 目标配置、运行时长、必需字段和可选工具链可用性。
 - 新增 `tools/verify/run_hardware_smoke_capture.py` 和 `tests/static/test_hardware_smoke_capture_runner.py`，用于 dry-run 或执行预检、编译、构建、烧录、采集、证据生成和目标级证据校验；默认不执行硬件命令。
 - 新增 raw log 追溯规则：`tools/verify/generate_hardware_smoke_evidence.py` 会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`，`tools/verify/check_hardware_smoke_evidence.py` 会读取原始日志并拒绝 SHA-256 错配证据。

@@ -33,6 +33,7 @@ def test_default_plan_skips_real_board_gate() -> None:
         "chinese-comments",
         "original-symbols",
         "stm32-context-scaffold",
+        "dsp-context-scaffold",
         "embedded-smoke",
         "hardware-smoke-preflight",
         "hardware-smoke-capture-runner",

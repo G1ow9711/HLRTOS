@@ -804,8 +804,30 @@
   - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
   - `python tools\verify\check_hardware_smoke_preflight.py` -> hardware smoke preflight config accepted
   - `python tools\verify\run_hardware_smoke_capture.py --target STM32` -> dry-run printed preflight/compiler/build/flash/capture/verify plan without executing hardware commands
-- Full default release verification passed:
+- Phase 19 default release verification passed before adding the DSP scaffold step:
   - `python tools\verify\run_release_verification.py` -> `[summary] 70 test target(s) passed`; `[release] 12 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+- Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
+
+## DSP C28x Context Assembly Scaffold
+- Added RED static coverage:
+  - `python tests\static\test_dsp_context_scaffold.py` requires `src\portable\dsp_c28x\mrt_port_dsp_c28x_context.asm`, first-task/yield/software-interrupt symbols, save/restore markers, and C hook handoff.
+  - `python tests\static\test_release_verification_runner.py` requires the default release chain to include `dsp-context-scaffold`.
+- Added `src\portable\dsp_c28x\mrt_port_dsp_c28x_context.asm` as a TI C28x-style context switch audit scaffold. It documents first-task start, software interrupt yield, register save/restore order, hook calls, and the real-board boundary.
+- Added `dsp-context-scaffold` to `tools\verify\run_release_verification.py`.
+- Updated `examples\dsp\README.md`, manual DSP porting steps, requirement matrix, coupling matrix, test suite plan, completion audit, final report, and task plan.
+- Focused/static checks passed:
+  - `python tests\static\test_dsp_context_scaffold.py`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `python tools\verify\check_original_symbols.py` -> `[original-symbols] no banned FreeRTOS-style public symbols found`
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 70 test target(s) passed`; `[release] 13 step(s) passed`
 - Hardware-required gate remains intentionally failing until real boards are run:
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`

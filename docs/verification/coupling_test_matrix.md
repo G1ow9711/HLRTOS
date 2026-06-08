@@ -78,3 +78,9 @@
 - `C-038`：默认模式只执行 dry-run，打印步骤顺序，不运行真实硬件命令；只有显式追加 `--execute` 才会调用 `hardware_smoke_preflight.json` 中的命令。
 - `C-038`：静态测试使用临时无害命令写入 raw log，再由 `generate_hardware_smoke_evidence.py` 生成带 `Raw-Log-Path` 和 `Raw-Log-SHA256` 的证据，最后调用目标级证据校验；该测试证明流水线契约，不替代真实 STM32/DSP 板级 PASS。
 
+## 最新增量证据：DSP C28x 汇编骨架
+
+- `C-031`：新增 `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm`，记录 DSP 首任务启动、软件中断 yield、软件中断切换入口、XAR4-XAR7、ST0/ST1、ACC、P、XT 保存和反向恢复顺序。
+- `C-031`：新增 `tests/static/test_dsp_context_scaffold.py`，检查汇编骨架入口符号、C 钩子交接、保存/恢复标记和 `examples/dsp/README.md` 中的真实板级边界说明。
+- `C-031`：当前证据证明 DSP 上下文汇编已经有可审计模板，不证明具体 TI/ADI DSP 工具链编译通过，也不证明真实板级上下文切换已经运行。
+

@@ -1826,6 +1826,7 @@ STM32 移植验收清单：
 - `portable/dsp/<family>/` 只放公共 C helper、上下文切换汇编、timer ISR glue 和启动 glue。
 - `linker.cmd` 或等价脚本只负责任务栈、heap、DMA buffer、采样帧和中断栈分区。
 - `mrt_port_dsp_model.c` 或 host model 只表达调用顺序和耦合关系，不要把真实 ABI 假装成已完成。
+- `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` 提供 TI C28x 风格首任务启动、软件中断 yield、寄存器保存/恢复和 C 钩子交接顺序的汇编骨架；该文件用于移植审计和静态检查，当前不参与 host 编译，也不替代真实 DSP 板级 smoke。
 
 ### 6.3 关键接入顺序
 
@@ -1833,7 +1834,7 @@ STM32 移植验收清单：
 2. ABI 确认：记录寄存器分类：调用者保存、被调用者保存、状态寄存器、返回地址寄存器、栈指针、参数传递寄存器。若栈元素不是 32 bit，需要在端口头文件中重新定义栈槽宽度或适配 `MRT_StackType`。
 3. 栈布局：以 `MRT_PortDspC28xInitializeStack()` 的契约为起点，确认栈向下增长、8 字节对齐、入口 PC、入口参数、退出处理函数、状态字和 XAR4-XAR7 保存槽。真实端口若需要更多寄存器，必须扩展槽位并补测试。
 4. tick 定时器：选择 CPU timer、ePWM timer 或片上通用 timer 作为 RTOS tick 源。ISR 中只清中断标志、调用 `MRT_KernelTick()`、根据端口策略请求软件中断切换。不要在 tick ISR 中执行长回调。
-5. 上下文切换：选择一个软件中断、trap 或低优先级可挂起中断作为 PendSV 等价物。任务上下文 yield 只置位该软件中断。ISR 中的 `should_yield` 只设置挂起请求，最外层 ISR 退出后再切换。
+5. 上下文切换：选择一个软件中断、trap 或低优先级可挂起中断作为 PendSV 等价物。任务上下文 yield 只置位该软件中断。ISR 中的 `should_yield` 只设置挂起请求，最外层 ISR 退出后再切换。可先按 `mrt_port_dsp_c28x_context.asm` 的保存顺序审计 XAR4-XAR7、ST0/ST1、ACC、P、XT 等寄存器，再按目标 ABI 增删槽位。
 6. 嵌套中断：在 ISR 入口调用端口进入钩子，在 ISR 退出调用端口退出钩子。`MRT_PortDspC28xExitInterrupt()` 的 `out_should_switch` 为 true 时，触发软件中断或直接跳转到尾链切换路径。内层 ISR 退出不得切换。
 7. 临界区：根据 DSP 中断控制器选择全局中断屏蔽位、分组中断屏蔽寄存器或优先级阈值。`MRT_PortEnterCritical()` 必须返回旧状态，`MRT_PortExitCritical()` 必须完整恢复旧状态，支持嵌套。
 8. 低功耗：tickless idle 端口应停止或重装 tick timer，进入 idle/standby 指令，唤醒后读取硬件计数或低功耗 timer 估算实际睡眠 tick。若低功耗会关闭主时钟，必须在恢复时重新同步 tick timer。
@@ -1908,12 +1909,12 @@ DSP smoke/model 落地步骤：
 
 1. 在仓库根目录运行 `python tools\verify\check_embedded_smoke_projects.py`。当前环境没有 TI DSP 工具链，因此脚本会用 host `gcc` 编译并运行 `examples/dsp/` 的 C28x 风格模型。
 2. `examples/dsp/main.c` 会执行 DSP 栈帧 helper、任务创建、队列创建、定时器启动、ISR 模型进入/退出、软件中断式切换请求和 tickless sleep 模型检查。它用于证明公共语义和调用顺序，而不是替代真实 DSP 汇编。
-3. 真实 TI C2000/C28x 工程中，把 `examples/dsp/mrt_port_dsp_model.c` 拆成三个文件：中断屏蔽/恢复 C 文件、上下文保存恢复汇编文件、硬件 timer/软件中断 glue 文件。
+3. 真实 TI C2000/C28x 工程中，把 `examples/dsp/mrt_port_dsp_model.c` 拆成三个文件：中断屏蔽/恢复 C 文件、上下文保存恢复汇编文件、硬件 timer/软件中断 glue 文件。上下文保存恢复文件可从 `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` 的骨架开始，但必须按目标编译器 ABI 和芯片寄存器集校正。
 4. 按目标 ABI 校验 `MRT_PortDspC28xInitializeStack()` 的槽位。若真实 ABI 需要保存更多寄存器，应扩展槽位枚举、修改端口 helper，并补充对应 host 测试。
 5. 把 CPU timer ISR 写成短路径：清硬件中断标志、调用 `MRT_KernelTick()`、按 `should_yield` 请求软件中断、确认中断控制器分组。不要在 timer ISR 中运行算法或定时器回调。
 6. ADC/DMA ISR 先通过固定块内存池或队列把数据交给任务，再通过软件中断请求延迟切换。多层 ISR 嵌套时只允许最外层退出后执行任务切换。
 7. 链接脚本要把任务栈、heap、采样 buffer、DMA buffer、通信 buffer 放入确定 RAM 区域，并记录 cache/共享 RAM 同步策略。
-8. 真实板级 smoke 结果应记录：DSP 型号、编译器版本、ABI 模式、栈方向、任务栈地址范围、timer tick 精度、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量和 30 分钟混合负载结果。
+8. 真实板级 smoke 结果应记录：DSP 型号、编译器版本、ABI 模式、栈方向、任务栈地址范围、timer tick 精度、上下文汇编来源、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量和 30 分钟混合负载结果。
 
 ### 6.5 板级验收
 
