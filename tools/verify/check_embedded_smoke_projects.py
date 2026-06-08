@@ -63,6 +63,7 @@ def compile_stm32_smoke():
         "-mthumb",
         "-nostdlib",
         "-Iinclude",
+        "-Isrc/kernel",
         "-Iexamples/stm32",
         *[str(source) for source in KERNEL_SOURCES],
         "src/portable/stm32_cm/mrt_port_stm32_cm.c",

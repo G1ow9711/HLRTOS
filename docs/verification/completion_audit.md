@@ -31,7 +31,7 @@
 | 专业详细中文注释 | `check_chinese_comments.py` 通过，覆盖 `include/`、`src/`、`examples/`、`tests/` | 已验证 |
 | 类 FreeRTOS 官方风格中文手册 | `check_api_manual_coverage.py` 通过，135 个 API 条目覆盖；`check_api_catalog_prototypes.py` 通过，135 个 API 原型对齐 | 已验证 |
 | 手册含详细移植步骤 | 手册第 5、6 节包含移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收和证据生成命令 | 已验证 |
-| 所有功能必须测试 | 69 个 host test target 通过，embedded smoke 脚本通过 | 大部分已验证 |
+| 所有功能必须测试 | 70 个 host test target 通过，embedded smoke 脚本通过 | 大部分已验证 |
 | 所有耦合情况测试清楚 | `docs/verification/coupling_test_matrix.md` 已扩展到 `C-037`，对应 host / smoke / 静态证据已落表 | 大部分已验证 |
 | 真实 STM32/DSP 板级 smoke | 目前仅有交叉编译与 host model 证据；`collection_checklist.md`、模板和 `check_hardware_smoke_evidence.py` 已就位，但真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 未提交 | 未验证 |
 
@@ -44,9 +44,9 @@
 
 ## 最新增量
 
-- STM32 端口新增 `src/portable/stm32_cm/mrt_port_stm32_cm_context.S`，提供 SVC/PendSV/首任务启动汇编入口骨架。
+- STM32 端口新增 `src/portable/stm32_cm/mrt_port_stm32_cm_context.S`，提供 SVC/PendSV/首任务启动汇编入口骨架；任务 TCB 现在保存运行期 `stack_top`，`examples/stm32/main.c` 会把 `MRT_PortStm32CmInitializeStack()` 返回的初始 PSP 写入 TCB，`MRT_PortStm32CmPendSvHook()` 已接入 `MRT_TaskKernelSwitchStackTop()` 的 PSP 保存/恢复契约。
 - 新增 `tests/static/test_stm32_context_scaffold.py`，并纳入 `tools/verify/run_release_verification.py` 默认 release 链路。
-- `tools/verify/check_embedded_smoke_projects.py` 已把 `.S` 纳入 ARM GCC 交叉编译；该证据证明入口骨架可构建，不证明真实板级上下文切换已运行。
+- `tools/verify/check_embedded_smoke_projects.py` 已把 `.S` 和 STM32 初始栈帧写回 TCB 的 C 接线纳入 ARM GCC 交叉编译；该证据证明入口骨架可构建，不证明真实板级上下文切换已运行。
 
 ## 仍待补证
 

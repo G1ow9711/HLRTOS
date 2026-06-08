@@ -21,6 +21,9 @@ static MRT_List g_delayed_list;
 /** @brief 当前正在运行的任务；调度器未启动时为空。 */
 static MRT_Task *g_current_task;
 
+/** @brief 最近一次调度中被换出的任务；PendSV 保存 PSP 时使用。*/
+static MRT_Task *g_context_save_task;
+
 /** @brief 任务调度器内部结构是否已经初始化。 */
 static bool g_task_kernel_initialized;
 
@@ -257,6 +260,12 @@ static void MRT_TaskSwitchToHighestReady(void)
 
     /* 如果没有 ready 任务，则清空当前任务。 */
     if (next_task == 0) {
+        /* 如果旧任务被换出到空闲状态，记录它以便端口层保存 PSP。*/
+        if (previous_task != 0) {
+            /* PendSV hook 稍后会把旧任务的运行期栈顶写回该 TCB。*/
+            g_context_save_task = previous_task;
+        }
+
         /* 当前无任务可运行。 */
         g_current_task = 0;
 
@@ -268,6 +277,12 @@ static void MRT_TaskSwitchToHighestReady(void)
     }
 
     /* 保存新的当前任务。 */
+    /* 如果旧任务和新任务不同，记录旧任务以便端口层保存 PSP。*/
+    if ((previous_task != 0) && (previous_task != next_task)) {
+        /* PendSV hook 稍后会消费该记录。*/
+        g_context_save_task = previous_task;
+    }
+
     g_current_task = next_task;
 
     /* 将新当前任务标记为 running。 */
@@ -300,6 +315,9 @@ void MRT_TaskKernelInitialize(void)
 
     /* 当前任务清空，表示调度器尚未选择任何任务。 */
     g_current_task = 0;
+
+    /* 清空待保存上下文任务，避免新一轮初始化后引用旧 TCB。*/
+    g_context_save_task = 0;
 
     /* 标记任务调度器内部状态已经初始化。 */
     g_task_kernel_initialized = true;
@@ -457,6 +475,106 @@ void MRT_TaskKernelAccumulateCurrentRuntime(MRT_Tick elapsed_ticks)
 }
 
 /**
+ * @brief 查询指定任务保存的运行期栈顶。
+ * @param task 待查询任务句柄；为空或已删除时返回空指针。
+ * @return MRT_StackType* 返回任务当前栈顶；无有效任务时返回空指针。
+ * @example
+ * MRT_StackType *top = MRT_TaskKernelGetStackTop(task);
+ */
+MRT_StackType *MRT_TaskKernelGetStackTop(MRT_TaskHandle task)
+{
+    /* 空任务句柄没有可查询的 TCB。 */
+    if (task == 0) {
+        /* 返回空指针表示无有效栈顶。 */
+        return 0;
+    }
+
+    /* 已删除任务的栈可能已经归还给应用或堆，不能继续暴露旧指针。 */
+    if (task->state == MRT_TASK_STATE_DELETED) {
+        /* 返回空指针，防止端口层恢复已失效任务。 */
+        return 0;
+    }
+
+    /* 返回 TCB 中保存的运行期栈顶。 */
+    return task->stack_top;
+}
+
+/**
+ * @brief 写入指定任务的运行期栈顶。
+ * @param task 目标任务句柄，不能为空且不能为已删除任务。
+ * @param stack_top 端口层保存或初始化后的栈顶指针，不能为空。
+ * @return MRT_Result 成功返回 MRT_RESULT_OK；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TaskKernelSetStackTop(task, saved_psp);
+ */
+MRT_Result MRT_TaskKernelSetStackTop(MRT_TaskHandle task, MRT_StackType *stack_top)
+{
+    /* 任务句柄不能为空，否则无法定位 TCB。 */
+    if (task == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 栈顶不能为空，端口层不能恢复到空 PSP。 */
+    if (stack_top == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 已删除任务不能再保存上下文。 */
+    if (task->state == MRT_TASK_STATE_DELETED) {
+        /* 返回参数错误，提示调用方不要操作失效任务。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 写入新的运行期栈顶。 */
+    task->stack_top = stack_top;
+
+    /* 栈顶保存成功。 */
+    return MRT_RESULT_OK;
+}
+
+/**
+ * @brief 保存刚换出任务的栈顶并返回当前任务待恢复栈顶。
+ * @param current_stack_top PendSV 已保存 R4-R11 后得到的旧任务 PSP；为空时仅查询当前任务栈顶。
+ * @return MRT_StackType* 返回当前任务待恢复栈顶；当前无运行任务时返回空指针。
+ * @example
+ * MRT_StackType *next_psp = MRT_TaskKernelSwitchStackTop(saved_psp);
+ */
+MRT_StackType *MRT_TaskKernelSwitchStackTop(MRT_StackType *current_stack_top)
+{
+    /* 非空 PSP 表示端口层已经保存了一个旧任务上下文，需要写回 TCB。 */
+    if (current_stack_top != 0) {
+        /* 优先使用调度器刚记录的换出任务。 */
+        MRT_Task *save_task = g_context_save_task;
+
+        /* 如果没有记录换出任务，则退化为保存当前任务，支持无实际切换的 PendSV。 */
+        if (save_task == 0) {
+            /* 取当前任务作为保存目标。 */
+            save_task = g_current_task;
+        }
+
+        /* 只有有效任务才允许写入 PSP。 */
+        if ((save_task != 0) && (save_task->state != MRT_TASK_STATE_DELETED)) {
+            /* 写回旧任务保存寄存器后的栈顶。 */
+            save_task->stack_top = current_stack_top;
+        }
+
+        /* 本次保存已经消费换出任务记录，避免下一次 PendSV 重复写旧任务。 */
+        g_context_save_task = 0;
+    }
+
+    /* 当前没有运行任务时，没有可恢复 PSP。 */
+    if (g_current_task == 0) {
+        /* 返回空指针。 */
+        return 0;
+    }
+
+    /* 返回当前任务的待恢复栈顶。 */
+    return g_current_task->stack_top;
+}
+
+/**
  * @brief 使用调用方提供的 TCB 和栈静态创建任务。
  * @param name 任务名称，允许为空，仅用于调试显示。
  * @param entry 任务入口函数，不能为空。
@@ -543,6 +661,9 @@ MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
     /* 将任务加入 delay list，tick 到期时自动超时唤醒。 */
     MRT_ListInsertOrdered(&g_delayed_list, &task->state_node);
 
+    /* 记录即将换出的任务，PendSV 保存 PSP 时会写回该任务。 */
+    g_context_save_task = task;
+
     /* 当前任务已经阻塞，清空当前任务指针。 */
     g_current_task = 0;
 
@@ -605,6 +726,9 @@ MRT_Result MRT_TaskKernelBlockCurrent(MRT_Tick ticks, MRT_TaskWaitReason wait_re
 
     /* 将任务加入 delay list，tick 到期时自动超时唤醒。 */
     MRT_ListInsertOrdered(&g_delayed_list, &task->state_node);
+
+    /* 记录即将换出的任务，PendSV 保存 PSP 时会写回该任务。 */
+    g_context_save_task = task;
 
     /* 当前任务已经阻塞，清空当前任务指针。 */
     g_current_task = 0;
@@ -955,6 +1079,9 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
     /* 保存任务栈长度。 */
     storage->stack_words = stack_words;
 
+    /* 初始化运行期栈顶为向下增长栈的空栈顶，后续端口层可写入真实初始帧栈顶。 */
+    storage->stack_top = stack + stack_words;
+
     /* 初始化任务链表节点，item 指回任务控制块。 */
     MRT_ListNodeInitialize(&storage->state_node, storage, 0u);
 
@@ -1236,6 +1363,9 @@ MRT_Result MRT_TaskSuspend(MRT_TaskHandle task)
 
     /* 如果挂起的是当前任务，需要立即让出 CPU。 */
     if (suspending_current) {
+        /* 记录被挂起的当前任务，PendSV 保存 PSP 时会写回该任务。 */
+        g_context_save_task = task;
+
         /* 清空当前任务指针。 */
         g_current_task = 0;
 
@@ -1385,6 +1515,9 @@ MRT_Result MRT_TaskDelay(MRT_Tick ticks)
 
     /* 将任务插入延时链表。 */
     MRT_ListInsertOrdered(&g_delayed_list, &task->state_node);
+
+    /* 记录即将换出的任务，PendSV 保存 PSP 时会写回该任务。 */
+    g_context_save_task = task;
 
     /* 当前任务已经阻塞，先清空当前任务指针。 */
     g_current_task = 0;

@@ -8,7 +8,7 @@
 | 目录 | 作用 | 覆盖对象 |
 |------|------|----------|
 | `tests/unit/` | 单模块与基础算法测试 | 链表、位图、heap、队列、事件组、缓冲 |
-| `tests/sim/` | 调度仿真测试 | 任务切换、tick、阻塞、超时、优先级继承 |
+| `tests/sim/` | 调度仿真测试 | 任务切换、tick、阻塞、超时、优先级继承、TCB 运行期栈顶保存契约 |
 | `tests/coupling/` | 跨模块耦合测试 | 矩阵 `C-001` 到 `C-037` |
 | `tests/port_mock/` | 端口抽象 mock 测试 | STM32/DSP 栈、临界区、tickless、ISR |
 | `tests/static/` | 静态检查 | 注释覆盖、API 手册覆盖、符号原创性、STM32 汇编骨架接线 |
@@ -116,7 +116,7 @@ python tools/verify/run_release_verification.py --require-hardware
 | 缓冲 | `tests/unit/test_stream_buffer_*.c`、`tests/unit/test_message_buffer_*.c`、`tests/coupling/test_buffer_dynamic_allocation.c` | `C-020` 到 `C-023`、`C-036` 到 `C-037` |
 | 内存 | `tests/unit/test_heap_*.c`、`tests/coupling/test_buffer_dynamic_allocation.c` | `C-023` 到 `C-024` |
 | trace/断言 | `tests/unit/test_trace_*.c`、`tests/port_mock/test_assert_context_*.c` | `C-025` 到 `C-027` |
-| STM32 端口 | `tests/port_mock/test_port_stm32_*.c`、`tests/port_mock/test_port_stm32_mpu.c`、`tests/static/test_stm32_context_scaffold.py` | `C-028` 到 `C-029`、`C-035` |
+| STM32 端口 | `tests/port_mock/test_port_stm32_*.c`、`tests/port_mock/test_port_stm32_mpu.c`、`tests/sim/test_task_stack_top.c`、`tests/static/test_stm32_context_scaffold.py`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-029`、`C-035`；包含初始 PSP 写回 TCB 和 PendSV helper 接线 |
 | DSP 端口 | `tests/port_mock/test_port_dsp_*.c` | `C-030` 到 `C-031` |
 | 手册/注释 | `tests/static/*.py` | `C-032` 到 `C-033` |
 | 烟雾工程 | `examples/stm32/`、`examples/dsp/`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-031` |

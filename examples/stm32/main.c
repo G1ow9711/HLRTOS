@@ -5,6 +5,7 @@
 #include "myrtos/mrt_task.h"
 #include "myrtos/mrt_timer.h"
 #include "myrtos/portable/mrt_port_stm32_cm.h"
+#include "mrt_task_internal.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -174,6 +175,52 @@ static void SmokeUartTask(void *arg)
 }
 
 /**
+ * @brief 任务函数意外返回时的兜底处理入口。
+ * @param void 无输入参数。
+ * @return void 无返回值。
+ * @example
+ * SmokeTaskExit();
+ */
+static void SmokeTaskExit(void)
+{
+    /* RTOS 任务按约定不应从入口函数返回；若返回则停在现场便于调试。 */
+    for (;;) {
+        /* 保持故障现场，真实板级可在这里点亮错误 LED 或触发断言。 */
+    }
+}
+
+/**
+ * @brief 为 STM32 smoke 任务构造初始异常帧并写入 TCB 运行期栈顶。
+ * @param task 已创建的任务句柄，不能为空。
+ * @param stack 任务栈首地址，不能为空。
+ * @param stack_words 任务栈元素数量，必须足够容纳端口初始帧。
+ * @param entry 任务入口函数，不能为空。
+ * @param arg 传递给任务入口函数的参数，可为空。
+ * @return MRT_Result 成功返回 MRT_RESULT_OK；栈帧构造或 TCB 写入失败时返回对应错误。
+ * @example
+ * SmokeInitializeTaskStack(task, stack, 128u, SmokeLedTask, 0);
+ */
+static MRT_Result SmokeInitializeTaskStack(MRT_TaskHandle task,
+                                           MRT_StackType *stack,
+                                           size_t stack_words,
+                                           void (*entry)(void *),
+                                           void *arg)
+{
+    /* 准备接收端口层构造出的初始 PSP。 */
+    MRT_StackType *stack_top = 0;
+
+    /* 先让 Cortex-M helper 写入 R4-R11、R0、LR、PC、xPSR 等初始上下文槽位。 */
+    MRT_Result result = MRT_PortStm32CmInitializeStack(stack, stack_words, entry, arg, SmokeTaskExit, &stack_top);
+    if (result != MRT_RESULT_OK) {
+        /* 栈空间、入口函数或对齐不满足端口要求时，直接返回错误。 */
+        return result;
+    }
+
+    /* 再把初始 PSP 写回任务控制块，供 SVC/PendSV 恢复首任务或后续任务。 */
+    return MRT_TaskKernelSetStackTop(task, stack_top);
+}
+
+/**
  * @brief 配置烟雾测试的系统时钟参数。
  * @param void 无输入参数。
  * @return MRT_Result 返回计算和记录结果。
@@ -327,6 +374,12 @@ int main(void)
         return 6;
     }
 
+    /* 为 LED 任务构造 Cortex-M 初始异常帧，并把初始 PSP 写入任务 TCB。 */
+    if (SmokeInitializeTaskStack(g_led_task, g_led_task_stack, SMOKE_STACK_WORDS, SmokeLedTask, 0) != MRT_RESULT_OK) {
+        /* LED 任务初始栈帧接线失败时返回错误。 */
+        return 8;
+    }
+
     /* 创建 UART 任务。 */
     if (MRT_TaskCreateStatic("uart",
                              SmokeUartTask,
@@ -340,10 +393,16 @@ int main(void)
         return 7;
     }
 
+    /* 为 UART 任务构造 Cortex-M 初始异常帧，并把初始 PSP 写入任务 TCB。 */
+    if (SmokeInitializeTaskStack(g_uart_task, g_uart_task_stack, SMOKE_STACK_WORDS, SmokeUartTask, 0) != MRT_RESULT_OK) {
+        /* UART 任务初始栈帧接线失败时返回错误。 */
+        return 9;
+    }
+
     /* 投递定时器启动命令。 */
     if (MRT_TimerStart(g_led_timer, 0u) != MRT_RESULT_OK) {
         /* 定时器启动命令投递失败时返回错误。 */
-        return 8;
+        return 10;
     }
 
     /* 让服务路径立即处理启动命令。 */

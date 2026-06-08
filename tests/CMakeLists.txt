@@ -3,6 +3,7 @@ function(mrt_add_test test_name test_source)
     target_link_libraries(${test_name} PRIVATE myrtos_kernel)
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/support
+        ${PROJECT_SOURCE_DIR}/src/kernel
     )
     target_compile_definitions(${test_name} PRIVATE MRT_TESTING=1)
     add_test(NAME ${test_name} COMMAND ${test_name})
@@ -25,6 +26,7 @@ mrt_add_test(test_scheduler_round_robin sim/test_scheduler_round_robin.c)
 mrt_add_test(test_task_delay sim/test_task_delay.c)
 mrt_add_test(test_task_delay_overflow sim/test_task_delay_overflow.c)
 mrt_add_test(test_task_lifecycle sim/test_task_lifecycle.c)
+mrt_add_test(test_task_stack_top sim/test_task_stack_top.c)
 mrt_add_test(test_queue_create_static unit/test_queue_create_static.c)
 mrt_add_test(test_queue_send_receive unit/test_queue_send_receive.c)
 mrt_add_test(test_queue_variants unit/test_queue_variants.c)

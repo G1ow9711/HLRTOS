@@ -84,7 +84,7 @@
 
 ## Verification Findings
 - 新增 `docs/verification/completion_audit.md`，把原始目标拆成逐项证据审计；当前唯一硬缺口仍是真实 STM32 / DSP 板级 smoke 证据。
-- Latest verification: `python tools\verify\check_api_manual_coverage.py` now reports 135 API sections covered, `python tools\verify\check_api_catalog_prototypes.py` reports 135 aligned prototypes, and `python tools\run_host_tests.py` now reports 69 passed host test targets.
+- Latest verification: `python tools\verify\check_api_manual_coverage.py` now reports 135 API sections covered, `python tools\verify\check_api_catalog_prototypes.py` reports 135 aligned prototypes, and `python tools\run_host_tests.py` now reports 70 passed host test targets.
 - Dynamic stream/message buffer lifecycle is now closed for current API scope: `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` release heap-backed buffers and reject null/static objects; `test_buffer_dynamic_allocation` covers the paths.
 - STM32/DSP 手册移植章已加细粒度骨架：`移植前准备`、`工程分层`、`关键接入顺序`、`首次联调`、`板级验收`；`check_api_manual_coverage.py` 也把这些词纳入必检项。
 - `test_port_stm32_mpu` 已单独纳入 `C-035`，把 STM32 MPU 区域规整 helper 从“附带证据”变成独立耦合项。
@@ -253,7 +253,7 @@
 - Receive/reset paths now wake one highest-priority waiting writer when enough space exists. `MRT_StreamBufferReceiveFromISR` and `MRT_MessageBufferReceiveFromISR` wake writers without immediate task switch because those APIs have no `should_yield` output.
 - New verifier `tools/verify/check_api_catalog_prototypes.py` checks catalog, public headers, and source definitions. It treats `MRT_ASSERT` as a macro and excludes test-only mock hooks plus low-level list/priority bitmap primitives from the official catalog contract.
 - Prototype verifier RED found two real public omissions: `MRT_MemoryPoolGetFreeCount` and `MRT_TimerGetName` were declared/implemented but not in the API catalog/manual. Catalog and manual now cover both, raising manual/prototype coverage to 135 APIs.
-- Latest full verification: `python tools\run_host_tests.py` reports `[summary] 69 test target(s) passed`; manual coverage reports 135; API prototype verifier reports 135; comments, originality, embedded smoke, and `git diff --check` pass with only expected CRLF warnings.
+- Latest full verification: `python tools\run_host_tests.py` reports `[summary] 70 test target(s) passed`; manual coverage reports 135; API prototype verifier reports 135; comments, originality, embedded smoke, and `git diff --check` pass with only expected CRLF warnings.
 - Real STM32 and DSP board smoke evidence remains the only hard completion gap; current STM32 evidence is cross-compile/link and current DSP evidence is host model smoke.
 
 ## Hardware Smoke Evidence Gate Findings
@@ -268,7 +268,7 @@
 - `tools/verify/run_release_verification.py` is now the unified entrypoint: default mode passed all repo-side checks, and `--require-hardware` failed only because the real STM32/DSP evidence files are still absent.
 - `python tools\verify\run_release_verification.py --list` shows the default repo-side chain only; hardware gate is appended only with `--require-hardware`.
 - Current hardware evidence gate intentionally fails with missing `stm32_board_smoke.md` and `dsp_board_smoke.md`; this is the remaining real-hardware proof gap, not a software test failure.
-- Latest repo-side verification: host tests 69 passed; manual coverage 135; API prototype alignment 135; Chinese comments, originality, embedded smoke, and hardware checker unit test pass; `git diff --check` exits 0 with expected CRLF warnings only.
+- Latest repo-side verification: host tests 70 passed; manual coverage 135; API prototype alignment 135; Chinese comments, originality, embedded smoke, and hardware checker unit test pass; `git diff --check` exits 0 with expected CRLF warnings only.
 
 ## Manual Porting Detail Refresh Findings
 - User explicitly asked that the final manual include detailed porting steps.
@@ -290,3 +290,13 @@
 - `tools/verify/check_embedded_smoke_projects.py` now cross-compiles the `.S` file with ARM GCC. This proves symbol and build wiring only; real STM32 board runtime evidence is still required.
 - `python tools\\verify\\run_release_verification.py` now passes with `[release] 10 step(s) passed`.
 - `python tools\\verify\\check_hardware_smoke_evidence.py` still fails only because `stm32_board_smoke.md` and `dsp_board_smoke.md` are missing; no fake board evidence was generated.
+
+## Task Runtime Stack-Top Contract Findings
+- RED evidence: `python tools\\run_host_tests.py` failed only on `test_task_stack_top` because `MRT_TaskKernelGetStackTop`, `MRT_TaskKernelSetStackTop`, and `MRT_TaskKernelSwitchStackTop` did not exist.
+- Implementation adds `MRT_Task.stack_top` and initializes it to the end of static/dynamic task stacks. Internal helpers reject null/deleted tasks, save the switched-out task PSP, and return the current task PSP.
+- `MRT_TaskSwitchToHighestReady`, blocking waits, delays, and current-task suspend now remember the task being switched out so the PendSV hook saves PSP into the correct TCB.
+- `examples/stm32/MRT_PortStm32CmPendSvHook()` now calls `MRT_TaskKernelSwitchStackTop()`; `check_embedded_smoke_projects.py` includes `-Isrc/kernel` so the ARM GCC smoke build verifies the hook wiring.
+- Follow-up RED evidence: `python tests\\static\\test_stm32_context_scaffold.py` failed until `examples/stm32/main.c` used `MRT_PortStm32CmInitializeStack()` and `MRT_TaskKernelSetStackTop()` to write each port-initialized initial PSP into the task TCB.
+- STM32 smoke now constructs initial Cortex-M exception frames for the LED and UART tasks before `MRT_KernelStart()`, then PendSV can return a TCB stack top that points at an actual initial frame instead of the raw empty stack end.
+- Current verification after this increment: `python tools\\verify\\run_release_verification.py` reports `[release] 10 step(s) passed` after 70 host targets, manual/API/comment/originality checks, STM32 context scaffold, embedded smoke, and hardware evidence tooling tests.
+- `python tools\\verify\\check_hardware_smoke_evidence.py` still fails only because `stm32_board_smoke.md` and `dsp_board_smoke.md` are missing. This is still not real STM32/DSP board runtime evidence; the hardware gate remains pending until both files contain real PASS logs.

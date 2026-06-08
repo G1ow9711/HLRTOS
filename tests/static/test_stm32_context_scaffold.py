@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ASM_FILE = ROOT / "src" / "portable" / "stm32_cm" / "mrt_port_stm32_cm_context.S"
 SMOKE_CHECKER = ROOT / "tools" / "verify" / "check_embedded_smoke_projects.py"
 STM32_PORT = ROOT / "examples" / "stm32" / "mrt_port_stm32_smoke.c"
+STM32_MAIN = ROOT / "examples" / "stm32" / "main.c"
 STARTUP = ROOT / "examples" / "stm32" / "startup_stm32cm.c"
 
 
@@ -48,11 +49,16 @@ def test_context_scaffold_is_wired_into_stm32_smoke_build() -> None:
     """STM32 smoke 交叉编译必须纳入汇编骨架并提供 C 钩子。"""
     checker_text = read_text(SMOKE_CHECKER)
     port_text = read_text(STM32_PORT)
+    main_text = read_text(STM32_MAIN)
     startup_text = read_text(STARTUP)
 
     assert "mrt_port_stm32_cm_context.S" in checker_text
+    assert "-Isrc/kernel" in checker_text
     assert "MRT_PortStm32CmSvcHook" in port_text
     assert "MRT_PortStm32CmPendSvHook" in port_text
+    assert "MRT_TaskKernelSwitchStackTop" in port_text
+    assert "MRT_PortStm32CmInitializeStack" in main_text
+    assert "MRT_TaskKernelSetStackTop" in main_text
     assert "__attribute__((weak)) void SVC_Handler" in startup_text
     assert "__attribute__((weak)) void PendSV_Handler" in startup_text
 

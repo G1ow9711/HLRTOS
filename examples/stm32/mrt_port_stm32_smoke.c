@@ -1,5 +1,6 @@
 #include "myrtos/mrt_port.h"
 #include "myrtos/portable/mrt_port_stm32_cm.h"
+#include "mrt_task_internal.h"
 
 #include <stdint.h>
 
@@ -166,7 +167,7 @@ void MRT_PortStm32CmSvcHook(uint32_t *exception_stack, uint32_t exc_return)
  * @brief 记录 PendSV 汇编入口转交的 PSP 并返回待恢复栈顶。
  * @param stack_top 已保存 R4-R11 后的 PSP 栈顶，当前 smoke 骨架可为空。
  * @param exc_return Cortex-M EXC_RETURN 值，用于判断异常返回路径。
- * @return uint32_t* 返回要恢复的 PSP；当前 smoke 骨架返回原值。
+ * @return uint32_t* 返回要恢复的 PSP；有当前任务时返回 TCB 中保存的 PSP，否则返回原值作为兜底。
  * @example
  * uint32_t *next = MRT_PortStm32CmPendSvHook(stack_top, exc_return);
  */
@@ -181,8 +182,18 @@ uint32_t *MRT_PortStm32CmPendSvHook(uint32_t *stack_top, uint32_t exc_return)
     /* 记录 PendSV 钩子被触发次数，证明延迟切换入口已经接通。 */
     g_pendsv_hook_count++;
 
-    /* smoke 阶段不切换 TCB 栈顶，直接返回原 PSP。 */
-    return stack_top;
+    /* smoke 阶段通过内核 TCB 栈顶契约完成 PSP 保存/选择。 */
+    /* 让内核把旧 PSP 写回刚换出的 TCB，并取出当前任务待恢复 PSP。 */
+    MRT_StackType *next_stack_top = MRT_TaskKernelSwitchStackTop((MRT_StackType *)stack_top);
+
+    /* 当前没有可恢复任务时，保持原 PSP，避免 smoke 骨架访问空地址。 */
+    if (next_stack_top == 0) {
+        /* 返回原始 PSP 作为诊断安全兜底。 */
+        return stack_top;
+    }
+
+    /* 返回当前任务 PSP，供 PendSV 汇编恢复 R4-R11 和硬件异常帧。 */
+    return (uint32_t *)next_stack_top;
 }
 
 /**

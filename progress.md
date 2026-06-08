@@ -716,3 +716,22 @@
   - `git diff --check` -> exit 0 with expected CRLF warnings only
 - Hardware evidence gate remains expected-failing:
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+
+## Task Runtime Stack-Top Contract
+- Added RED host test `tests\sim\test_task_stack_top.c`; first `python tools\run_host_tests.py` run failed only because `MRT_TaskKernelGetStackTop`, `MRT_TaskKernelSetStackTop`, and `MRT_TaskKernelSwitchStackTop` were missing.
+- Added `MRT_Task.stack_top`, initialized it for static and dynamic tasks, and implemented internal stack-top helpers in `src\kernel\mrt_task.c` / `src\kernel\mrt_task_internal.h`.
+- Updated scheduler paths so the task being switched out is remembered before yield, blocking wait, delay, or current-task suspend; PendSV can then save the old PSP into the correct TCB.
+- Added static RED coverage requiring `examples/stm32/mrt_port_stm32_smoke.c` to call `MRT_TaskKernelSwitchStackTop()` and requiring embedded smoke to include `-Isrc/kernel`.
+- Wired `MRT_PortStm32CmPendSvHook()` to `MRT_TaskKernelSwitchStackTop()` and updated STM32 manual/README plus verification matrices.
+- Follow-up sanity check found STM32 smoke task creation still returned raw empty stack ends to TCBs. Added RED static coverage requiring `examples\stm32\main.c` to call `MRT_PortStm32CmInitializeStack()` and `MRT_TaskKernelSetStackTop()`.
+- Updated `examples\stm32\main.c` so LED/UART tasks build Cortex-M initial exception frames and write the initialized PSP into each TCB before `MRT_KernelStart()`.
+- Rechecked `python tests\static\test_stm32_context_scaffold.py` and `python tools\verify\check_embedded_smoke_projects.py`; both passed after the STM32 initial-stack wiring.
+- First follow-up `python tools\verify\check_chinese_comments.py` failed because the new helper had been inserted between `SmokeConfigureClock` and its Doxygen block; moved the Doxygen block back above `SmokeConfigureClock`, then comment check passed.
+- Full verification passed: `python tools\verify\run_release_verification.py` -> `[release] 10 step(s) passed` after 70 host test targets.
+- Whitespace check passed: `git diff --check` exited 0 with only expected CRLF conversion warnings.
+- Hardware evidence gate remains expected-failing: `python tools\verify\check_hardware_smoke_evidence.py` reports missing `stm32_board_smoke.md` and `dsp_board_smoke.md`.
+- GREEN checks passed so far:
+  - `python tools\run_host_tests.py` -> `[summary] 70 test target(s) passed`
+  - `python tests\static\test_stm32_context_scaffold.py`
+  - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
+- Hardware evidence gap remains unchanged: no real `stm32_board_smoke.md` or `dsp_board_smoke.md` PASS logs have been produced.

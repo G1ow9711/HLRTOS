@@ -110,6 +110,8 @@ typedef struct MRT_Task {
     MRT_StackType *stack;
     /** @brief 任务栈元素数量，单位为 MRT_StackType。 */
     size_t stack_words;
+    /** @brief 任务运行期栈顶；端口层在上下文保存/恢复时读写该指针。*/
+    MRT_StackType *stack_top;
     /** @brief 当前任务状态。 */
     MRT_TaskState state;
     /** @brief 任务进入 ready/delay 等链表时使用的节点。 */

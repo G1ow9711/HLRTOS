@@ -59,6 +59,34 @@ void MRT_TaskKernelTick(MRT_Tick now);
 void MRT_TaskKernelAccumulateCurrentRuntime(MRT_Tick elapsed_ticks);
 
 /**
+ * @brief 查询指定任务保存的运行期栈顶。
+ * @param task 待查询任务句柄；为空或已删除时返回空指针。
+ * @return MRT_StackType* 返回任务当前栈顶；无有效任务时返回空指针。
+ * @example
+ * MRT_StackType *top = MRT_TaskKernelGetStackTop(task);
+ */
+MRT_StackType *MRT_TaskKernelGetStackTop(MRT_TaskHandle task);
+
+/**
+ * @brief 写入指定任务的运行期栈顶。
+ * @param task 目标任务句柄，不能为空且不能为已删除任务。
+ * @param stack_top 端口层保存或初始化后的栈顶指针，不能为空。
+ * @return MRT_Result 成功返回 MRT_RESULT_OK；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * MRT_TaskKernelSetStackTop(task, saved_psp);
+ */
+MRT_Result MRT_TaskKernelSetStackTop(MRT_TaskHandle task, MRT_StackType *stack_top);
+
+/**
+ * @brief 保存刚换出任务的栈顶并返回当前任务待恢复栈顶。
+ * @param current_stack_top PendSV 已保存 R4-R11 后得到的旧任务 PSP；为空时仅查询当前任务栈顶。
+ * @return MRT_StackType* 返回当前任务待恢复栈顶；当前无运行任务时返回空指针。
+ * @example
+ * MRT_StackType *next_psp = MRT_TaskKernelSwitchStackTop(saved_psp);
+ */
+MRT_StackType *MRT_TaskKernelSwitchStackTop(MRT_StackType *current_stack_top);
+
+/**
  * @brief 查询最近的任务唤醒 tick。
  * @param out_tick 输出最近唤醒 tick，不能为空。
  * @return bool 返回 true 表示存在延时任务 deadline；false 表示没有延时任务。

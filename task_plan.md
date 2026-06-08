@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 15 complete: STM32 Cortex-M SVC/PendSV assembly scaffold is cross-build verified; overall goal still awaits real STM32/DSP board logs
+Phase 16 complete: task TCB runtime stack-top contract is host-tested, STM32 smoke tasks write initialized stack frames into TCB stack_top, and PendSV hook returns the current PSP; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -155,6 +155,7 @@ Phase 15 complete: STM32 Cortex-M SVC/PendSV assembly scaffold is cross-build ve
 | API prototype verifier | Public API catalog must match public headers and source definitions; test-only `MRT_PortMock*`/`MRT_KernelTest*`, list primitives, priority bitmap helpers, and `MRT_ASSERT` macro are handled explicitly. |
 | Hardware evidence templates | Do not commit fake PASS board logs. Keep templates under `docs/verification/hardware_smoke/` and require real `stm32_board_smoke.md` / `dsp_board_smoke.md` before final hardware completion. |
 | Hardware capture checklist | Keep real-board collection steps separate from templates so users capture UART/trace proof first, then fill evidence files. |
+| TCB stack-top contract | Task creation initializes `stack_top`, STM32 smoke task setup writes the port-initialized PSP back into each TCB, scheduler records the task being switched out, and STM32 PendSV smoke hook uses `MRT_TaskKernelSwitchStackTop()` to save old PSP and return current PSP. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -191,3 +192,14 @@ Phase 15 complete: STM32 Cortex-M SVC/PendSV assembly scaffold is cross-build ve
 - [x] Update STM32 manual porting steps and verification evidence docs
 - [ ] Replace scaffold proof with real STM32 board runtime evidence after actual hardware smoke
 - **Status:** complete for compile/static scaffold; real STM32 board evidence remains pending
+
+## Phase 16: Task Runtime Stack-Top Contract and STM32 PendSV Hook Wiring
+- [x] Add failing host coverage for task `stack_top` initialization, invalid helper inputs, and scheduler/PendSV save-return contract
+- [x] Add `MRT_Task.stack_top` plus internal `MRT_TaskKernelGetStackTop`, `MRT_TaskKernelSetStackTop`, and `MRT_TaskKernelSwitchStackTop`
+- [x] Record the task being switched out so PendSV can save the old PSP into the correct TCB
+- [x] Wire `examples/stm32/MRT_PortStm32CmPendSvHook()` to `MRT_TaskKernelSwitchStackTop()`
+- [x] Wire STM32 smoke task creation through `MRT_PortStm32CmInitializeStack()` and `MRT_TaskKernelSetStackTop()`
+- [x] Add static coverage requiring the STM32 hook and embedded smoke build to include the internal stack-top contract
+- [x] Update STM32 manual porting steps and verification docs
+- [ ] Replace cross-build PSP/TCB proof with real STM32 board runtime evidence after actual hardware smoke
+- **Status:** complete for host/static/cross-build contract; real STM32 board evidence remains pending
