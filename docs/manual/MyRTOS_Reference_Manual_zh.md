@@ -866,87 +866,99 @@ int main(void)
 
 ### MRT_TimerDelete
 - 函数原型：`MRT_Result MRT_TimerDelete(MRT_TimerHandle timer);`
-- 功能说明：删除动态定时器；如果定时器仍处于活动列表，会先停止再释放控制块。
+- 功能说明：删除动态定时器；删除前会从活动列表移除该定时器，并清除服务命令队列中尚未处理的该定时器控制命令或到期事件，避免释放后残留悬空引用。
 - 参数：定时器句柄。
 - 返回值：动态定时器释放成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；静态定时器返回 `MRT_RESULT_OBJECT_BUSY`。
 - 调用上下文：任务上下文。
 - 阻塞行为：不阻塞。
 - ISR 限制：禁止在 ISR 中调用。
-- 配置宏：动态分配支持。
+- 配置宏：动态分配支持；`MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH` 影响可清理的服务队列容量。
 - 调用示例：`MRT_TimerDelete(timer);`
-- 常见错误：在定时器回调内部删除自身却未理解服务路径。
+- 常见错误：删除静态定时器；删除动态定时器后继续保存旧句柄并再次访问。
 
 ### MRT_TimerStart
 - 函数原型：`MRT_Result MRT_TimerStart(MRT_TimerHandle timer, MRT_Timeout timeout);`
-- 功能说明：启动软件定时器，从当前 tick 计算到期时间。
-- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
-- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 功能说明：把启动命令投递到定时器服务命令队列；服务任务处理该命令时，才会按当前 tick 计算到期时间并加入活动列表。
+- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现不阻塞等待队列空位，`timeout` 为兼容参数。
+- 返回值：命令入队成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；服务命令队列满返回 `MRT_RESULT_OBJECT_FULL`。
 - 调用上下文：任务上下文。
-- 阻塞行为：不阻塞。
+- 阻塞行为：不阻塞；调用返回成功只表示命令已经入队，不表示定时器已经活动。
 - ISR 限制：不建议在 ISR 中调用。
-- 配置宏：tick 频率影响周期。
-- 调用示例：`MRT_TimerStart(timer, 0u);`
-- 常见错误：修改周期后忘记 reset。
+- 配置宏：tick 频率影响周期；`MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH` 控制命令队列容量。
+- 调用示例：`MRT_TimerStart(timer, 0u); MRT_TimerServiceRunPending();`
+- 常见错误：启动后立即查询活动状态却未运行定时器服务任务。
 
 ### MRT_TimerStop
 - 函数原型：`MRT_Result MRT_TimerStop(MRT_TimerHandle timer, MRT_Timeout timeout);`
-- 功能说明：停止活动软件定时器。
-- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
-- 返回值：成功返回 `MRT_RESULT_OK`。
+- 功能说明：把停止命令投递到定时器服务命令队列；服务任务处理后，定时器才会从活动列表移除。
+- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现不阻塞等待队列空位，`timeout` 为兼容参数。
+- 返回值：命令入队成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；服务命令队列满返回 `MRT_RESULT_OBJECT_FULL`。
 - 调用上下文：任务上下文。
-- 阻塞行为：不阻塞。
+- 阻塞行为：不阻塞；调用返回成功只表示停止命令已经入队。
 - ISR 限制：不建议在 ISR 中调用。
-- 配置宏：无特殊依赖。
-- 调用示例：`MRT_TimerStop(timer, 0u);`
-- 常见错误：以为停止会清除用户参数或回调。
+- 配置宏：`MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH`。
+- 调用示例：`MRT_TimerStop(timer, 0u); MRT_TimerServiceRunPending();`
+- 常见错误：排队停止后未运行服务任务，导致定时器仍按旧状态参与 tickless deadline 计算。
 
 ### MRT_TimerReset
 - 函数原型：`MRT_Result MRT_TimerReset(MRT_TimerHandle timer, MRT_Timeout timeout);`
-- 功能说明：从当前 tick 重新计算定时器到期时间。
-- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
-- 返回值：成功返回 `MRT_RESULT_OK`。
+- 功能说明：把重新装载命令投递到定时器服务命令队列；服务任务处理后，定时器按当时 tick 重新计算到期时间。
+- 参数：定时器句柄和等待内部控制资源的 tick 数；当前实现不阻塞等待队列空位，`timeout` 为兼容参数。
+- 返回值：命令入队成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`；服务命令队列满返回 `MRT_RESULT_OBJECT_FULL`。
 - 调用上下文：任务上下文。
-- 阻塞行为：不阻塞。
+- 阻塞行为：不阻塞；调用返回成功只表示 reset 命令已经入队。
 - ISR 限制：不建议在 ISR 中调用。
-- 配置宏：tick 频率影响周期。
-- 调用示例：`MRT_TimerReset(timer, 0u);`
-- 常见错误：对未启动定时器 reset 后误判活动状态。
+- 配置宏：tick 频率影响周期；`MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH`。
+- 调用示例：`MRT_TimerReset(timer, 0u); MRT_TimerServiceRunPending();`
+- 常见错误：忘记 reset 生效点是服务任务运行时刻，而不是 API 调用时刻。
 
 ### MRT_TimerChangePeriod
 - 函数原型：`MRT_Result MRT_TimerChangePeriod(MRT_TimerHandle timer, MRT_Tick new_period_ticks, MRT_Timeout timeout);`
-- 功能说明：修改定时器周期，活动定时器按当前 tick 重装。
-- 参数：定时器句柄、新周期和等待内部控制资源的 tick 数；当前实现中 `timeout` 为兼容参数。
-- 返回值：成功返回 `MRT_RESULT_OK`；周期为 0 返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 功能说明：把改周期命令投递到定时器服务命令队列；服务任务处理后更新周期，若定时器已经活动，则按服务任务运行时 tick 重算到期点。
+- 参数：定时器句柄、新周期和等待内部控制资源的 tick 数；新周期必须大于 0，当前实现不阻塞等待队列空位。
+- 返回值：命令入队成功返回 `MRT_RESULT_OK`；空句柄或 0 周期返回 `MRT_RESULT_INVALID_ARGUMENT`；服务命令队列满返回 `MRT_RESULT_OBJECT_FULL`。
 - 调用上下文：任务上下文。
-- 阻塞行为：不阻塞。
+- 阻塞行为：不阻塞；调用返回成功只表示改周期命令已经入队。
 - ISR 限制：不建议在 ISR 中调用。
-- 配置宏：tick 频率影响周期。
-- 调用示例：`MRT_TimerChangePeriod(timer, 250u, 0u);`
-- 常见错误：传入 0 tick 周期。
+- 配置宏：tick 频率影响周期；`MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH`。
+- 调用示例：`MRT_TimerChangePeriod(timer, 250u, 0u); MRT_TimerServiceRunPending();`
+- 常见错误：以为周期字段会在 API 返回前立即改变。
 
 ### MRT_TimerIsActive
-- 函数原型：`bool MRT_TimerIsActive(MRT_TimerHandle timer);`
-- 功能说明：查询定时器是否处于活动列表中。
-- 参数：定时器句柄。
-- 返回值：活动返回 `true`；非活动或空句柄返回 `false`。
+- 函数原型：`MRT_Result MRT_TimerIsActive(MRT_TimerHandle timer, bool *out_active);`
+- 功能说明：查询定时器是否处于活动列表中；结果只反映已经被服务任务处理过的控制命令。
+- 参数：定时器句柄和活动状态输出指针，二者均不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK` 并写入 `out_active`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文或诊断代码。
 - 阻塞行为：不阻塞。
 - ISR 限制：ISR 中仅建议用于诊断。
 - 配置宏：无特殊依赖。
-- 调用示例：`bool active = MRT_TimerIsActive(timer);`
-- 常见错误：把 active 当作回调正在执行的标志。
+- 调用示例：`bool active = false; MRT_TimerIsActive(timer, &active);`
+- 常见错误：查询到非活动后忽略队列中尚未处理的启动命令。
 
 ### MRT_TimerPendFunctionCall
-- 函数原型：`MRT_Result MRT_TimerPendFunctionCall(MRT_TimerPendedFunction function, void *argument);`
-- 功能说明：把轻量函数投递到定时器服务路径延后执行。
-- 参数：函数指针和用户参数。
-- 返回值：成功返回 `MRT_RESULT_OK`；队列满返回 `MRT_RESULT_OBJECT_FULL`。
+- 函数原型：`MRT_Result MRT_TimerPendFunctionCall(MRT_TimerPendingFunction function, void *arg, uint32_t value, MRT_Timeout timeout);`
+- 功能说明：把轻量函数投递到定时器服务命令队列；服务任务按 FIFO 顺序在临界区外调用 `function(arg, value)`。
+- 参数：函数指针、用户指针参数、用户整数参数和等待队列空位的 tick 数；当前实现不阻塞等待队列空位。
+- 返回值：成功返回 `MRT_RESULT_OK`；函数为空返回 `MRT_RESULT_INVALID_ARGUMENT`；服务命令队列满返回 `MRT_RESULT_OBJECT_FULL`。
 - 调用上下文：任务上下文；ISR 支持取决于端口策略。
 - 阻塞行为：不阻塞。
 - ISR 限制：ISR 中应避免投递重负载函数。
-- 配置宏：`MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH`。
-- 调用示例：`MRT_TimerPendFunctionCall(deferred_fn, arg);`
-- 常见错误：pending function 中执行阻塞等待。
+- 配置宏：`MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH`；旧的 `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH` 仅作为默认容量来源。
+- 调用示例：`MRT_TimerPendFunctionCall(deferred_fn, arg, value, 0u);`
+- 常见错误：pending function 中执行阻塞等待；把 pending function 容量误认为独立于定时器控制命令。
+
+### MRT_TimerServiceRunPending
+- 函数原型：`void MRT_TimerServiceRunPending(void);`
+- 功能说明：运行定时器服务入口，按 FIFO 顺序处理启动、停止、复位、改周期、到期回调和 pending function 命令；用户回调和 pending function 在临界区外执行。
+- 参数：无。
+- 返回值：无。
+- 调用上下文：任务上下文；host 测试中可显式调用，真实移植中通常由定时器服务任务循环调用。
+- 阻塞行为：不阻塞；持续处理直到当前服务命令队列为空。
+- ISR 限制：禁止在 ISR 中执行服务入口，避免在中断中运行用户回调。
+- 配置宏：`MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH`。
+- 调用示例：`MRT_TimerServiceRunPending();`
+- 常见错误：只投递控制命令而从不运行服务入口，导致定时器状态、到期回调和 pending function 都不推进。
 
 ### MRT_StreamBufferCreateStatic
 - 函数原型：`MRT_Result MRT_StreamBufferCreateStatic(size_t capacity, size_t trigger_level, void *buffer, MRT_StreamBuffer *storage, MRT_StreamBufferHandle *out_stream);`
@@ -1724,7 +1736,8 @@ DSP 移植验收清单：
 - `MRT_CFG_HEAP_ALIGNMENT`：heap 对齐字节数。
 - `MRT_CFG_USE_TRACE`：是否启用 trace。
 - `MRT_CFG_USE_TICKLESS_IDLE`：是否启用 tickless idle。
-- `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH`：pending function 队列长度。
+- `MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH`：软件定时器服务命令队列长度。
+- `MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH`：pending function 历史默认容量，当前用于给 `MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH` 提供默认值。
 
 ### 7.4 验证命令
 

@@ -53,6 +53,7 @@ TESTS = [
     ("test_timer_control", ROOT / "tests" / "unit" / "test_timer_control.c"),
     ("test_timer_tick_expiry", ROOT / "tests" / "coupling" / "test_timer_tick_expiry.c"),
     ("test_timer_pending_function", ROOT / "tests" / "unit" / "test_timer_pending_function.c"),
+    ("test_timer_service_task", ROOT / "tests" / "coupling" / "test_timer_service_task.c"),
     ("test_stream_buffer_create_static", ROOT / "tests" / "unit" / "test_stream_buffer_create_static.c"),
     ("test_stream_buffer_send_receive", ROOT / "tests" / "unit" / "test_stream_buffer_send_receive.c"),
     ("test_stream_buffer_isr", ROOT / "tests" / "unit" / "test_stream_buffer_isr.c"),

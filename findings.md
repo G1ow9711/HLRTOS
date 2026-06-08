@@ -167,7 +167,7 @@
 - Static verification scripts added under `tools/verify/`: API manual coverage, Chinese function comments, and originality/symbol scan.
 - API manual coverage script verifies every API table entry in `docs/api/myrtos_api_catalog.md` has a matching `### API` manual section with function prototype, purpose, parameters, return value, calling context, blocking behavior, ISR limits, config dependencies, example, and common errors.
 - Chinese comment script initially found 13 gaps, mostly internal task scheduler prototypes plus two public function definitions. These were fixed in `src/kernel/mrt_task_internal.h`, `src/kernel/mrt_queue.c`, and `src/kernel/mrt_task.c`.
-- Manual file `docs/manual/MyRTOS_Reference_Manual_zh.md` now covers 125 API sections and includes detailed STM32 Cortex-M and DSP porting steps with toolchain, startup/vector table, tick, context switch, stack layout, critical section, low power, example, and troubleshooting content.
+- Manual file `docs/manual/MyRTOS_Reference_Manual_zh.md` now covers 126 API sections and includes detailed STM32 Cortex-M and DSP porting steps with toolchain, startup/vector table, tick, context switch, stack layout, critical section, low power, example, and troubleshooting content.
 - Static checks currently pass: manual coverage, Chinese comment coverage, and original-symbol scan.
 - Final verification report branch starts from `feature/manual-static-verification` at `cdb4b39`.
 - Final report records that the project is a verified preview rather than a fully complete final RTOS: host/static evidence is strong, but real STM32/DSP board smoke tests and several preview API implementations remain future work.
@@ -218,3 +218,11 @@
 - Policy decision: deleting a task that owns a mutex is rejected with `MRT_RESULT_OBJECT_BUSY`; MyRTOS does not silently release application locks during task deletion.
 - Implementation approach: mutex objects are tracked in an internal registry; `MRT_TaskDelete` checks the registry before unlinking/freeing a task; `MRT_KernelInitialize` resets the registry for deterministic test/system restart behavior.
 - Current verification: `python tools\run_host_tests.py` reports `[summary] 67 test target(s) passed`.
+
+## Timer Service Command Queue Findings
+- Branch `feature/timer-service-task` starts from `feature/held-mutex-delete-policy` at `d56cb0e`.
+- RED evidence: `test_timer_service_task` failed because `MRT_TimerStart(timer, 0u)` made the timer active immediately; the expected service-queue behavior is that the timer remains inactive until `MRT_TimerServiceRunPending()` drains the start command.
+- Design decision: use `MRT_TimerServiceRunPending()` as the host-testable timer service entry. Real STM32/DSP ports may run that entry from a dedicated service task, but host tests can call it directly for deterministic proof.
+- Implementation approach: one FIFO service queue now carries timer control commands, timer expiry callback events, and pending functions. `MRT_TimerKernelTick()` only queues expiry events; user callbacks execute from the service entry outside the critical section.
+- Dynamic timer deletion now purges queued commands and expiry events for the deleted timer before freeing memory, preventing service-queue dangling references.
+- Current verification: `python tools\run_host_tests.py` reports `[summary] 68 test target(s) passed`.

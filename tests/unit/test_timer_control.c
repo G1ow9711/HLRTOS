@@ -79,8 +79,16 @@ static void assert_timer_start_stop_controls_active_state(void)
     /* 启动定时器，timeout 当前作为兼容参数传入 0。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
 
-    /* 启动后定时器应处于活动状态。 */
-    bool active = false;
+    /* 启动命令尚未被服务任务处理前，定时器不应立即活动。 */
+    bool active = true;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerIsActive(timer, &active));
+    MRT_TEST_ASSERT_TRUE(!active);
+
+    /* 运行定时器服务任务，真正处理启动命令。 */
+    MRT_TimerServiceRunPending();
+
+    /* 启动命令处理后，定时器应处于活动状态。 */
+    active = false;
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerIsActive(timer, &active));
     MRT_TEST_ASSERT_TRUE(active);
 
@@ -96,7 +104,15 @@ static void assert_timer_start_stop_controls_active_state(void)
     /* 停止定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStop(timer, 0u));
 
-    /* 停止后定时器不再活动。 */
+    /* 停止命令尚未被服务任务处理前，定时器仍应保持活动。 */
+    active = false;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerIsActive(timer, &active));
+    MRT_TEST_ASSERT_TRUE(active);
+
+    /* 运行定时器服务任务，真正处理停止命令。 */
+    MRT_TimerServiceRunPending();
+
+    /* 停止命令处理后，定时器不再活动。 */
     active = true;
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerIsActive(timer, &active));
     MRT_TEST_ASSERT_TRUE(!active);
@@ -125,6 +141,7 @@ static void assert_timer_reset_recalculates_expiry_from_current_tick(void)
 
     /* 启动后第一次到期 tick 应为 4。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
     MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)storage.expiry_tick);
 
     /* 推进两个 tick，当前 tick 变为 2。 */
@@ -133,6 +150,12 @@ static void assert_timer_reset_recalculates_expiry_from_current_tick(void)
 
     /* reset 应从当前 tick 重新装载周期。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerReset(timer, 0u));
+
+    /* reset 命令在服务任务处理前不应立刻改变到期时间。 */
+    MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)storage.expiry_tick);
+
+    /* 运行定时器服务任务，真正处理 reset 命令。 */
+    MRT_TimerServiceRunPending();
 
     /* 当前 tick 为 2，周期为 4，因此新到期 tick 应为 6。 */
     MRT_TEST_ASSERT_EQ_U32(6u, (unsigned)storage.expiry_tick);
@@ -144,6 +167,7 @@ static void assert_timer_reset_recalculates_expiry_from_current_tick(void)
 
     /* 测试结束前停止定时器，避免全局活动链表保留栈上控制块。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStop(timer, 0u));
+    MRT_TimerServiceRunPending();
 }
 
 /**
@@ -166,12 +190,20 @@ static void assert_timer_change_period_updates_period_and_active_expiry(void)
 
     /* 启动定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
 
     /* 推进一个 tick，使当前 tick 为 1。 */
     MRT_KernelTick();
 
     /* 修改周期为 3 tick。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerChangePeriod(timer, 3u, 0u));
+
+    /* 改周期命令在服务任务处理前不应立刻生效。 */
+    MRT_TEST_ASSERT_EQ_U32(8u, (unsigned)storage.period_ticks);
+    MRT_TEST_ASSERT_EQ_U32(8u, (unsigned)storage.expiry_tick);
+
+    /* 运行定时器服务任务，真正处理改周期命令。 */
+    MRT_TimerServiceRunPending();
 
     /* 周期字段应被更新。 */
     MRT_TEST_ASSERT_EQ_U32(3u, (unsigned)storage.period_ticks);
@@ -186,6 +218,7 @@ static void assert_timer_change_period_updates_period_and_active_expiry(void)
 
     /* 测试结束前停止定时器，避免全局活动链表保留栈上控制块。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStop(timer, 0u));
+    MRT_TimerServiceRunPending();
 }
 
 /**
@@ -208,6 +241,12 @@ static void assert_timer_change_period_on_inactive_timer_does_not_start(void)
 
     /* 修改周期为 2 tick。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerChangePeriod(timer, 2u, 0u));
+
+    /* 改周期命令在服务任务处理前不应立刻更新。 */
+    MRT_TEST_ASSERT_EQ_U32(9u, (unsigned)storage.period_ticks);
+
+    /* 运行定时器服务任务，真正处理改周期命令。 */
+    MRT_TimerServiceRunPending();
 
     /* 周期字段应更新。 */
     MRT_TEST_ASSERT_EQ_U32(2u, (unsigned)storage.period_ticks);

@@ -10,6 +10,18 @@
 - GREEN run: `python tools\run_host_tests.py` reported `[summary] 67 test target(s) passed`.
 - Updated manual, coupling matrix, requirement matrix, final report, and branch plan for `C-012`.
 
+### Timer Service Command Queue Branch
+- Continued worktree `F:\My_RTOS\.worktrees\timer-service-task` on branch `feature/timer-service-task` from `feature/held-mutex-delete-policy`.
+- Added `tests/coupling/test_timer_service_task.c` and registered it in CMake plus `tools/run_host_tests.py`.
+- RED evidence from this branch: `test_timer_service_task.c:84` failed because `MRT_TimerStart` activated the timer before the service task drained the start command.
+- Implemented one FIFO timer service queue for start/stop/reset/change-period commands, expiry callback events, and pending functions.
+- Changed `MRT_TimerKernelTick` to queue expiry events instead of running user callbacks directly.
+- Changed dynamic timer delete to purge queued commands/events for that timer before freeing memory.
+- First full GREEN attempt after implementation exposed 4 stale tests still assuming direct timer activation/callback behavior.
+- Updated `test_timer_control`, `test_timer_tick_expiry`, `test_tickless_expected_idle`, and `test_tickless_timer_compensation` to drain `MRT_TimerServiceRunPending()` before expecting queued commands or callbacks to take effect.
+- GREEN run: `python tools\run_host_tests.py` reported `[summary] 68 test target(s) passed`.
+- Updated `mrt_timer.h` comments, API catalog, Chinese manual timer sections, configuration macro appendix, coupling matrix, requirement matrix, final verification report, and added branch plan `docs/superpowers/plans/2026-06-08-myrtos-timer-service-task.md`.
+
 ### Mutex Timeout Rollback Branch Resume
 - Created worktree `F:\My_RTOS\.worktrees\mutex-timeout-rollback` on branch `feature/mutex-timeout-rollback` from `feature/runtime-stats-api`.
 - Added coupling test `tests/coupling/test_mutex_timeout_rollback.c` and registered it in `tests/CMakeLists.txt` and `tools/run_host_tests.py`.

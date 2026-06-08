@@ -32,6 +32,9 @@ int main(void)
     /* 检查定时器 pending function 队列有足够默认容量覆盖常见延后执行场景。 */
     MRT_TEST_ASSERT_TRUE(MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH >= 4u);
 
+    /* 检查定时器服务命令队列有足够默认容量覆盖控制命令和延后执行场景。 */
+    MRT_TEST_ASSERT_TRUE(MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH >= 4u);
+
     /* 所有配置断言均通过，返回 0 交给测试运行器统计。 */
     return 0;
 }

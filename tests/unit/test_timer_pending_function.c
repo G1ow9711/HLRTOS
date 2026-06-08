@@ -4,7 +4,7 @@
 #include "myrtos/mrt_timer.h"
 
 /** @brief pending function 测试记录容量。 */
-#define PENDING_RECORD_CAPACITY (MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH + 1u)
+#define PENDING_RECORD_CAPACITY (MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH + 1u)
 
 /** @brief pending function 执行时记录的参数标识。 */
 static uint32_t g_recorded_args[PENDING_RECORD_CAPACITY];
@@ -132,8 +132,8 @@ static void assert_pending_function_queue_full_returns_object_full(void)
     /* 定义循环投递使用的参数标识。 */
     uint32_t id = 33u;
 
-    /* 填满 pending function 队列。 */
-    for (uint32_t index = 0u; index < MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH; index++) {
+    /* 填满共享的定时器服务命令队列。 */
+    for (uint32_t index = 0u; index < MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH; index++) {
         /* 队列未满时每次投递都应成功。 */
         MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
                                (unsigned)MRT_TimerPendFunctionCall(RecordPendingFunction, &id, index, 0u));
@@ -145,7 +145,7 @@ static void assert_pending_function_queue_full_returns_object_full(void)
 
     /* 执行队列，确认只执行成功入队的项目。 */
     MRT_TimerServiceRunPending();
-    MRT_TEST_ASSERT_EQ_U32(MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH, (unsigned)g_recorded_count);
+    MRT_TEST_ASSERT_EQ_U32(MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH, (unsigned)g_recorded_count);
 }
 
 /**

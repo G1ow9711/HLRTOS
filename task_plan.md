@@ -59,6 +59,7 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 - [x] Produce verification report
 - [x] Close mutex timeout priority rollback coupling (`C-011`)
 - [x] Close held-mutex task deletion policy coupling (`C-012`)
+- [x] Close timer service command queue and callback service coupling (`C-017`, `C-018`)
 - **Status:** complete
 
 ## Key Questions
@@ -88,6 +89,7 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 | Porting manual detail | STM32/DSP manual chapters now include concrete migration steps, handler skeletons, smoke-test guidance, troubleshooting, and acceptance checklists. |
 | Mutex timeout rollback | When a mutex waiter times out, the owner effective priority is recalculated from remaining waiters and restored to base priority if no higher waiter remains. |
 | Held mutex deletion policy | `MRT_TaskDelete` rejects deletion of a task that still owns a mutex, preserving owner, waiters, and task state until the application releases the lock explicitly. |
+| Timer service command queue | Timer control APIs enqueue service commands; tick expiry enqueues callback events; `MRT_TimerServiceRunPending` drains commands, callbacks, and pending functions in FIFO order. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -97,6 +99,7 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 | PowerShell rejected `&&` command separator | 1 | Re-run git add and git commit as separate PowerShell commands. |
 | `cmake` command not found | 1 | Verified GCC exists; added project-local Python host test runner as fallback while preserving CMake build files. |
 | Dynamic object GREEN first run failed: `filler != 0` | 1 | Replaced full-free-size allocation with a repeated heap exhaustion helper in dynamic allocation tests. |
+| Timer service GREEN first run failed four legacy tests | 1 | Updated timer control, timer expiry, and tickless tests to drain `MRT_TimerServiceRunPending` before expecting queued commands or callbacks to take effect. |
 
 ## Notes
 - Re-read this file before major design decisions.

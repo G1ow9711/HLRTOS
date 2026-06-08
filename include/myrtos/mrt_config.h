@@ -110,4 +110,14 @@
 #define MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH 8u
 #endif
 
+/**
+ * @brief 软件定时器服务命令队列长度。
+ *
+ * 定时器启动、停止、复位、改周期、到期回调和 pending function 都通过该队列交给
+ * 定时器服务任务顺序处理。默认沿用 pending function 队列长度，便于保持小系统配置简单。
+ */
+#ifndef MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH
+#define MRT_CFG_TIMER_COMMAND_QUEUE_LENGTH MRT_CFG_TIMER_PENDING_FUNCTION_QUEUE_LENGTH
+#endif
+
 #endif

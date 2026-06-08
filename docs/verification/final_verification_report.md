@@ -1,17 +1,17 @@
 # MyRTOS 最终验证报告
 
 生成日期：2026-06-08
-分支：`feature/runtime-stats-api`
-基线来源：`feature/dynamic-object-apis` (`dfe4838`)
+分支：`feature/timer-service-task`
+基线来源：`feature/held-mutex-delete-policy` (`d56cb0e`)
 
 ## 1. 结论摘要
 
-MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度、任务生命周期 API、动态任务创建、动态同步对象、动态事件组、动态软件定时器、动态流/消息缓冲创建、队列、信号量、互斥锁、事件组、任务通知、软件定时器、流缓冲、消息缓冲、heap、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、DSP C28x 风格端口契约 helper、中文参考手册和静态验证脚本。
+MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度、任务生命周期 API、动态任务创建、动态同步对象、动态事件组、动态软件定时器、动态流/消息缓冲创建、队列、信号量、互斥锁、事件组、任务通知、软件定时器服务命令队列、流缓冲、消息缓冲、heap、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、DSP C28x 风格端口契约 helper、中文参考手册和静态验证脚本。
 
 当前自动化证据显示：
 
-- Host C 测试：67 个测试目标通过。
-- API 手册覆盖：125 个 API 条目均有中文手册章节。
+- Host C 测试：68 个测试目标通过。
+- API 手册覆盖：126 个 API 条目均有中文手册章节。
 - 中文注释覆盖：`include/` 与 `src/` 函数注释通过静态扫描。
 - 原创符号扫描：未发现 banned FreeRTOS-style public symbols。
 
@@ -19,15 +19,15 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 - 尚未在真实 STM32 板卡运行 smoke test。
 - 尚未在真实 DSP 板卡运行 smoke test。
-- API 目录中的当前 125 个公共 API 条目均已有源码声明/定义、手册章节和自动化/静态证据；当前已知源码/API 目录缺口为 0。
+- API 目录中的当前 126 个公共 API 条目均已有源码声明/定义、手册章节和自动化/静态证据；当前已知源码/API 目录缺口为 0。
 - `cmake` 在当前本地环境不可用，因此本报告以 `python tools\run_host_tests.py` 作为权威 host 验证命令；CMake 文件已维护，但未在本机执行。
 
 ## 2. 执行命令证据
 
 | 命令 | 结果 |
 |------|------|
-| `python tools\run_host_tests.py` | `[summary] 67 test target(s) passed` |
-| `python tools\verify\check_api_manual_coverage.py` | `[manual-coverage] 125 API section(s) covered` |
+| `python tools\run_host_tests.py` | `[summary] 68 test target(s) passed` |
+| `python tools\verify\check_api_manual_coverage.py` | `[manual-coverage] 126 API section(s) covered` |
 | `python tools\verify\check_chinese_comments.py` | `[chinese-comments] include/src function comments covered` |
 | `python tools\verify\check_original_symbols.py` | `[original-symbols] no banned FreeRTOS-style public symbols found` |
 
@@ -41,9 +41,9 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | R-004 | 部分实现 | DSP 栈帧、软件中断上下文模型已测试 | 具体 DSP ABI 汇编和板级 smoke |
 | R-005 | 部分验证 | include/src 函数头中文 Doxygen 字段通过扫描 | 历史测试文件未纳入严格扫描范围 |
 | R-006 | 部分验证 | include/src 函数体附近中文步骤注释通过扫描 | 后续可扩大到 tests/examples |
-| R-007 | 部分验证 | 中文参考手册已写，125 API 条目覆盖 | API 实现状态变化后需同步手册 |
-| R-008 | 部分验证 | 67 个 host 测试目标通过，新增运行统计、mutex timeout rollback 和持锁任务删除策略测试 | 真实硬件测试待补 |
-| R-009 | 部分验证 | C-001 到 C-034 中大量耦合项已有自动化证据，新增 runtime stats + tick + scheduler 切换耦合、mutex timeout rollback 和持锁任务删除策略 | C-017、C-018 和真实端口项仍有部分/待硬件补证 |
+| R-007 | 部分验证 | 中文参考手册已写，126 API 条目覆盖 | API 实现状态变化后需同步手册 |
+| R-008 | 部分验证 | 68 个 host 测试目标通过，新增 timer service command queue、运行统计、mutex timeout rollback 和持锁任务删除策略测试 | 真实硬件测试待补 |
+| R-009 | 部分验证 | C-001 到 C-034 中大量耦合项已有自动化证据，新增 timer service command queue、timer expiry service callback、runtime stats + tick + scheduler 切换耦合、mutex timeout rollback 和持锁任务删除策略 | 真实端口项仍待硬件补证 |
 | R-010 | 部分实现 | 高级模块包含 stream/message buffer、多 heap、tickless、trace、runtime stats、assert、动态对象创建 | MPU 和真实板级端口后续补齐 |
 | R-011 | 部分验证 | 手册第 5、6 节包含 STM32/DSP 详细移植步骤 | 真实移植完成后补板级截图/日志 |
 
@@ -53,14 +53,13 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 - `C-001` 到 `C-010`：调度、任务生命周期、tick、队列、信号量、互斥锁核心耦合。
 - `C-013` 到 `C-016`：递归互斥锁、事件组、任务通知耦合。
-- `C-019` 到 `C-026`：tickless、流/消息缓冲、heap、动态对象、动态任务、trace 耦合。
+- `C-017` 到 `C-026`：timer service command queue、timer expiry service callback、tickless、流/消息缓冲、heap、动态对象、动态任务、trace 耦合。
 - `C-030` 到 `C-034`：DSP 栈/上下文模型、手册覆盖、源码注释静态扫描、运行统计与 tick/调度耦合。
 
 部分验证或待补项：
 
 - `C-011`：互斥锁等待者 timeout 后优先级回滚已实现并由 `test_mutex_timeout_rollback` 覆盖。
 - `C-012`：持锁任务删除策略已实现为拒绝删除，并由 `test_mutex_task_delete_policy` 覆盖锁拥有者、等待链表和任务状态保持不变。
-- `C-017`、`C-018`：当前为 deterministic timer service shim；独立 timer service task 和异步命令队列待补。
 - `C-028`、`C-029`：STM32 helper 已验证，真实 SysTick/PendSV/SVC 与 BASEPRI/PRIMASK 硬件行为待板级 smoke。
 - 当前 API 目录范围内没有已知源码实现缺口；`MRT_StatsGetTaskRuntime` 已由 `test_runtime_stats` 覆盖 tick 级运行统计。
 
@@ -78,7 +77,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 
 ## 6. 建议下一步
 
-1. 实现独立 timer service task 和异步 timer command queue。
-2. 增加 STM32 ARM GCC smoke 工程，至少覆盖 LED、UART ISR 队列、软件定时器、tickless idle。
-3. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke。
-4. 将中文注释静态扫描范围从 `include/`、`src/` 扩展到 `tests/` 和 `examples/`。
+1. 增加 STM32 ARM GCC smoke 工程，至少覆盖 LED、UART ISR 队列、软件定时器、tickless idle。
+2. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke。
+3. 将中文注释静态扫描范围从 `include/`、`src/` 扩展到 `tests/` 和 `examples/`。
+4. 如后续需要真实内核自动创建服务任务，可把 `MRT_TimerServiceRunPending` 绑定到调度器管理的专用任务入口。

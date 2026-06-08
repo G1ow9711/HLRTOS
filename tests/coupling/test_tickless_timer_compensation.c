@@ -72,6 +72,7 @@ static void assert_tickless_sleep_compensates_timer_expiry(void)
 
     /* 启动定时器，让 tickless 查询到最近 deadline。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
 
     /* 配置 mock 端口模拟实际睡眠 4 个 tick。 */
     MRT_PortMockSetSuppressedSleepTicks(4u);
@@ -88,7 +89,11 @@ static void assert_tickless_sleep_compensates_timer_expiry(void)
     MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)slept_ticks);
     MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)MRT_KernelGetTick());
 
-    /* 软件定时器应在补偿到第 4 tick 时执行回调。 */
+    /* 补偿路径只投递到期事件，服务任务运行前不应执行用户回调。 */
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)g_timer_callback_count);
+
+    /* 服务任务运行后才会执行定时器回调。 */
+    MRT_TimerServiceRunPending();
     MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)g_timer_callback_count);
 }
 
@@ -178,6 +183,7 @@ static void assert_tickless_idle_honors_max_sleep_ticks(void)
 
     /* 启动定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
 
     /* 配置 mock 端口模拟实际睡眠 2 tick。 */
     MRT_PortMockSetSuppressedSleepTicks(2u);
@@ -197,6 +203,7 @@ static void assert_tickless_idle_honors_max_sleep_ticks(void)
 
     /* 测试结束前停止仍处于活动状态的栈上定时器，避免后续内核重初始化访问失效控制块。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStop(timer, 0u));
+    MRT_TimerServiceRunPending();
 }
 
 /**

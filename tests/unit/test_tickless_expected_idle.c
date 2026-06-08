@@ -140,6 +140,7 @@ static void assert_active_timer_limits_expected_idle_ticks(void)
 
     /* 启动定时器，使其进入活动链表。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
 
     /* 查询 tickless 预计空闲时长，应由定时器到期点限制为 4。 */
     MRT_Tick expected_idle_ticks = 0u;
@@ -198,6 +199,7 @@ static void assert_expected_idle_uses_nearest_deadline(void)
 
     /* 启动定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
 
     /* 最近 deadline 是定时器 3 tick，而不是任务 8 tick。 */
     MRT_Tick expected_idle_ticks = 0u;

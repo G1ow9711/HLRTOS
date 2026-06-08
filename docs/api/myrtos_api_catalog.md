@@ -167,6 +167,7 @@ typedef enum MRT_Result {
 | `MRT_TimerChangePeriod(...)` | 修改周期 | 运行中修改 |
 | `MRT_TimerIsActive(...)` | 查询活动状态 | 命令处理前后 |
 | `MRT_TimerPendFunctionCall(...)` | 投递延迟函数调用 | 服务任务执行 |
+| `MRT_TimerServiceRunPending(...)` | 运行定时器服务命令 | 控制命令/回调 FIFO |
 
 ## 10. 流缓冲与消息缓冲 API
 

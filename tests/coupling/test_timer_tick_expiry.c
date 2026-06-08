@@ -129,6 +129,7 @@ static void assert_one_shot_timer_fires_once_on_expiry_tick(void)
 
     /* 启动定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
 
     /* 第 1 个 tick 尚未到期。 */
     MRT_KernelTick();
@@ -138,8 +139,12 @@ static void assert_one_shot_timer_fires_once_on_expiry_tick(void)
     MRT_KernelTick();
     MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)g_callback_count);
 
-    /* 第 3 个 tick 到期并执行一次回调。 */
+    /* 第 3 个 tick 仅投递到期事件。 */
     MRT_KernelTick();
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)g_callback_count);
+
+    /* 服务任务执行后才会调用用户回调。 */
+    MRT_TimerServiceRunPending();
     MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)g_callback_count);
     MRT_TEST_ASSERT_TRUE(g_last_timer == timer);
 
@@ -177,13 +182,16 @@ static void assert_auto_reload_timer_rearms_after_callback(void)
 
     /* 启动定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(timer, 0u));
+    MRT_TimerServiceRunPending();
 
     /* 第 1 个 tick 尚未到期。 */
     MRT_KernelTick();
     MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)g_callback_count);
 
-    /* 第 2 个 tick 第一次到期。 */
+    /* 第 2 个 tick 第一次到期，但回调仍由服务任务执行。 */
     MRT_KernelTick();
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)g_callback_count);
+    MRT_TimerServiceRunPending();
     MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)g_callback_count);
 
     /* 自动重载后下一次到期 tick 应为 4。 */
@@ -195,6 +203,8 @@ static void assert_auto_reload_timer_rearms_after_callback(void)
 
     /* 第 4 个 tick 第二次到期。 */
     MRT_KernelTick();
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)g_callback_count);
+    MRT_TimerServiceRunPending();
     MRT_TEST_ASSERT_EQ_U32(2u, (unsigned)g_callback_count);
 
     /* 自动重载定时器应保持活动。 */
@@ -204,6 +214,7 @@ static void assert_auto_reload_timer_rearms_after_callback(void)
 
     /* 测试结束前停止定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStop(timer, 0u));
+    MRT_TimerServiceRunPending();
 }
 
 /**
@@ -241,15 +252,22 @@ static void assert_timers_fire_in_expiry_order(void)
     /* 再启动早到期的定时器。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_TimerStart(second, 0u));
 
+    /* 服务任务运行后，两个启动命令才会真正生效。 */
+    MRT_TimerServiceRunPending();
+
     /* 推进到 tick 2，第二个定时器应先触发。 */
     MRT_KernelTick();
     MRT_KernelTick();
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)g_callback_order_count);
+    MRT_TimerServiceRunPending();
     MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)g_callback_order_count);
     MRT_TEST_ASSERT_EQ_U32(2u, (unsigned)g_callback_order[0]);
 
     /* 推进到 tick 4，第一个定时器随后触发。 */
     MRT_KernelTick();
     MRT_KernelTick();
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)g_callback_order_count);
+    MRT_TimerServiceRunPending();
     MRT_TEST_ASSERT_EQ_U32(2u, (unsigned)g_callback_order_count);
     MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)g_callback_order[1]);
 }
