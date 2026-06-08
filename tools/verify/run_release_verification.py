@@ -67,6 +67,11 @@ def build_steps(require_hardware: bool = False) -> list[Step]:
             description="检查 STM32/DSP embedded smoke 工程",
         ),
         Step(
+            name="hardware-smoke-preflight",
+            command=[sys.executable, str(ROOT / "tools" / "verify" / "check_hardware_smoke_preflight.py")],
+            description="检查真实板级 smoke 采集前置配置",
+        ),
+        Step(
             name="hardware-evidence-checker",
             command=[sys.executable, str(ROOT / "tests" / "static" / "test_hardware_smoke_evidence_checker.py")],
             description="检查真实板级烟雾证据校验器本身",

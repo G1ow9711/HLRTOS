@@ -1797,12 +1797,13 @@ STM32 移植验收清单：
 ### 5.6 真实板级证据归档
 
 1. 采集前先看 `docs/verification/hardware_smoke/collection_checklist.md`，按清单保留原始 UART/trace 日志，建议命名为 `docs/verification/hardware_smoke/stm32_uart_raw.log`。
-2. 若原始日志已经包含 `Key: Value` 格式字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
-3. 若不使用生成器，先从 `docs/verification/hardware_smoke/stm32_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/stm32_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
-4. 证据至少要记录：芯片型号、板卡型号、编译器版本、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、上下文切换来源、SysTick、PendSV/SVC、ISR 队列、软件定时器、tickless、运行时长、断言次数、heap 最小剩余量和 UART/trace 摘要。
-5. 真实验收时，必须能从日志里看出 `Reset -> main -> 首任务 -> SysTick -> ISR 唤醒 -> 延迟切换 -> 退出` 这条链路闭环，而不是只有“能编译”。
-6. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/stm32_board_smoke.md` 是否满足最终格式。
-7. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，STM32 板级 smoke 才算最终可交付。
+2. 修改或确认 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 中的 STM32 节点：`chip`、`board`、`compiler_command`、`build_command`、`flash_command`、`capture_command`、`raw_log`、`evidence_output`、`minimum_runtime_minutes` 和 `expected_fields` 都必须是当前板卡的真实信息。然后运行 `python tools\verify\check_hardware_smoke_preflight.py`；若要同时检查本机工具链、烧录器和采集命令是否在 PATH 中，再运行 `python tools\verify\check_hardware_smoke_preflight.py --check-tools`。
+3. 若原始日志已经包含 `Key: Value` 格式字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
+4. 若不使用生成器，先从 `docs/verification/hardware_smoke/stm32_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/stm32_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
+5. 证据至少要记录：芯片型号、板卡型号、编译器版本、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、上下文切换来源、SysTick、PendSV/SVC、ISR 队列、软件定时器、tickless、运行时长、断言次数、heap 最小剩余量和 UART/trace 摘要。
+6. 真实验收时，必须能从日志里看出 `Reset -> main -> 首任务 -> SysTick -> ISR 唤醒 -> 延迟切换 -> 退出` 这条链路闭环，而不是只有“能编译”。
+7. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/stm32_board_smoke.md` 是否满足最终格式。
+8. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，STM32 板级 smoke 才算最终可交付。
 
 ## 6. DSP 移植步骤
 
@@ -1931,12 +1932,13 @@ DSP 移植验收清单：
 ### 6.6 真实板级证据归档
 
 1. 采集前先看 `docs/verification/hardware_smoke/collection_checklist.md`，按清单保留原始 UART/trace 日志，建议命名为 `docs/verification/hardware_smoke/dsp_uart_raw.log`。
-2. 若原始日志已经包含 `Key: Value` 格式字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
-3. 若不使用生成器，先从 `docs/verification/hardware_smoke/dsp_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/dsp_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
-4. 证据至少要记录：DSP 型号、板卡型号、编译器版本、ABI 模式、栈方向、上下文切换来源、timer tick 精度、软件中断切换、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量、运行时长和 UART/trace 摘要。
-5. 实机联调时，必须能从日志里看出 `timer ISR -> MRT_KernelTick() -> 软件中断请求 -> 最外层 ISR 退出 -> 切换发生` 这条链路闭合。
-6. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/dsp_board_smoke.md` 是否满足最终格式。
-7. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，DSP 板级 smoke 才算最终可交付。
+2. 修改或确认 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 中的 DSP 节点：`chip`、`board`、`compiler_command`、`build_command`、`flash_command`、`capture_command`、`raw_log`、`evidence_output`、`minimum_runtime_minutes`、`expected_fields`、`abi`、`stack_direction`、`timer_source` 和 `context_switch` 都必须是当前 DSP 工程的真实信息。然后运行 `python tools\verify\check_hardware_smoke_preflight.py`；若要同时检查本机 TI/ADI/目标 DSP 工具链和烧录采集工具是否在 PATH 中，再运行 `python tools\verify\check_hardware_smoke_preflight.py --check-tools`。
+3. 若原始日志已经包含 `Key: Value` 格式字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
+4. 若不使用生成器，先从 `docs/verification/hardware_smoke/dsp_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/dsp_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
+5. 证据至少要记录：DSP 型号、板卡型号、编译器版本、ABI 模式、栈方向、上下文切换来源、timer tick 精度、软件中断切换、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量、运行时长和 UART/trace 摘要。
+6. 实机联调时，必须能从日志里看出 `timer ISR -> MRT_KernelTick() -> 软件中断请求 -> 最外层 ISR 退出 -> 切换发生` 这条链路闭合。
+7. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/dsp_board_smoke.md` 是否满足最终格式。
+8. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，DSP 板级 smoke 才算最终可交付。
 
 ## 7. 附录
 
@@ -1982,5 +1984,6 @@ DSP 移植验收清单：
 
   ```powershell
   python tools\verify\run_release_verification.py
+  python tools\verify\check_hardware_smoke_preflight.py
   python tools\verify\run_release_verification.py --require-hardware
   ```

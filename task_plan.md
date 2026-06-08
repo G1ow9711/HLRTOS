@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 16 complete: task TCB runtime stack-top contract is host-tested, STM32 smoke tasks write initialized stack frames into TCB stack_top, and PendSV hook returns the current PSP; overall goal still awaits real STM32/DSP board logs
+Phase 17 complete for repo-side tooling: hardware smoke preflight config/tool is implemented, documented, and wired into release verification; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -203,3 +203,15 @@ Phase 16 complete: task TCB runtime stack-top contract is host-tested, STM32 smo
 - [x] Update STM32 manual porting steps and verification docs
 - [ ] Replace cross-build PSP/TCB proof with real STM32 board runtime evidence after actual hardware smoke
 - **Status:** complete for host/static/cross-build contract; real STM32 board evidence remains pending
+
+## Phase 17: Hardware Smoke Preflight Configuration
+- [x] Add failing static coverage for hardware smoke preflight config validation
+- [x] Add `tools/verify/check_hardware_smoke_preflight.py`
+- [x] Add `docs/verification/hardware_smoke/hardware_smoke_preflight.json`
+- [x] Validate STM32/DSP targets, board/chip metadata, command fields, runtime duration, expected log fields, and target-specific STM32/DSP settings
+- [x] Add optional `--check-tools` executable lookup without making repo-side release verification depend on local TI/OpenOCD tools
+- [x] Add `hardware-smoke-preflight` to the default release verification runner
+- [x] Update manual STM32/DSP evidence sections, hardware smoke docs, verification report, completion audit, requirement matrix, coupling matrix, and test suite plan
+- [x] Re-run full release verification after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md` and `dsp_board_smoke.md` after actual board runs
+- **Status:** complete for repo-side preflight tooling; real hardware evidence remains pending

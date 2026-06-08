@@ -58,6 +58,10 @@
 - `C-028`：新增 `test_stm32_context_scaffold.py`，检查 `SVC_Handler`、`PendSV_Handler`、`MRT_PortStm32CmStartFirstTaskAsm`、PSP 读取、R4-R11 保存/恢复、C 钩子转交、`MRT_TaskKernelSwitchStackTop()` 接线，以及 `main.c` 的初始 PSP 写回 TCB 接线；`check_embedded_smoke_projects.py` 已把 `mrt_port_stm32_cm_context.S` 纳入 ARM GCC 交叉编译。
 - `C-029`：`examples/stm32/mrt_port_stm32_smoke.c` 新增 `MRT_PortStm32CmSvcHook()` 和 `MRT_PortStm32CmPendSvHook()` 记录异常帧、PSP 和 EXC_RETURN，PendSV C 钩子现在通过 TCB 栈顶契约保存旧 PSP 并返回当前任务 PSP；`examples/stm32/main.c` 现在为 LED/UART 任务构造 Cortex-M 初始异常帧并写回 TCB；`test_task_stack_top` 覆盖静态/动态任务初始栈顶、非法输入和调度切换保存契约。当前仍不替代真实 PRIMASK/BASEPRI 和 PendSV 运行验证。
 
+## 最新增量证据：硬件 smoke 预检配置
+
+- `C-032`：新增 `tools/verify/check_hardware_smoke_preflight.py`、`tests/static/test_hardware_smoke_preflight.py` 和 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，用于在真实 STM32/DSP 采集前检查目标配置、采集命令、最短运行时长、必需日志字段和可选工具链可用性；该检查只证明采集前置配置完整，不替代真实板级运行证据。
+
 ## 后续落地
 
 - `tests/unit/`：基础算法与单模块。

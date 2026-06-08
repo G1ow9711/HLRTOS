@@ -735,3 +735,30 @@
   - `python tests\static\test_stm32_context_scaffold.py`
   - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
 - Hardware evidence gap remains unchanged: no real `stm32_board_smoke.md` or `dsp_board_smoke.md` PASS logs have been produced.
+
+## Hardware Smoke Preflight Configuration
+- Verified RED: `python tests\static\test_hardware_smoke_preflight.py` failed on missing `tools\verify\check_hardware_smoke_preflight.py`.
+- Added `tools\verify\check_hardware_smoke_preflight.py` with schema validation, placeholder rejection, required STM32/DSP expected-field checks, runtime minimum checks, target-specific STM32/DSP checks, and optional `--check-tools`.
+- Added `docs\verification\hardware_smoke\hardware_smoke_preflight.json` with STM32 and DSP default board smoke capture configuration.
+- Verified GREEN for first cycle:
+  - `python tests\static\test_hardware_smoke_preflight.py`
+  - `python tools\verify\check_hardware_smoke_preflight.py`
+- Verified RED for release runner wiring: `python tests\static\test_release_verification_runner.py` failed after adding `hardware-smoke-preflight` to the expected default step list.
+- Added `hardware-smoke-preflight` to `tools\verify\run_release_verification.py`.
+- Verified GREEN for runner wiring:
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tests\static\test_hardware_smoke_preflight.py`
+  - `python tools\verify\check_hardware_smoke_preflight.py`
+- Updated STM32/DSP manual evidence sections, hardware smoke README/checklist, final verification report, completion audit, test suite plan, requirements matrix, and coupling matrix to mention preflight before real board evidence generation.
+- Verification after docs/tooling sync:
+  - `python tests\static\test_hardware_smoke_preflight.py` -> pass
+  - `python tests\static\test_release_verification_runner.py` -> pass
+  - `python tools\verify\check_hardware_smoke_preflight.py` -> accepted
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_chinese_comments.py` -> pass
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\run_release_verification.py` -> `[release] 11 step(s) passed`
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> expected failure on missing real `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> expected `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+- Remaining: collect real STM32 and DSP board logs, generate/fill final evidence files, and pass the hardware evidence gate.

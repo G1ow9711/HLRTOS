@@ -34,6 +34,7 @@ def test_default_plan_skips_real_board_gate() -> None:
         "original-symbols",
         "stm32-context-scaffold",
         "embedded-smoke",
+        "hardware-smoke-preflight",
         "hardware-evidence-checker",
         "hardware-evidence-generator",
         "release-verification-runner",

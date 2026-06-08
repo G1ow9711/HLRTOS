@@ -14,7 +14,7 @@
 | `tests/static/` | 静态检查 | 注释覆盖、API 手册覆盖、符号原创性、STM32 汇编骨架接线 |
 | `examples/stm32/` | STM32 smoke test | LED、UART、ISR 队列、定时器 |
 | `examples/dsp/` | DSP smoke/mock test | tick、软件中断、栈初始化 |
-| `docs/verification/hardware_smoke/` | 真实板级 smoke 证据 | STM32/DSP 实机日志、采集清单与最终验收模板 |
+| `docs/verification/hardware_smoke/` | 真实板级 smoke 证据 | STM32/DSP 实机日志、采集前置配置、采集清单与最终验收模板 |
 
 ## 2. 测试框架建议
 
@@ -23,7 +23,7 @@
 - 静态脚本：Python，放在 `tools/verify/`，覆盖 `include/`、`src/`、`examples/`、`tests/`。
 - STM32：先提供 ARM GCC 可编译 smoke 示例；真实板级运行结果后续由用户硬件环境补证。
 - DSP：先以端口 mock 证明端口契约；真实 DSP 型号确认后补 ABI 级测试。
-- 真实硬件验收：按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，再用 `tools/verify/generate_hardware_smoke_evidence.py` 生成 `stm32_board_smoke.md` 和 `dsp_board_smoke.md`，或按 `docs/verification/hardware_smoke/*.template.md` 手动填写，最后运行 `tools/verify/check_hardware_smoke_evidence.py`。
+- 真实硬件验收：先按目标板修改 `docs/verification/hardware_smoke/hardware_smoke_preflight.json` 并运行 `tools/verify/check_hardware_smoke_preflight.py`，再按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，用 `tools/verify/generate_hardware_smoke_evidence.py` 生成 `stm32_board_smoke.md` 和 `dsp_board_smoke.md`，或按 `docs/verification/hardware_smoke/*.template.md` 手动填写，最后运行 `tools/verify/check_hardware_smoke_evidence.py`。
 
 ## 3. 验收命令设计
 
@@ -34,10 +34,11 @@ cmake -S . -B build -DMRT_BUILD_TESTS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
 python tools/verify/run_release_verification.py
+python tools/verify/check_hardware_smoke_preflight.py
 python tools/verify/run_release_verification.py --require-hardware
 ```
 
-`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、embedded smoke、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
+`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、embedded smoke、硬件 smoke 预检配置、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
 
 ## 4. 测试分层策略
 
@@ -120,7 +121,7 @@ python tools/verify/run_release_verification.py --require-hardware
 | DSP 端口 | `tests/port_mock/test_port_dsp_*.c` | `C-030` 到 `C-031` |
 | 手册/注释 | `tests/static/*.py` | `C-032` 到 `C-033` |
 | 烟雾工程 | `examples/stm32/`、`examples/dsp/`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-031` |
-| 真实板级证据 | `docs/verification/hardware_smoke/`、`tools/verify/generate_hardware_smoke_evidence.py`、`tools/verify/check_hardware_smoke_evidence.py` | `R-003`、`R-004`、`R-011` |
+| 真实板级证据 | `docs/verification/hardware_smoke/`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/generate_hardware_smoke_evidence.py`、`tools/verify/check_hardware_smoke_evidence.py` | `R-003`、`R-004`、`R-011` |
 
 ## 7. 验收报告
 

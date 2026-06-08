@@ -1,0 +1,55 @@
+{
+  "targets": {
+    "STM32": {
+      "target": "STM32",
+      "chip": "STM32F407VG",
+      "board": "STM32F4DISCOVERY",
+      "compiler_command": "arm-none-eabi-gcc --version",
+      "build_command": "python tools\\verify\\check_embedded_smoke_projects.py",
+      "flash_command": "openocd -f board/stm32f4discovery.cfg -c \"program build/embedded-smoke/stm32_smoke.elf verify reset exit\"",
+      "capture_command": "python tools\\verify\\generate_hardware_smoke_evidence.py --target STM32 --input docs\\verification\\hardware_smoke\\stm32_uart_raw.log --output docs\\verification\\hardware_smoke\\stm32_board_smoke.md",
+      "raw_log": "docs/verification/hardware_smoke/stm32_uart_raw.log",
+      "evidence_output": "docs/verification/hardware_smoke/stm32_board_smoke.md",
+      "minimum_runtime_minutes": 30,
+      "expected_fields": [
+        "SysTick",
+        "PendSV-SVC",
+        "ISR-Queue",
+        "Software-Timer",
+        "Tickless"
+      ],
+      "stm32": {
+        "clock_hz": 168000000,
+        "tick_hz": 1000,
+        "nvic_priority_bits": 4,
+        "context_switch": "PendSV/SVC"
+      }
+    },
+    "DSP": {
+      "target": "DSP",
+      "chip": "TMS320F28379D",
+      "board": "LAUNCHXL-F28379D",
+      "compiler_command": "tiarmclang --version",
+      "build_command": "python tools\\verify\\check_embedded_smoke_projects.py",
+      "flash_command": "uniflash --target TMS320F28379D --program build/embedded-smoke/dsp_smoke.out",
+      "capture_command": "python tools\\verify\\generate_hardware_smoke_evidence.py --target DSP --input docs\\verification\\hardware_smoke\\dsp_uart_raw.log --output docs\\verification\\hardware_smoke\\dsp_board_smoke.md",
+      "raw_log": "docs/verification/hardware_smoke/dsp_uart_raw.log",
+      "evidence_output": "docs/verification/hardware_smoke/dsp_board_smoke.md",
+      "minimum_runtime_minutes": 30,
+      "expected_fields": [
+        "Timer-Tick",
+        "Software-Interrupt-Switch",
+        "ISR-Nesting",
+        "Queue-Or-Pool",
+        "Software-Timer",
+        "Tickless"
+      ],
+      "dsp": {
+        "abi": "eabi",
+        "stack_direction": "down",
+        "timer_source": "CPU timer",
+        "context_switch": "software interrupt"
+      }
+    }
+  }
+}

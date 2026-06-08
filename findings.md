@@ -300,3 +300,11 @@
 - STM32 smoke now constructs initial Cortex-M exception frames for the LED and UART tasks before `MRT_KernelStart()`, then PendSV can return a TCB stack top that points at an actual initial frame instead of the raw empty stack end.
 - Current verification after this increment: `python tools\\verify\\run_release_verification.py` reports `[release] 10 step(s) passed` after 70 host targets, manual/API/comment/originality checks, STM32 context scaffold, embedded smoke, and hardware evidence tooling tests.
 - `python tools\\verify\\check_hardware_smoke_evidence.py` still fails only because `stm32_board_smoke.md` and `dsp_board_smoke.md` are missing. This is still not real STM32/DSP board runtime evidence; the hardware gate remains pending until both files contain real PASS logs.
+## Hardware Smoke Preflight Findings
+- RED evidence: `python tests\\static\\test_hardware_smoke_preflight.py` first failed because `tools\\verify\\check_hardware_smoke_preflight.py` was missing.
+- Implementation adds `check_config_file(config_path, check_tools)` plus CLI `--config` and `--check-tools`. Default mode validates schema and placeholders only; `--check-tools` additionally checks command executables with `shutil.which`.
+- Default config `docs/verification/hardware_smoke/hardware_smoke_preflight.json` covers STM32F407VG/STM32F4DISCOVERY and TMS320F28379D/LAUNCHXL-F28379D example targets, 30-minute minimum runtime, required STM32/DSP evidence fields, and raw-log/evidence output paths.
+- Release runner now includes `hardware-smoke-preflight` as a default repo-side step before final evidence checker self-tests. This does not fabricate or accept real board evidence.
+- Manual sections 5.6, 6.6, and 7.4 now instruct users to run the preflight check before raw-log normalization and final evidence validation.
+- Latest default release verification passed with `[release] 11 step(s) passed`; `--require-hardware` still fails only at the real hardware evidence gate.
+- Hardware evidence gap remains unchanged: no real `stm32_board_smoke.md` or `dsp_board_smoke.md` PASS logs exist yet.
