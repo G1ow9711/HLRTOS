@@ -265,5 +265,7 @@
 - Added templates only: `docs/verification/hardware_smoke/stm32_board_smoke.template.md` and `docs/verification/hardware_smoke/dsp_board_smoke.template.md`. No fake PASS logs are committed.
 - Manual sections 5.6 and 6.6 now describe real-board evidence archival steps and point at the collection checklist. Section 7.4 lists the verification commands, including `python tools\verify\check_hardware_smoke_evidence.py`.
 - Latest repo-side recheck after checklist update: manual coverage 135, API prototype alignment 135, embedded smoke passed, hardware checker unit test passed, and `git diff --check` stayed clean apart from expected CRLF warnings.
+- `tools/verify/run_release_verification.py` is now the unified entrypoint: default mode passed all repo-side checks, and `--require-hardware` failed only because the real STM32/DSP evidence files are still absent.
+- `python tools\verify\run_release_verification.py --list` shows the default repo-side chain only; hardware gate is appended only with `--require-hardware`.
 - Current hardware evidence gate intentionally fails with missing `stm32_board_smoke.md` and `dsp_board_smoke.md`; this is the remaining real-hardware proof gap, not a software test failure.
 - Latest repo-side verification: host tests 69 passed; manual coverage 135; API prototype alignment 135; Chinese comments, originality, embedded smoke, and hardware checker unit test pass; `git diff --check` exits 0 with expected CRLF warnings only.

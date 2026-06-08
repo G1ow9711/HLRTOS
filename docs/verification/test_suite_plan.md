@@ -33,13 +33,11 @@
 cmake -S . -B build -DMRT_BUILD_TESTS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
-python tools/verify/check_api_manual_coverage.py
-python tools/verify/check_api_catalog_prototypes.py
-python tools/verify/check_chinese_comments.py
-python tools/verify/check_original_symbols.py
-python tools/verify/check_embedded_smoke_projects.py
-python tools/verify/check_hardware_smoke_evidence.py
+python tools/verify/run_release_verification.py
+python tools/verify/run_release_verification.py --require-hardware
 ```
+
+`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、embedded smoke 和硬件证据脚本自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
 
 ## 4. 测试分层策略
 

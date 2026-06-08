@@ -1955,12 +1955,6 @@ DSP 移植验收清单：
 ### 7.4 验证命令
 
   ```powershell
-  python tools\run_host_tests.py
-  python tools\verify\check_api_manual_coverage.py
-  python tools\verify\check_api_catalog_prototypes.py
-  python tools\verify\check_chinese_comments.py
-  python tools\verify\check_original_symbols.py
-  python tools\verify\check_embedded_smoke_projects.py
-  python tests\static\test_hardware_smoke_evidence_checker.py
-  python tools\verify\check_hardware_smoke_evidence.py
+  python tools\verify\run_release_verification.py
+  python tools\verify\run_release_verification.py --require-hardware
   ```

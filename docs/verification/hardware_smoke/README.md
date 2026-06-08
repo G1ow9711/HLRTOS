@@ -11,6 +11,7 @@
 ## 校验命令
 
 ```powershell
+python tools\verify\run_release_verification.py
 python tools\verify\check_hardware_smoke_evidence.py
 ```
 

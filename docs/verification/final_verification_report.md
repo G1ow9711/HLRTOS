@@ -13,6 +13,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 - Host C 测试：69 个测试目标通过。
 - Embedded smoke：STM32 smoke 可由 ARM GCC 交叉编译，DSP smoke/model 可在 host 上编译并运行。
 - 真实硬件证据 gate：`tools/verify/check_hardware_smoke_evidence.py` 已提供，证据模板位于 `docs/verification/hardware_smoke/`。
+- 统一 release 入口：`tools/verify/run_release_verification.py` 默认模式已通过，`--require-hardware` 在真实板级日志缺失处失败。
 - API 手册覆盖：135 个 API 条目均有中文手册章节。
 - API 原型一致性：API 目录、公共头文件和源文件定义三方对齐。
 - 中文注释覆盖：`include/`、`src/`、`examples/` 与 `tests/` 函数注释通过静态扫描。
@@ -39,6 +40,8 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | `python tools\verify\check_original_symbols.py` | `[original-symbols] no banned FreeRTOS-style public symbols found` |
 | `python tests\static\test_hardware_smoke_evidence_checker.py` | 硬件证据校验脚本规则单测通过 |
 | `docs/verification/hardware_smoke/collection_checklist.md` | 实机日志采集流程和字段填写规则 |
+| `python tools\verify\run_release_verification.py` | `[release] 8 step(s) passed` |
+| `python tools\verify\run_release_verification.py --require-hardware` | `[release] 1 step(s) failed`；真实 STM32/DSP 板级日志仍缺失 |
 | `python tools\verify\check_hardware_smoke_evidence.py` | 当前预期失败：真实 `stm32_board_smoke.md` 与 `dsp_board_smoke.md` 尚未提交 |
 
 ## 3. 需求状态摘要
@@ -84,7 +87,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | Embedded smoke | `examples/stm32/`、`examples/dsp/` |
 | Host 测试 | `tests/unit/`、`tests/sim/`、`tests/coupling/`、`tests/port_mock/` |
 | 中文手册 | `docs/manual/MyRTOS_Reference_Manual_zh.md` |
-| 静态/烟雾验证 | `tools/verify/check_api_manual_coverage.py`、`tools/verify/check_api_catalog_prototypes.py`、`tools/verify/check_chinese_comments.py`、`tools/verify/check_original_symbols.py`、`tools/verify/check_embedded_smoke_projects.py`、`tools/verify/check_hardware_smoke_evidence.py` |
+| 静态/烟雾验证 | `tools/verify/run_release_verification.py`、`tools/verify/check_api_manual_coverage.py`、`tools/verify/check_api_catalog_prototypes.py`、`tools/verify/check_chinese_comments.py`、`tools/verify/check_original_symbols.py`、`tools/verify/check_embedded_smoke_projects.py`、`tools/verify/check_hardware_smoke_evidence.py` |
 | 真实硬件证据模板 | `docs/verification/hardware_smoke/` |
 | 追踪矩阵 | `docs/verification/requirements_traceability_matrix.md`、`docs/verification/coupling_test_matrix.md` |
 

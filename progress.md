@@ -34,6 +34,14 @@
   - `python tools\verify\check_hardware_smoke_evidence.py` -> expected failure because real `stm32_board_smoke.md` and `dsp_board_smoke.md` are still absent
 - Committed checklist/doc updates as `2ea379b` with message `docs: add hardware smoke capture checklist`.
 
+## Session: 2026-06-08 Unified Release Verification Runner
+- Added `tools/verify/run_release_verification.py` as the single release gate entrypoint.
+- Added `tests/static/test_release_verification_runner.py` to verify the default step list and the hardware-required append behavior.
+- Default release run passed: `python tools\verify\run_release_verification.py` -> `[release] 8 step(s) passed`.
+- Hardware-required release run failed only at the real board log gate: `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` with missing `stm32_board_smoke.md` and `dsp_board_smoke.md`.
+- Manual/test-suite/final-report/completion-audit/requirements docs now point at the unified release entrypoint.
+- Final report summary now records the default pass and hardware-required failure, and `hardware_smoke/README.md` now points users at the unified release runner first.
+
 ## Session: 2026-06-08 Embedded Smoke Projects
 - Added dynamic `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` lifecycle APIs with heap-release, null-argument, and static-object rejection coverage.
 - RED: direct compile of `test_buffer_dynamic_allocation` failed on implicit declarations for `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete`.

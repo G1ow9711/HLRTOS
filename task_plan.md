@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 12 complete: Hardware smoke capture checklist; overall goal still awaits real STM32/DSP board logs
+Phase 13 complete: Unified release verification runner; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -112,6 +112,16 @@ Phase 12 complete: Hardware smoke capture checklist; overall goal still awaits r
 - [x] Re-run manual/static checks after documentation updates
 - [ ] Replace templates with real `stm32_board_smoke.md` and `dsp_board_smoke.md` after actual board runs
 - **Status:** complete for repo-side guide/docs; real hardware evidence remains pending
+
+### Phase 13: Unified Release Verification Runner
+- [x] Add `tools/verify/run_release_verification.py`
+- [x] Add `tests/static/test_release_verification_runner.py`
+- [x] Make the default release path run host, static, embedded smoke, and hardware checker self-test steps
+- [x] Make `--require-hardware` append the real STM32/DSP board evidence gate
+- [x] Update the manual and verification docs to point at the unified release entrypoint
+- [x] Run the default release verification successfully
+- [x] Run the hardware-required release verification and confirm it fails only on missing real board logs
+- **Status:** complete for repo-side wrapper/docs; real hardware evidence remains pending
 
 ## Key Questions
 1. Which first target should drive the port: STM32 Cortex-M3/M4/M7, Cortex-M0/M0+, or a specific DSP family?

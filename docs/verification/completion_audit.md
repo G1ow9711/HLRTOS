@@ -12,6 +12,7 @@
 - 中文注释覆盖、手册 API 覆盖、原始符号扫描、host 测试和 embedded smoke 脚本都已通过。
 - 手册已补充详细 STM32 / DSP 移植步骤。
 - 真实板级 smoke 证据模板和校验脚本已补充到 `docs/verification/hardware_smoke/` 与 `tools/verify/check_hardware_smoke_evidence.py`。
+- 统一 release 验证入口 `tools/verify/run_release_verification.py` 已就位：默认模式可跑 repo-side 验证，`--require-hardware` 会把真实板级 gate 纳入同一链路。
 
 但**仍有一项硬缺口未被证明**：
 
