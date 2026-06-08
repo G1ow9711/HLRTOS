@@ -38,6 +38,7 @@ def test_default_plan_skips_real_board_gate() -> None:
         "embedded-smoke",
         "hardware-smoke-preflight",
         "hardware-smoke-raw-log-schema",
+        "hardware-smoke-raw-log-checker",
         "hardware-smoke-capture-runner",
         "hardware-evidence-checker",
         "hardware-evidence-generator",
@@ -60,6 +61,15 @@ def test_raw_log_schema_step_mentions_report_header() -> None:
     steps = runner.build_steps(require_hardware=False)
     raw_log_step = next(step for step in steps if step.name == "hardware-smoke-raw-log-schema")
     assert "完整报告 emitter" in raw_log_step.description
+    assert "check_hardware_smoke_raw_log.py" in raw_log_step.description
+
+
+def test_raw_log_checker_step_mentions_direct_uart_trace_check() -> None:
+    """raw-log checker release 步骤说明必须表明它直接检查原始 UART/trace 日志。"""
+    runner = load_runner()
+    steps = runner.build_steps(require_hardware=False)
+    raw_log_step = next(step for step in steps if step.name == "hardware-smoke-raw-log-checker")
+    assert "原始 UART/trace" in raw_log_step.description
 
 
 def main() -> int:
@@ -67,6 +77,7 @@ def main() -> int:
     test_default_plan_skips_real_board_gate()
     test_hardware_plan_appends_real_board_gate()
     test_raw_log_schema_step_mentions_report_header()
+    test_raw_log_checker_step_mentions_direct_uart_trace_check()
     return 0
 
 

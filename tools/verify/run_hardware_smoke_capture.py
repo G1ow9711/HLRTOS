@@ -115,6 +115,13 @@ def generated_evidence_command(target: str, target_config: dict[str, Any]) -> st
     )
 
 
+def raw_log_check_command(target: str, target_config: dict[str, Any]) -> str:
+    """生成原始 UART/trace 日志直检命令行。"""
+    raw_log = resolve_project_path(str(target_config["raw_log"]))
+    checker = VERIFY_DIR / "check_hardware_smoke_raw_log.py"
+    return f"{quote_path(Path(sys.executable))} {quote_path(checker)} --target {target} --input {quote_path(raw_log)}"
+
+
 def command_already_generates_evidence(command: str) -> bool:
     """判断采集命令是否已经调用最终证据生成器。"""
     return "generate_hardware_smoke_evidence.py" in command.replace("/", "\\")
@@ -141,6 +148,12 @@ def build_capture_plan(config_path: Path, target: str, check_tools: bool = False
             CaptureStep(f"{target_name}.build", target_name, "command", str(target_config["build_command"])),
             CaptureStep(f"{target_name}.flash", target_name, "command", str(target_config["flash_command"])),
             CaptureStep(f"{target_name}.capture", target_name, "command", capture_command),
+            CaptureStep(
+                f"{target_name}.check-raw-log",
+                target_name,
+                "check-raw-log",
+                raw_log_check_command(target_name, target_config),
+            ),
         ]
         if not command_already_generates_evidence(capture_command):
             target_steps.append(
@@ -191,6 +204,20 @@ def run_target_evidence_check(config_path: Path, target: str) -> int:
     return 0
 
 
+def run_target_raw_log_check(config_path: Path, target: str) -> int:
+    """只校验当前目标的原始 UART/trace 日志字段。"""
+    checker = load_module("check_hardware_smoke_raw_log", VERIFY_DIR / "check_hardware_smoke_raw_log.py")
+    config = require_target_config(load_config(config_path), target)
+    raw_log = resolve_project_path(str(config["raw_log"]))
+    failures = checker.check_raw_log_file(raw_log, target)
+    if failures:
+        for failure in failures:
+            print(f"[hardware-capture] {failure}")
+        return 1
+    print(f"[hardware-capture] {target} raw log accepted")
+    return 0
+
+
 def run_command(step: CaptureStep) -> int:
     """执行一个外部命令步骤。"""
     print(f"[hardware-capture] run {step.name}: {step.command}")
@@ -202,6 +229,8 @@ def run_step(step: CaptureStep, config_path: Path, check_tools: bool) -> int:
     """执行单个采集流水线步骤。"""
     if step.action == "preflight":
         return run_config_preflight(config_path, check_tools, step.target)
+    if step.action == "check-raw-log":
+        return run_target_raw_log_check(config_path, step.target)
     if step.action == "verify-evidence":
         return run_target_evidence_check(config_path, step.target)
     return run_command(step)

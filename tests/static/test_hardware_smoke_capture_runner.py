@@ -166,6 +166,7 @@ def test_capture_plan_has_ordered_target_steps() -> None:
             "STM32.build",
             "STM32.flash",
             "STM32.capture",
+            "STM32.check-raw-log",
             "STM32.generate-evidence",
             "STM32.verify-evidence",
         ]
@@ -202,6 +203,7 @@ def test_generator_capture_command_is_not_duplicated() -> None:
         steps = runner.build_capture_plan(config_path, "STM32", check_tools=False)
         names = [step.name for step in steps]
         assert "STM32.capture" in names
+        assert "STM32.check-raw-log" in names
         assert "STM32.generate-evidence" not in names
         assert names[-1] == "STM32.verify-evidence"
 

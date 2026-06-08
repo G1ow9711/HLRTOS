@@ -6,13 +6,14 @@
 
 0. 预检配置：先按当前板卡修改 `hardware_smoke_preflight.json`，运行 `python tools\verify\check_hardware_smoke_preflight.py --target STM32` 或 `python tools\verify\check_hardware_smoke_preflight.py --target DSP`。单目标模式只检查被选目标，适合先调通一块板；不带 `--target` 时默认检查 STM32/DSP 两个节点是否齐全、是否还有 TODO/PENDING 占位符、最短运行时长是否至少 30 分钟、预期日志字段是否覆盖必需项。需要确认工具链、烧录器和采集工具在当前机器可执行时，再追加 `--check-tools`。
 0. 字段对齐：先阅读 `raw_log_schema.md`，确认 UART/trace 将输出完整 `Key: Value` 字段；修改字段清单后运行 `python tools\verify\check_hardware_smoke_raw_log_schema.py`，确保生成器、文档和示例头文件一致。
-0. 流水线预演：运行 `python tools\verify\run_hardware_smoke_capture.py --target STM32` 或 `--target DSP`，先只看 dry-run 顺序。确认 `capture_command` 会写入 `raw_log` 后，再运行同一命令并追加 `--execute`；不要在未连接真实板卡时执行烧录命令。
+0. 流水线预演：运行 `python tools\verify\run_hardware_smoke_capture.py --target STM32` 或 `--target DSP`，先只看 dry-run 顺序。确认 `capture_command` 会写入 `raw_log` 后，再运行同一命令并追加 `--execute`；不要在未连接真实板卡时执行烧录命令。执行器会在采集后先调用 `check_hardware_smoke_raw_log.py` 检查原始日志，再进入证据生成和最终证据校验。
 1. 保留原始日志：UART、trace、调试器输出或仿真器控制台日志建议另存为 `stm32_uart_raw.log`、`dsp_uart_raw.log` 或等价文件名。
 2. 运行负载：至少 30 分钟，期间必须覆盖任务切换、ISR 唤醒、软件定时器、tickless、heap 查询和断言 hook。
 3. 填写摘要：把原始日志中的关键结果归纳到 `Key: Value` 字段，不要把模板中的 `PENDING`、`FAIL`、`TODO` 留在最终证据文件中。
-4. 自动生成：若原始日志已经包含完整字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md` 或 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`。生成器会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`。
-5. 手动填写：若不使用生成器，再从 `stm32_board_smoke.template.md` 复制为 `stm32_board_smoke.md`，或从 `dsp_board_smoke.template.md` 复制为 `dsp_board_smoke.md`，并填入真实板级结果。
-6. 执行校验：运行 `python tools\verify\check_hardware_smoke_evidence.py`。只有该命令通过，真实板级 smoke 才能作为最终验收证据。
+4. 原始日志直检：若手动采集或整理原始日志，先运行 `python tools\verify\check_hardware_smoke_raw_log.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log` 或 `python tools\verify\check_hardware_smoke_raw_log.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log`，确认字段、PASS 状态、运行时长、断言次数和 heap 最小剩余量满足规则。
+5. 自动生成：若原始日志已经包含完整字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md` 或 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`。生成器会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`。
+6. 手动填写：若不使用生成器，再从 `stm32_board_smoke.template.md` 复制为 `stm32_board_smoke.md`，或从 `dsp_board_smoke.template.md` 复制为 `dsp_board_smoke.md`，并填入真实板级结果。
+7. 执行校验：运行 `python tools\verify\check_hardware_smoke_evidence.py`。只有该命令通过，真实板级 smoke 才能作为最终验收证据。
 
 ## STM32 采集步骤
 

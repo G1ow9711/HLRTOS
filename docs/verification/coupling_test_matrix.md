@@ -54,10 +54,11 @@
 | C-037 | 消息缓冲 + 写者等待 + 动态删除 | 满消息缓冲上高优先级写者带 timeout 写入完整消息，随后删除对象 | 写者进入 `waiting_writers`，删除返回 `MRT_RESULT_OBJECT_BUSY`；读出完整消息后按完整记录长度唤醒写者 | host 耦合测试 | 已验证：`test_buffer_dynamic_allocation` 覆盖动态消息缓冲满载后 `MRT_MessageBufferSend(..., timeout>0)` 进入 `MRT_TASK_WAIT_REASON_MESSAGE_SEND`，`object_wait_bytes=4+payload`，删除 busy；后台任务读出完整消息后 waiting writer 被唤醒并允许后续动态删除释放 heap |
 | C-038 | 硬件 smoke 采集流水线 + 证据生成 | 预检、构建、烧录、采集、raw log 生成最终证据和目标级校验 | 默认 dry-run 不执行硬件命令；显式 `--execute` 才运行真实命令；生成器和目标级校验按顺序执行 | 静态工具测试 | 已验证：`test_hardware_smoke_capture_runner.py` 覆盖 dry-run 顺序、无害执行、生成器去重和目标级证据校验；真实 STM32/DSP 板级 PASS 仍待真实硬件补证 |
 | C-039 | DSP C2000 smoke 工程 + 启动/链接/ISR glue | 从 host DSP model 迁移到真实 C2000 板级工程 | 启动向量、CPU Timer0 tick、软件中断上下文切换、ADC/DMA FromISR 队列、RTOS heap/任务栈/DMA/trace 分区均有可审计骨架，且明确不替代真实板级 smoke | 静态检查/smoke 路径检查 | 已验证：`test_dsp_c2000_project_scaffold.py` 检查 `startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c`、`linker_c28x.cmd` 的入口符号、tick/FromISR/软件中断接线和 RTOS 分区标记；`check_embedded_smoke_projects.py` 把这些文件纳入 required path 检查；真实 TI 工具链编译和 DSP 板级运行仍待补证 |
-| C-040 | 硬件 smoke 原始日志 schema + 证据生成器 + 示例 C 头文件 | 真实板级 UART/trace 字段由文档、生成器和板级输出端共同使用 | `COMMON_REQUIRED_FIELDS`、STM32/DSP 专属字段、`raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h` 和采集指南必须保持一致；release 默认链路必须包含该检查 | 静态检查 | 已验证：`test_hardware_smoke_raw_log_schema.py` 和 `check_hardware_smoke_raw_log_schema.py` 覆盖字段存在性、指南链接和 release runner 步骤；该检查只证明字段契约一致，不替代真实板级 smoke |
+| C-040 | 硬件 smoke 原始日志 schema + 证据生成器 + 示例 C 头文件 | 真实板级 UART/trace 字段由文档、生成器、板级输出端和 raw-log 直检工具共同使用 | `COMMON_REQUIRED_FIELDS`、STM32/DSP 专属字段、`raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h`、`mrt_hardware_smoke_report.h`、`check_hardware_smoke_raw_log.py` 和采集指南必须保持一致；release 默认链路必须包含该检查 | 静态检查 | 已验证：`test_hardware_smoke_raw_log_schema.py` 和 `check_hardware_smoke_raw_log_schema.py` 覆盖字段存在性、完整报告 emitter 字段常量、raw-log 直检脚本字段覆盖、指南链接和 release runner 步骤；该检查只证明字段契约一致，不替代真实板级 smoke |
 | C-041 | 硬件 smoke 日志输出 helper + raw-log schema | STM32/DSP 板级代码需要输出 `Key: Value` 字符串字段和十进制整数字段 | helper 输出必须精确为 `Key: Value\n`；十进制整数不带单位；非法参数必须返回错误且不留下半行日志，避免误导证据生成器 | host 单测 | 已验证：`test_hardware_smoke_log` 覆盖 `MRT_SmokeLogWritePair()`、`MRT_SmokeLogWriteU32()`、字段常量联用和非法参数无输出；该 helper 只格式化日志，不判断 PASS/FAIL，也不替代真实 STM32/DSP 板级 smoke |
 | C-042 | 硬件 smoke 完整报告 emitter + raw-log schema | STM32/DSP 板级代码一次性输出 common 字段和目标专属字段 | emitter 必须先完整校验所有字符串字段，再输出通用字段和 STM32/DSP 专属字段；缺字段或空 writer 时必须返回错误且不留下半份 raw log | host 单测 | 已验证：`test_hardware_smoke_report` 覆盖 `MRT_SmokeEmitStm32Report()` 输出 STM32 全部必填字段、`MRT_SmokeEmitDspReport()` 输出 DSP 全部必填字段、非法参数无输出；该 emitter 只序列化调用方提供的结果，不生成真实板级 PASS |
 | C-043 | 硬件 smoke 采集执行器 + 目标级预检 | 用户只连接 STM32 或只连接 DSP 时，未选目标可能仍处于占位配置 | `--target STM32` 只预检 STM32 节点并执行 STM32 采集；`--target DSP` 只预检 DSP 节点；`--target all` 仍拒绝任一目标占位或缺字段 | 静态工具测试 | 已验证：`test_hardware_smoke_capture_runner.py` 覆盖未选 DSP 节点含 TODO 时 STM32 单目标执行仍可生成可追溯证据，并覆盖 `all` 目标会拒绝该错误；该测试不执行真实硬件命令 |
+| C-044 | 硬件 smoke 原始日志直检 + 采集执行器 + 证据生成器 | 真实板卡已经输出 raw log，但尚未生成最终 `*_board_smoke.md` | 原始 UART/trace 日志必须先通过字段完整性、目标匹配、PASS 状态、运行时长、断言次数和 heap 最小剩余量检查；capture runner 必须在 capture 后、generate evidence 前执行该检查 | 静态工具测试 | 已验证：`test_hardware_smoke_raw_log_checker.py` 覆盖 STM32 raw log 无需自带 `Raw-Log-*` 字段即可派生校验、DSP 缺字段时继续报告可见 FAIL/数值错误、目标不匹配拒绝；`test_hardware_smoke_capture_runner.py` 覆盖采集流水线顺序中新增 `check-raw-log` 步骤 |
 
 ## 最新增量证据：STM32 上下文切换入口
 
@@ -68,7 +69,7 @@
 
 - `C-032`：新增 `tools/verify/check_hardware_smoke_preflight.py`、`tests/static/test_hardware_smoke_preflight.py` 和 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，用于在真实 STM32/DSP 采集前检查目标配置、采集命令、最短运行时长、必需日志字段和可选工具链可用性；该检查只证明采集前置配置完整，不替代真实板级运行证据。
 - `C-032`：`tools/verify/generate_hardware_smoke_evidence.py` 现在从原始日志派生 `Raw-Log-Path` 和 `Raw-Log-SHA256`，`tools/verify/check_hardware_smoke_evidence.py` 会读取原始日志并拒绝 SHA-256 错配；`tests/static/test_hardware_smoke_evidence_generator.py` 与 `tests/static/test_hardware_smoke_evidence_checker.py` 覆盖该追溯链路。
-- `C-040`：`docs/verification/hardware_smoke/raw_log_schema.md` 给出 STM32/DSP 原始日志字段契约，`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 给出 C 输出端字段常量，`tools/verify/check_hardware_smoke_raw_log_schema.py` 防止字段漂移。
+- `C-040`：`docs/verification/hardware_smoke/raw_log_schema.md` 给出 STM32/DSP 原始日志字段契约，`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 给出 C 输出端字段常量，`tools/verify/check_hardware_smoke_raw_log_schema.py` 同时检查文档、C 头文件、完整报告 emitter 和 raw-log 直检脚本，防止字段漂移。
 
 ## 后续落地
 
@@ -102,7 +103,7 @@
 
 - `C-040`：新增 `docs/verification/hardware_smoke/raw_log_schema.md`，集中列出通用字段、STM32 字段、DSP 字段、示例日志和字段填写规则。
 - `C-040`：新增 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`，让真实板级 UART/trace 输出端复用 `MRT_SMOKE_FIELD_*` 字段常量。
-- `C-040`：新增 `tools/verify/check_hardware_smoke_raw_log_schema.py` 和 `tests/static/test_hardware_smoke_raw_log_schema.py`，并纳入默认 release runner；该检查证明字段契约一致，但不生成或接受真实板级 PASS 证据。
+- `C-040`：新增 `tools/verify/check_hardware_smoke_raw_log_schema.py` 和 `tests/static/test_hardware_smoke_raw_log_schema.py`，并纳入默认 release runner；该检查证明字段契约一致，并覆盖完整报告 emitter 与 raw-log 直检脚本字段漂移，但不生成或接受真实板级 PASS 证据。
 
 ## 最新增量证据：硬件 smoke 日志输出 helper
 
@@ -122,4 +123,10 @@
 - `C-043`：`tools/verify/check_hardware_smoke_preflight.py` 新增 `--target STM32|DSP|all`，默认仍检查全部目标；单目标模式只检查被选目标配置，适合先调通一块板。
 - `C-043`：`tools/verify/run_hardware_smoke_capture.py` 的 preflight 步骤现在把当前 `--target` 传给预检；dry-run 输出也显示目标级预检命令。
 - `C-043`：`tests/static/test_hardware_smoke_capture_runner.py` 覆盖单目标忽略未选目标占位配置，以及 `all` 目标拒绝任一目标占位配置。
+
+## 最新增量证据：硬件 smoke 原始日志直检
+
+- `C-044`：新增 `tools/verify/check_hardware_smoke_raw_log.py`，直接检查原始 UART/trace 日志中的 `Key: Value` 字段，自动派生 `Raw-Log-Path` 与 `Raw-Log-SHA256` 后复用最终证据的 PASS、日期和数值规则。
+- `C-044`：`tools/verify/run_hardware_smoke_capture.py` 在每个目标的 `capture` 后加入 `check-raw-log`，通过后才进入证据生成和目标级证据校验。
+- `C-044`：新增 `tests/static/test_hardware_smoke_raw_log_checker.py` 并纳入 release runner；该测试只证明 raw log 规则和流水线顺序，不替代真实 STM32/DSP 板级 PASS。
 

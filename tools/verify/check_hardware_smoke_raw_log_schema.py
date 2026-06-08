@@ -12,6 +12,7 @@ from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[2]
 GENERATOR = ROOT / "tools" / "verify" / "generate_hardware_smoke_evidence.py"
+RAW_LOG_CHECKER = ROOT / "tools" / "verify" / "check_hardware_smoke_raw_log.py"
 SCHEMA_DOC = ROOT / "docs" / "verification" / "hardware_smoke" / "raw_log_schema.md"
 SCHEMA_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_log_schema.h"
 REPORT_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_report.h"
@@ -113,7 +114,7 @@ def check_artifacts_exist() -> list[str]:
         `failures = check_artifacts_exist()`
     """
     failures: list[str] = []
-    for path in (SCHEMA_DOC, SCHEMA_HEADER, REPORT_HEADER):
+    for path in (RAW_LOG_CHECKER, SCHEMA_DOC, SCHEMA_HEADER, REPORT_HEADER):
         if not path.exists():
             failures.append(f"missing {path.relative_to(ROOT)}")
     return failures
@@ -163,6 +164,23 @@ def check_report_header_coverage(fields: list[str], report_text: str) -> list[st
     return failures
 
 
+def check_raw_log_checker_coverage(fields: list[str], checker_text: str) -> list[str]:
+    """妫€鏌ュ師濮嬫棩蹇楃洿妫€鑴氭湰鏄惁瑕嗙洊鐢熸垚鍣ㄥ繀濉瓧娈点€?
+    鍙傛暟:
+        fields: 闇€瑕佺洿妫€鐨勫師濮嬫棩蹇楀瓧娈靛垪琛ㄣ€?
+        checker_text: `check_hardware_smoke_raw_log.py` 鐨勬枃浠跺唴瀹广€?
+    杩斿洖:
+        杩斿洖 raw-log checker 瀛楁缂哄け閿欒鍒楄〃銆?
+    璋冪敤绀轰緥:
+        `failures = check_raw_log_checker_coverage(fields, checker_text)`
+    """
+    failures: list[str] = []
+    for field in fields:
+        if field not in checker_text:
+            failures.append(f"check_hardware_smoke_raw_log.py missing field {field}")
+    return failures
+
+
 def check_guides_link_schema() -> list[str]:
     """检查硬件 smoke 指南是否链接统一 raw log schema。
     参数:
@@ -197,8 +215,10 @@ def check_schema() -> list[str]:
     doc_text = read_text(SCHEMA_DOC)
     header_text = read_text(SCHEMA_HEADER)
     report_text = read_text(REPORT_HEADER)
+    checker_text = read_text(RAW_LOG_CHECKER)
     failures.extend(check_field_coverage(fields, doc_text, header_text))
     failures.extend(check_report_header_coverage(fields, report_text))
+    failures.extend(check_raw_log_checker_coverage(fields, checker_text))
     failures.extend(check_guides_link_schema())
     return failures
 

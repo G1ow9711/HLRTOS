@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 26 repo-side complete: hardware smoke capture/preflight supports target-scoped validation; overall goal still awaits real STM32/DSP board logs
+Phase 27 repo-side complete: hardware smoke raw-log direct checker added before evidence generation; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -161,6 +161,8 @@ Phase 26 repo-side complete: hardware smoke capture/preflight supports target-sc
 | Hardware smoke complete report emitter | Board code may use `mrt_hardware_smoke_report.h` to validate and output STM32/DSP required field sets in one call, reducing real-board raw-log omissions while still leaving PASS/FAIL decisions to board tests. |
 | Report emitter schema coverage | `check_hardware_smoke_raw_log_schema.py` must inspect `mrt_hardware_smoke_report.h` so generator field additions cannot leave the complete report emitter stale. |
 | Target-scoped hardware preflight | Single-target smoke capture should validate only the selected STM32 or DSP target so one board can be brought up while the other target configuration is still incomplete; `all` remains strict across both targets. |
+| Raw-log direct check before generation | Real board raw UART/trace logs should be checked before final evidence generation so field omissions and FAIL/numeric errors are caught while the capture context is still fresh. |
+| Raw-log checker schema coverage | `check_hardware_smoke_raw_log_schema.py` must also inspect `check_hardware_smoke_raw_log.py` so generator field additions cannot leave the direct raw-log checker stale. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -307,3 +309,14 @@ Phase 26 repo-side complete: hardware smoke capture/preflight supports target-sc
 - [x] Re-run focused/static/full release verification after documentation sync
 - [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
 - **Status:** complete for repo-side target-scoped capture/preflight; real hardware evidence remains pending
+
+## Phase 27: Hardware Smoke Raw-Log Direct Checker
+- [x] Add RED tests requiring `tools/verify/check_hardware_smoke_raw_log.py`, a release-runner step, and a `check-raw-log` capture pipeline step
+- [x] Implement raw UART/trace checker that derives `Raw-Log-Path` and `Raw-Log-SHA256` then reuses final evidence PASS/date/numeric rules
+- [x] Wire `run_hardware_smoke_capture.py` to check raw logs after capture and before evidence generation
+- [x] Add `hardware-smoke-raw-log-checker` to default release verification
+- [x] Extend raw-log schema drift coverage to include `check_hardware_smoke_raw_log.py`
+- [x] Update manual, hardware smoke docs, requirement matrix, coupling matrix, test-suite plan, completion audit, final report, findings, and progress
+- [x] Re-run focused/static/full release verification after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
+- **Status:** complete for repo-side raw-log direct checker; real hardware evidence remains pending

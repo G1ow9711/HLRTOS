@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 GENERATOR = ROOT / "tools" / "verify" / "generate_hardware_smoke_evidence.py"
 SCHEMA_CHECKER = ROOT / "tools" / "verify" / "check_hardware_smoke_raw_log_schema.py"
+RAW_LOG_CHECKER = ROOT / "tools" / "verify" / "check_hardware_smoke_raw_log.py"
 SCHEMA_DOC = ROOT / "docs" / "verification" / "hardware_smoke" / "raw_log_schema.md"
 SCHEMA_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_log_schema.h"
 REPORT_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_report.h"
@@ -53,7 +54,7 @@ def field_macro_token(field: str) -> str:
 
 def test_schema_artifacts_exist() -> None:
     """raw log schema 必须有文档、示例头文件和独立校验脚本。"""
-    for path in [SCHEMA_CHECKER, SCHEMA_DOC, SCHEMA_HEADER, REPORT_HEADER]:
+    for path in [SCHEMA_CHECKER, RAW_LOG_CHECKER, SCHEMA_DOC, SCHEMA_HEADER, REPORT_HEADER]:
         assert path.exists(), f"missing {path.relative_to(ROOT)}"
 
 
@@ -77,6 +78,19 @@ def test_report_header_covers_generator_fields() -> None:
     assert "MRT_SmokeEmitDspReport" in report_text
 
 
+def test_raw_log_checker_covers_generator_fields() -> None:
+    """原始日志直检工具必须覆盖生成器要求的 STM32/DSP 目标专属字段。"""
+    checker_text = read_text(RAW_LOG_CHECKER)
+    for field in expected_fields()["STM32"]:
+        if field in ["Raw-Log-Path", "Raw-Log-SHA256"]:
+            continue
+        assert field in checker_text
+    for field in expected_fields()["DSP"]:
+        if field in ["Raw-Log-Path", "Raw-Log-SHA256"]:
+            continue
+        assert field in checker_text
+
+
 def test_guides_point_to_raw_log_schema() -> None:
     """硬件 smoke 指南和示例说明必须指向统一 raw log schema。"""
     for path in [HARDWARE_README, COLLECTION_CHECKLIST, STM32_README, DSP_README]:
@@ -90,6 +104,7 @@ def test_schema_checker_and_release_runner_are_wired() -> None:
     assert "COMMON_REQUIRED_FIELDS" in checker_text
     assert "MRT_SMOKE_FIELD" in checker_text
     assert "mrt_hardware_smoke_report.h" in checker_text
+    assert "check_hardware_smoke_raw_log.py" in checker_text
     runner = load_module(RUNNER, "run_release_verification")
     names = [step.name for step in runner.build_steps(require_hardware=False)]
     assert "hardware-smoke-raw-log-schema" in names
@@ -100,6 +115,7 @@ def main() -> int:
     test_schema_artifacts_exist()
     test_schema_doc_and_header_cover_generator_fields()
     test_report_header_covers_generator_fields()
+    test_raw_log_checker_covers_generator_fields()
     test_guides_point_to_raw_log_schema()
     test_schema_checker_and_release_runner_are_wired()
     return 0
