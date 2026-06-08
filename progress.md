@@ -1,5 +1,56 @@
 # Progress Log
 
+## Session: 2026-06-08 Hardware Smoke Evidence Gate
+- RED/GREEN: `python tests\static\test_hardware_smoke_evidence_checker.py` first failed because the checker stopped after missing required fields and did not report present failing fields such as `Evidence-Status: FAIL`.
+- Fixed `tools/verify/check_hardware_smoke_evidence.py` to keep validating target, PASS fields, date, runtime, assert count, and heap minimum after missing-field collection.
+- GREEN: `python tests\static\test_hardware_smoke_evidence_checker.py` now passes.
+- Added `docs/verification/hardware_smoke/README.md`, `stm32_board_smoke.template.md`, and `dsp_board_smoke.template.md`.
+- Updated manual sections 5.6 and 6.6 with real-board evidence archival steps; updated section 7.4 with `python tools\verify\check_hardware_smoke_evidence.py`.
+- Updated `docs/verification/test_suite_plan.md`, `docs/verification/final_verification_report.md`, `docs/verification/completion_audit.md`, and `docs/verification/requirements_traceability_matrix.md` to reference the hardware evidence gate.
+- Fresh verification passed:
+  - `python tools\run_host_tests.py` -> `[summary] 69 test target(s) passed`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `python tools\verify\check_original_symbols.py` -> `[original-symbols] no banned FreeRTOS-style public symbols found`
+  - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
+  - `git diff --check` -> exit 0 with expected CRLF warnings only
+- Expected remaining failure: `python tools\verify\check_hardware_smoke_evidence.py` reports missing `stm32_board_smoke.md` and `dsp_board_smoke.md` because no real STM32/DSP board logs have been produced in this environment.
+
+## Session: 2026-06-08 Embedded Smoke Projects
+- Added dynamic `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` lifecycle APIs with heap-release, null-argument, and static-object rejection coverage.
+- RED: direct compile of `test_buffer_dynamic_allocation` failed on implicit declarations for `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete`.
+- GREEN: direct compile/run of `test_buffer_dynamic_allocation` passed after adding delete APIs; full verification later stayed green.
+- Added `docs/verification/completion_audit.md` to map the original user objective to current evidence and the remaining real-hardware smoke gap.
+- Added detailed STM32/DSP migration subsections to the manual: `移植前准备`、`工程分层`、`关键接入顺序`、`首次联调`、`板级验收`.
+- Extended `tools/verify/check_api_manual_coverage.py` to require the new migration terms so the manual detail stays locked.
+- Added MPU helper evidence to the verification set: `test_port_stm32_mpu` now has its own coupling row `C-035`, and STM32 port plan/docs mention it explicitly.
+- Resumed worktree `F:\My_RTOS\.worktrees\embedded-smoke-projects` on branch `feature/embedded-smoke-projects`.
+- Updated `task_plan.md` and added branch plan `docs/superpowers/plans/2026-06-08-myrtos-embedded-smoke-projects.md`.
+- Discovery: `examples/`, `examples/stm32/`, and `examples/dsp/` are missing.
+- Discovery: `arm-none-eabi-gcc` is installed and can support STM32 cross-compile smoke verification.
+- Discovery: `tiarmclang` is not installed, so DSP real hardware/toolchain verification remains pending; use a host model and document the boundary.
+- Next step: add a RED smoke verification script that fails because the example projects are missing.
+- Added `tools/verify/check_embedded_smoke_projects.py`.
+- RED run: `python tools\verify\check_embedded_smoke_projects.py` failed with 11 missing required paths under `examples/stm32` and `examples/dsp`, proving the smoke project gap.
+- Added `examples/stm32/` with README, minimal startup, linker script, runtime stubs, smoke main, and STM32 port smoke implementation.
+- Added `examples/dsp/` with README, DSP port host model, and smoke main.
+- GREEN run: `python tools\verify\check_embedded_smoke_projects.py` passed; STM32 ELF cross-build succeeded and DSP model executable compiled and ran successfully.
+- Expanded `tools\verify\check_chinese_comments.py` to include `examples/` and `tests/`; after documenting `tests/unit/test_types_contract.c` `main`, run passed with `[chinese-comments] include/src/examples/tests function comments covered`.
+- Expanded `tools\verify\check_original_symbols.py` to include `examples/` and `tests/`; run passed with `[original-symbols] no banned FreeRTOS-style public symbols found`.
+- Updated manual STM32/DSP porting chapters with smoke project layout, build commands, handler wiring, acceptance evidence, and real hardware boundaries.
+- Marked Phase 4 and Phase 7 complete in `task_plan.md` after all code/example/comment deliverables reached the documented target.
+- Updated requirement matrix, coupling matrix, test suite plan, and final verification report with embedded smoke evidence.
+- Error logged: first attempt to patch `docs/verification/test_suite_plan.md` used coupling-matrix-only context and failed; resolved by re-reading the file and applying a narrower patch.
+- Latest verification passed:
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `python tools\verify\check_original_symbols.py` -> `[original-symbols] no banned FreeRTOS-style public symbols found`
+  - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
+  - `python tools\run_host_tests.py` -> `[summary] 69 test target(s) passed`
+  - `git diff --check` -> exit 0 with expected CRLF warnings only
+
 ## Session: 2026-06-07
 
 ### Held Mutex Delete Policy Branch
@@ -581,3 +632,15 @@
 | Portable Task 5 verification | `python tools\run_host_tests.py` after build/docs/matrix updates and test comments | STM32/DSP port helpers plus prior modules pass | `[summary] 59 test target(s) passed` | Pass |
 | Portable implementation commit | `git commit -m "feat: add STM32 and DSP portable helpers"` | Commit port helper implementation | `f24502a` | Pass |
 | Portable branch push | `git push -u origin feature/portable-stm32-dsp` | Push branch to origin | Branch tracks `origin/feature/portable-stm32-dsp` | Pass |
+
+## Buffer Writer Wait and API Prototype Audit Results
+| Check | Command | Expected | Actual | Status |
+|-------|---------|----------|--------|--------|
+| Stream/message writer RED | Direct compile of `tests/coupling/test_buffer_dynamic_allocation.c` after adding writer-wait assertions | Build fails because send wait reasons and per-task requested-byte tracking are missing | Compile failed on missing `MRT_TASK_WAIT_REASON_STREAM_SEND`, `MRT_TASK_WAIT_REASON_MESSAGE_SEND`, and `MRT_Task.object_wait_bytes` | Pass |
+| Stream/message writer GREEN | Direct compile/run of `test_buffer_dynamic_allocation` | Dynamic stream/message full-buffer writer waits enter waiting list, dynamic delete returns busy, receive wakes writer | Target compiled and ran successfully with exit code 0 | Pass |
+| API prototype audit RED | `python tools\verify\check_api_catalog_prototypes.py` after adding verifier | Script reveals API catalog/header/source drift | Initial failures reduced to real public omissions: `MRT_MemoryPoolGetFreeCount` and `MRT_TimerGetName` missing from catalog/manual | Pass |
+| API prototype audit GREEN | `python tools\verify\check_api_catalog_prototypes.py` | Catalog, public headers, and source definitions align | `[api-catalog] 135 API prototype(s) aligned` | Pass |
+| Manual coverage GREEN | `python tools\verify\check_api_manual_coverage.py` | Manual covers all catalog APIs | `[manual-coverage] 135 API section(s) covered` | Pass |
+| Full host verification | `python tools\run_host_tests.py` | All host targets pass | `[summary] 69 test target(s) passed` | Pass |
+| Static/smoke verification | `python tools\verify\check_chinese_comments.py`; `python tools\verify\check_original_symbols.py`; `python tools\verify\check_embedded_smoke_projects.py`; `git diff --check` | Static and smoke checks pass; no real whitespace errors | Chinese comments covered; originality clean; STM32 cross build + DSP model smoke passed; `git diff --check` exit 0 with expected CRLF warnings | Pass |
+| Parallel verification timeout | Parallel run including host tests | All checks finish | Host runner timed out at 184 s while static/smoke checks passed; reran host tests alone with longer timeout and passed | Logged |

@@ -14,6 +14,7 @@ TESTS = [
     ("test_port_mock", ROOT / "tests" / "port_mock" / "test_port_mock.c"),
     ("test_port_stm32_stack", ROOT / "tests" / "port_mock" / "test_port_stm32_stack.c"),
     ("test_port_stm32_tick_priority", ROOT / "tests" / "port_mock" / "test_port_stm32_tick_priority.c"),
+    ("test_port_stm32_mpu", ROOT / "tests" / "port_mock" / "test_port_stm32_mpu.c"),
     ("test_port_dsp_stack", ROOT / "tests" / "port_mock" / "test_port_dsp_stack.c"),
     ("test_port_dsp_context", ROOT / "tests" / "port_mock" / "test_port_dsp_context.c"),
     ("test_kernel_tick", ROOT / "tests" / "unit" / "test_kernel_tick.c"),

@@ -62,8 +62,12 @@ typedef enum MRT_TaskWaitReason {
     MRT_TASK_WAIT_REASON_EVENT_BITS,
     /** @brief 任务正在等待本任务通知到达。 */
     MRT_TASK_WAIT_REASON_NOTIFY_WAIT,
+    /** @brief 任务正在等待流缓冲出现可写空间。 */
+    MRT_TASK_WAIT_REASON_STREAM_SEND,
     /** @brief 任务正在等待流缓冲达到可读条件。 */
     MRT_TASK_WAIT_REASON_STREAM_RECEIVE,
+    /** @brief 任务正在等待消息缓冲出现足够可写空间。 */
+    MRT_TASK_WAIT_REASON_MESSAGE_SEND,
     /** @brief 任务正在等待消息缓冲出现一条完整消息。 */
     MRT_TASK_WAIT_REASON_MESSAGE_RECEIVE
 } MRT_TaskWaitReason;
@@ -118,6 +122,8 @@ typedef struct MRT_Task {
     MRT_TaskWaitReason wait_reason;
     /** @brief 任务从对象等待中恢复时传递给等待 API 的结果。 */
     MRT_Result wait_result;
+    /** @brief 对象等待请求字节数；流/消息缓冲写等待用该值判断是否可唤醒。 */
+    size_t object_wait_bytes;
     /** @brief 事件组等待时请求的 bit 掩码。 */
     MRT_EventBits event_wait_bits;
     /** @brief 事件组等待被满足时匹配到的 bit。 */

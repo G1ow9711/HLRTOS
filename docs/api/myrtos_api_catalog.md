@@ -166,6 +166,7 @@ typedef enum MRT_Result {
 | `MRT_TimerReset(...)` | 复位定时器 | 到期时间重算 |
 | `MRT_TimerChangePeriod(...)` | 修改周期 | 运行中修改 |
 | `MRT_TimerIsActive(...)` | 查询活动状态 | 命令处理前后 |
+| `MRT_TimerGetName(...)` | 查询定时器名称 | 名称指针稳定性 |
 | `MRT_TimerPendFunctionCall(...)` | 投递延迟函数调用 | 服务任务执行 |
 | `MRT_TimerServiceRunPending(...)` | 运行定时器服务命令 | 控制命令/回调 FIFO |
 
@@ -175,18 +176,24 @@ typedef enum MRT_Result {
 |-----|------|----------|
 | `MRT_StreamBufferCreateStatic(...)` | 静态创建流缓冲 | 触发水位校验 |
 | `MRT_StreamBufferCreate(...)` | 动态创建流缓冲 | 分配失败 |
+| `MRT_StreamBufferDelete(...)` | 删除动态流缓冲 | 释放堆空间、拒绝静态对象 |
 | `MRT_StreamBufferSend(...)` | 写入字节流 | 环绕、阻塞 |
 | `MRT_StreamBufferReceive(...)` | 读取字节流 | 水位唤醒 |
 | `MRT_StreamBufferSendFromISR(...)` | ISR 写入字节流 | should_yield |
 | `MRT_StreamBufferReceiveFromISR(...)` | ISR 读取字节流 | 空缓冲 |
 | `MRT_StreamBufferBytesAvailable(...)` | 查询可读字节 | 环绕计数 |
 | `MRT_StreamBufferSpacesAvailable(...)` | 查询可写空间 | 环绕计数 |
+| `MRT_StreamBufferReset(...)` | 清空流缓冲 | 索引和计数复位 |
 | `MRT_MessageBufferCreateStatic(...)` | 静态创建消息缓冲 | 长度字段空间 |
 | `MRT_MessageBufferCreate(...)` | 动态创建消息缓冲 | 分配失败 |
+| `MRT_MessageBufferDelete(...)` | 删除动态消息缓冲 | 释放堆空间、拒绝静态对象 |
 | `MRT_MessageBufferSend(...)` | 写入完整消息 | 不允许半包 |
 | `MRT_MessageBufferReceive(...)` | 读取完整消息 | 输出缓冲不足 |
 | `MRT_MessageBufferSendFromISR(...)` | ISR 写入消息 | 完整性 |
 | `MRT_MessageBufferReceiveFromISR(...)` | ISR 读取消息 | 空消息 |
+| `MRT_MessageBufferBytesAvailable(...)` | 查询已用字节 | 完整消息记录 |
+| `MRT_MessageBufferSpacesAvailable(...)` | 查询可写空间 | 容量边界 |
+| `MRT_MessageBufferReset(...)` | 清空消息缓冲 | 索引和计数复位 |
 
 ## 11. 内存管理 API
 
@@ -200,6 +207,7 @@ typedef enum MRT_Result {
 | `MRT_MemoryPoolCreateStatic(...)` | 静态创建固定块池 | 块大小/对齐 |
 | `MRT_MemoryPoolAlloc(...)` | 分配固定块 | 池空 |
 | `MRT_MemoryPoolFree(...)` | 释放固定块 | 重复释放检测 |
+| `MRT_MemoryPoolGetFreeCount(...)` | 查询空闲块数量 | 计数一致性 |
 
 ## 12. Tickless、trace、断言 API
 
@@ -229,6 +237,7 @@ typedef enum MRT_Result {
 | `MRT_PortStm32CmInitializeStack(...)` | 初始化 STM32 Cortex-M 初始任务栈帧 | `test_port_stm32_stack` |
 | `MRT_PortStm32CmCalculateSysTickReload(...)` | 计算 SysTick 24 位 reload 值 | `test_port_stm32_tick_priority` |
 | `MRT_PortStm32CmEncodeBasepri(...)` | 按 NVIC 优先级 bit 编码 BASEPRI 屏蔽值 | `test_port_stm32_tick_priority` |
+| `MRT_PortStm32CmNormalizeMpuRegion(...)` | 将 STM32 MPU 保护范围规整为 power-of-two 对齐区域 | `test_port_stm32_mpu` |
 | `MRT_PortDspC28xInitializeStack(...)` | 初始化 DSP C28x 风格任务栈帧 | `test_port_dsp_stack` |
 | `MRT_PortDspC28xContextModelReset(...)` | 复位 DSP 上下文切换模型 | `test_port_dsp_context` |
 | `MRT_PortDspC28xRequestContextSwitch(...)` | 请求 DSP 软件中断式上下文切换 | `test_port_dsp_context` |

@@ -186,6 +186,9 @@ static void MRT_TaskUnlinkFromScheduling(MRT_Task *task)
         /* 清空等待原因，防止后续诊断读到旧等待状态。 */
         task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
 
+        /* 清空对象等待请求字节数，防止后续同步对象误判唤醒条件。 */
+        task->object_wait_bytes = 0u;
+
         /* 直接返回调用方。 */
         return;
     }
@@ -204,6 +207,9 @@ static void MRT_TaskUnlinkFromScheduling(MRT_Task *task)
 
     /* 清除等待返回结果，避免恢复后沿用旧结果。 */
     task->wait_result = MRT_RESULT_OK;
+
+    /* 清除对象等待请求字节数。 */
+    task->object_wait_bytes = 0u;
 }
 
 /**
@@ -408,6 +414,9 @@ void MRT_TaskKernelTick(MRT_Tick now)
         /* 超时唤醒后任务不再等待具体对象。 */
         task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
 
+        /* 超时离开等待链表后清除缓冲写等待请求字节数。 */
+        task->object_wait_bytes = 0u;
+
         /* 将到期任务重新加入 ready list。 */
         MRT_TaskAddReady(task);
 
@@ -509,6 +518,13 @@ MRT_Result MRT_TaskKernelBlockCurrentOnObject(MRT_List *wait_list,
     /* 保存等待结果，host 仿真中立即返回给调用方。 */
     task->wait_result = wait_result;
 
+    /* 非缓冲写等待不需要记录请求字节数，避免复用旧状态。 */
+    if ((wait_reason != MRT_TASK_WAIT_REASON_STREAM_SEND) &&
+        (wait_reason != MRT_TASK_WAIT_REASON_MESSAGE_SEND)) {
+        /* 清除与当前等待类型无关的字节数。 */
+        task->object_wait_bytes = 0u;
+    }
+
     /* 使用唤醒 tick 作为 delay list 排序值。 */
     task->state_node.value = task->wake_tick;
 
@@ -574,6 +590,9 @@ MRT_Result MRT_TaskKernelBlockCurrent(MRT_Tick ticks, MRT_TaskWaitReason wait_re
 
     /* 保存等待结果，host 仿真中立即返回给调用方。 */
     task->wait_result = wait_result;
+
+    /* 纯任务等待没有对象空间条件，清除请求字节数。 */
+    task->object_wait_bytes = 0u;
 
     /* 使用唤醒 tick 作为 delay list 排序值。 */
     task->state_node.value = task->wake_tick;
@@ -644,6 +663,9 @@ bool MRT_TaskKernelWakeFirstObjectWaiter(MRT_List *wait_list, MRT_Result wait_re
     /* 被对象唤醒后不再等待具体对象。 */
     task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
 
+    /* 被对象唤醒后清除缓冲写等待请求字节数。 */
+    task->object_wait_bytes = 0u;
+
     /* 重新加入 ready list，等待调度器选择。 */
     MRT_TaskAddReady(task);
 
@@ -691,6 +713,9 @@ bool MRT_TaskKernelWakeTask(MRT_TaskHandle task, MRT_Result wait_result, bool sw
 
     /* 被唤醒后不再等待具体对象。 */
     task->wait_reason = MRT_TASK_WAIT_REASON_NONE;
+
+    /* 被对象唤醒后清除缓冲写等待请求字节数。 */
+    task->object_wait_bytes = 0u;
 
     /* 将任务重新加入 ready list。 */
     MRT_TaskAddReady(task);
@@ -944,6 +969,9 @@ MRT_Result MRT_TaskCreateStatic(const char *name,
 
     /* 新任务没有挂起的等待结果。 */
     storage->wait_result = MRT_RESULT_OK;
+
+    /* 新任务没有对象等待请求字节数。 */
+    storage->object_wait_bytes = 0u;
 
     /* 新任务没有事件组等待掩码。 */
     storage->event_wait_bits = 0u;
@@ -1348,6 +1376,9 @@ MRT_Result MRT_TaskDelay(MRT_Tick ticks)
 
     /* 纯延时醒来后没有对象等待错误，结果保持 OK。 */
     task->wait_result = MRT_RESULT_OK;
+
+    /* 纯延时没有对象空间等待条件。 */
+    task->object_wait_bytes = 0u;
 
     /* 使用唤醒 tick 作为延时链表排序值。 */
     task->state_node.value = task->wake_tick;

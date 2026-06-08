@@ -83,8 +83,13 @@
 - User requires detailed STM32/DSP porting steps in the final Chinese manual.
 
 ## Verification Findings
+- 新增 `docs/verification/completion_audit.md`，把原始目标拆成逐项证据审计；当前唯一硬缺口仍是真实 STM32 / DSP 板级 smoke 证据。
+- Latest verification: `python tools\verify\check_api_manual_coverage.py` now reports 135 API sections covered, `python tools\verify\check_api_catalog_prototypes.py` reports 135 aligned prototypes, and `python tools\run_host_tests.py` now reports 69 passed host test targets.
+- Dynamic stream/message buffer lifecycle is now closed for current API scope: `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` release heap-backed buffers and reject null/static objects; `test_buffer_dynamic_allocation` covers the paths.
+- STM32/DSP 手册移植章已加细粒度骨架：`移植前准备`、`工程分层`、`关键接入顺序`、`首次联调`、`板级验收`；`check_api_manual_coverage.py` 也把这些词纳入必检项。
+- `test_port_stm32_mpu` 已单独纳入 `C-035`，把 STM32 MPU 区域规整 helper 从“附带证据”变成独立耦合项。
 - Requirement traceability now has 11 top-level requirements (`R-001` through `R-011`); `R-011` requires the final manual to include detailed STM32 and DSP porting steps.
-- Coupling matrix now has 33 coverage rows (`C-001` through `C-033`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, and source comments.
+- Coupling matrix now has 37 coverage rows (`C-001` through `C-037`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, source comments, runtime stats, STM32 MPU layout, and buffer writer wait/delete coupling.
 - Implementation plan self-review placeholder scan found no `TBD`, `TODO`, `implement later`, `fill in details`, or stale draft-design path strings.
 - Queue Task 2 non-blocking FIFO send/receive is implemented with caller-provided storage, circular byte-copy semantics, empty/full status returns, and temporary nonzero-timeout handling through `MRT_RESULT_TIMEOUT` until queue blocking coupling is implemented.
 - Queue Task 3 queue variants are implemented: `MRT_QueuePeek` preserves queue state, `MRT_QueueSendFront` inserts before existing head, `MRT_QueueOverwrite` is intentionally restricted to one-slot queues, and `MRT_QueueReset` clears count/read/write indexes without clearing backing bytes.
@@ -194,7 +199,7 @@
 - Stream/message buffers need one heap block containing an aligned control block plus byte storage. Semaphore, mutex, event group, and timer need only control-block-sized heap allocations.
 - First GREEN run exposed a test assumption bug: `MRT_Malloc(free_before)` fails on coalescing heap because `free_before` includes the heap block header overhead. Failure-path tests now use a helper that repeatedly allocates smaller blocks until even the minimum payload cannot be allocated, then compares heap free size before/after the target dynamic API failure.
 - Dynamic object implementation is now covered by 64 passing host targets. The 12 dynamic object source/catalog gaps are closed; the remaining known source/catalog gap is `MRT_StatsGetTaskRuntime`.
-- Manual updates now document exact dynamic object prototypes, failed-create handle clearing, static-delete rejection, waiters/locked-object busy deletion, active timer delete-stop-free behavior, dynamic stream/message buffer single-block heap layout, and the current absence of stream/message buffer delete APIs.
+- Manual updates now document exact dynamic object prototypes, failed-create handle clearing, static-delete rejection, waiters/locked-object busy deletion, active timer delete-stop-free behavior, dynamic stream/message buffer single-block heap layout, and stream/message buffer dynamic delete APIs.
 
 ## Runtime Stats API Gap Closure
 - Branch `feature/runtime-stats-api` starts from `feature/dynamic-object-apis` at `dfe4838`.
@@ -226,3 +231,37 @@
 - Implementation approach: one FIFO service queue now carries timer control commands, timer expiry callback events, and pending functions. `MRT_TimerKernelTick()` only queues expiry events; user callbacks execute from the service entry outside the critical section.
 - Dynamic timer deletion now purges queued commands and expiry events for the deleted timer before freeing memory, preventing service-queue dangling references.
 - Current verification: `python tools\run_host_tests.py` reports `[summary] 68 test target(s) passed`.
+
+## Embedded Smoke Project Findings
+- Branch `feature/embedded-smoke-projects` starts from `feature/timer-service-task` at `3071d34`; baseline state is expected to have 68 host test targets passing.
+- Current project has no `examples/`, `examples/stm32/`, or `examples/dsp/` directories, while `docs/verification/test_suite_plan.md` already lists those directories as required smoke layers.
+- `arm-none-eabi-gcc` is available: Arm GNU Toolchain 14.2.Rel1. This makes an STM32 Cortex-M cross-compile smoke build feasible in the current environment.
+- `tiarmclang` is not available in the current environment. DSP real-toolchain verification cannot be claimed here; use a host-verifiable DSP C28x-style model and document the real TI/toolchain smoke gap.
+- The manual already has STM32/DSP porting chapters, but this branch should add explicit smoke project layout, build commands, handler wiring, and acceptance steps so the manual porting path matches the new examples.
+- RED smoke verification script added at `tools/verify/check_embedded_smoke_projects.py`; first run failed only because the required example directories and files do not exist yet.
+- GREEN smoke verification now passes: `python tools\verify\check_embedded_smoke_projects.py` builds `examples/stm32` with `arm-none-eabi-gcc`, builds `examples/dsp` with host `gcc`, and runs the DSP smoke model executable successfully.
+- STM32 smoke project is a cross-compile/link scaffold and does not claim real board execution. DSP smoke is a host-verifiable C28x-style model because the TI DSP toolchain is absent.
+- Chinese comment scanning was first extended to `examples/`, proving the new STM32/DSP smoke files have Chinese function and step comments.
+- `python tools\verify\check_chinese_comments.py` now scans `include/`, `src/`, `examples/`, and `tests/`; the only discovered gap was `tests/unit/test_types_contract.c` `main`, which is now documented.
+- `python tools\verify\check_original_symbols.py` now scans `include/`, `src/`, `examples/`, `tests/`, and the manual, and still reports no banned FreeRTOS-style public symbols.
+- Final verification snapshot: 68 host targets passed; API manual coverage, Chinese comments, original-symbol scan, embedded smoke verification, and `git diff --check` all passed with only expected CRLF warnings.
+
+## Buffer Writer Wait and API Prototype Audit Findings
+- Dynamic stream/message delete already checked `waiting_writers`, but public send paths previously never populated those lists. New tests prove the missing coupling by expecting full-buffer nonzero-timeout send to block the writer and make delete return `MRT_RESULT_OBJECT_BUSY`.
+- Stream buffer writer wait records `object_wait_bytes=1` because stream buffers permit partial writes; any freed byte lets the writer retry. Message buffer writer wait records `4 + payload` because a message buffer must not wake a writer until a complete record can fit.
+- `MRT_TASK_WAIT_REASON_STREAM_SEND` and `MRT_TASK_WAIT_REASON_MESSAGE_SEND` are now public task wait reasons for diagnostics. `MRT_Task.object_wait_bytes` is cleared on object wake, timeout, pure delay, task unlink, and task creation so stale byte requests cannot affect later waits.
+- Receive/reset paths now wake one highest-priority waiting writer when enough space exists. `MRT_StreamBufferReceiveFromISR` and `MRT_MessageBufferReceiveFromISR` wake writers without immediate task switch because those APIs have no `should_yield` output.
+- New verifier `tools/verify/check_api_catalog_prototypes.py` checks catalog, public headers, and source definitions. It treats `MRT_ASSERT` as a macro and excludes test-only mock hooks plus low-level list/priority bitmap primitives from the official catalog contract.
+- Prototype verifier RED found two real public omissions: `MRT_MemoryPoolGetFreeCount` and `MRT_TimerGetName` were declared/implemented but not in the API catalog/manual. Catalog and manual now cover both, raising manual/prototype coverage to 135 APIs.
+- Latest full verification: `python tools\run_host_tests.py` reports `[summary] 69 test target(s) passed`; manual coverage reports 135; API prototype verifier reports 135; comments, originality, embedded smoke, and `git diff --check` pass with only expected CRLF warnings.
+- Real STM32 and DSP board smoke evidence remains the only hard completion gap; current STM32 evidence is cross-compile/link and current DSP evidence is host model smoke.
+
+## Hardware Smoke Evidence Gate Findings
+- `tools/verify/check_hardware_smoke_evidence.py` now defines the machine-checkable final evidence contract for real STM32 and DSP boards.
+- The checker expects `docs/verification/hardware_smoke/stm32_board_smoke.md` and `docs/verification/hardware_smoke/dsp_board_smoke.md`.
+- `tests/static/test_hardware_smoke_evidence_checker.py` covers valid STM32/DSP evidence plus missing/invalid evidence. The first run failed because the checker returned immediately after missing required fields and hid present-but-failing `Evidence-Status`, runtime, assert, and heap fields.
+- Checker behavior is now improved: missing required fields are reported, but present failing status and numeric fields are still validated.
+- Added templates only: `docs/verification/hardware_smoke/stm32_board_smoke.template.md` and `docs/verification/hardware_smoke/dsp_board_smoke.template.md`. No fake PASS logs are committed.
+- Manual sections 5.6 and 6.6 now describe real-board evidence archival steps. Section 7.4 lists `python tools\verify\check_hardware_smoke_evidence.py`.
+- Current hardware evidence gate intentionally fails with missing `stm32_board_smoke.md` and `dsp_board_smoke.md`; this is the remaining real-hardware proof gap, not a software test failure.
+- Latest repo-side verification: host tests 69 passed; manual coverage 135; API prototype alignment 135; Chinese comments, originality, embedded smoke, and hardware checker unit test pass; `git diff --check` exits 0 with expected CRLF warnings only.

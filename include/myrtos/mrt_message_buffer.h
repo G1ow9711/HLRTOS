@@ -68,14 +68,25 @@ MRT_Result MRT_MessageBufferCreateStatic(size_t capacity,
 MRT_Result MRT_MessageBufferCreate(size_t capacity, MRT_MessageBufferHandle *out_message_buffer);
 
 /**
+ * @brief 删除动态创建的消息缓冲并归还堆内存。
+ * @param message_buffer 待删除消息缓冲句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态对象或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_MessageBufferDelete(message_buffer);
+ */
+MRT_Result MRT_MessageBufferDelete(MRT_MessageBufferHandle message_buffer);
+
+/**
  * @brief 向消息缓冲写入一条完整消息。
  * @param message_buffer 目标消息缓冲句柄，不能为空。
  * @param message 待写入消息地址；length 大于 0 时不能为空。
  * @param length 消息载荷字节数，必须大于 0。
  * @param timeout 等待可写空间的 tick 数；当前阶段非阻塞路径会在空间不足时返回。
  * @param out_sent 输出实际写入的消息载荷字节数，允许为空。
- * @return MRT_Result 返回 MRT_RESULT_OK 表示整条消息写入成功；空间不足返回 MRT_RESULT_OBJECT_FULL；
- *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示整条消息写入成功；空间不足且 timeout 为 0 时返回
+ *         MRT_RESULT_OBJECT_FULL；空间不足且 timeout 非 0 时进入写等待并在当前 host 模型中返回
+ *         MRT_RESULT_TIMEOUT；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
  * @example
  * size_t sent;
  * MRT_MessageBufferSend(message_buffer, data, len, 0, &sent);

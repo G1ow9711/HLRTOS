@@ -7,7 +7,7 @@
 
 本手册采用嵌入式 RTOS 常见参考手册结构：先说明适用范围、调用限制和配置方法，再按 API 族分章列出函数原型、功能说明、参数、返回值、调用上下文、阻塞行为、ISR 限制、配置宏、调用示例和常见错误。本文档为 MyRTOS 原创说明，不复制其他 RTOS 的源码、注释或手册文字。
 
-MyRTOS 当前处于 preview 阶段。已经通过 host 自动化测试的模块包括：基础类型、配置、链表、优先级位图、mock 端口、任务调度、队列、信号量、互斥锁、事件组、任务通知、软件定时器、流缓冲、消息缓冲、堆、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、DSP C28x 风格端口契约 helper。真实 STM32/DSP 板级 smoke test 需要按本手册移植章节接入具体硬件后补证。
+MyRTOS 当前处于 preview 阶段。已经通过 host 自动化测试的模块包括：基础类型、配置、链表、优先级位图、mock 端口、任务调度、队列、信号量、互斥锁、事件组、任务通知、软件定时器、流缓冲、消息缓冲、堆、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、STM32 MPU 区域布局 helper、DSP C28x 风格端口契约 helper。真实 STM32/DSP 板级 smoke test 需要按本手册移植章节接入具体硬件后补证。
 
 ## 2. API 使用规则
 
@@ -936,6 +936,18 @@ int main(void)
 - 调用示例：`bool active = false; MRT_TimerIsActive(timer, &active);`
 - 常见错误：查询到非活动后忽略队列中尚未处理的启动命令。
 
+### MRT_TimerGetName
+- 函数原型：`const char *MRT_TimerGetName(MRT_TimerHandle timer);`
+- 功能说明：返回创建定时器时保存的名称指针，供 trace、日志和调试界面显示。
+- 参数：定时器句柄，不能为空。
+- 返回值：定时器有效时返回名称指针；空句柄返回空指针；创建时名称为空则返回空指针。
+- 调用上下文：任务上下文、诊断代码或调度启动前。
+- 阻塞行为：不阻塞。
+- ISR 限制：ISR 中仅建议用于调试读取，不应在 ISR 中执行复杂字符串处理。
+- 配置宏：无特殊依赖。
+- 调用示例：`const char *name = MRT_TimerGetName(timer);`
+- 常见错误：把返回的名称指针当作内核复制出的字符串；MyRTOS 只保存调用方传入的指针。
+
 ### MRT_TimerPendFunctionCall
 - 函数原型：`MRT_Result MRT_TimerPendFunctionCall(MRT_TimerPendingFunction function, void *arg, uint32_t value, MRT_Timeout timeout);`
 - 功能说明：把轻量函数投递到定时器服务命令队列；服务任务按 FIFO 顺序在临界区外调用 `function(arg, value)`。
@@ -982,13 +994,25 @@ int main(void)
 - ISR 限制：禁止在 ISR 中调用。
 - 配置宏：动态分配支持和 heap。
 - 调用示例：`MRT_StreamBufferCreate(128u, 16u, &stream);`
-- 常见错误：忽略当前版本尚未提供流缓冲删除 API，短生命周期反复动态创建会消耗 heap。
+- 常见错误：动态创建后忘记在对象生命周期结束时调用 `MRT_StreamBufferDelete`，导致 heap 长期占用。
+
+### MRT_StreamBufferDelete
+- 函数原型：`MRT_Result MRT_StreamBufferDelete(MRT_StreamBufferHandle stream);`
+- 功能说明：删除动态创建的流缓冲，并把控制块和字节存储所在堆块归还给 MyRTOS heap。
+- 参数：流缓冲句柄；不能为空，且必须来自 `MRT_StreamBufferCreate`。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；静态对象或仍有等待任务时返回 `MRT_RESULT_OBJECT_BUSY`。
+- 调用上下文：任务上下文。
+- 阻塞行为：不阻塞。
+- ISR 限制：禁止在 ISR 中删除。
+- 配置宏：动态分配支持和 heap。
+- 调用示例：`MRT_StreamBufferDelete(stream);`
+- 常见错误：对静态创建的流缓冲调用动态删除；删除前没有确保读者/写者等待链表为空。
 
 ### MRT_StreamBufferSend
 - 函数原型：`MRT_Result MRT_StreamBufferSend(MRT_StreamBufferHandle stream, const void *data, size_t length, MRT_Timeout timeout, size_t *out_sent);`
 - 功能说明：向流缓冲写入字节序列。
 - 参数：缓冲句柄、数据地址、长度、等待 tick 和可选实际写入字节数输出。
-- 返回值：成功返回 `MRT_RESULT_OK`；空间不足返回 `MRT_RESULT_OBJECT_FULL`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 返回值：成功返回 `MRT_RESULT_OK`；无空间且 `timeout` 为 0 返回 `MRT_RESULT_OBJECT_FULL`；无空间且 `timeout` 非 0 时进入写等待并在当前 host 模型中返回 `MRT_RESULT_TIMEOUT`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：空间不足且 timeout 非 0 时可阻塞。
 - ISR 限制：ISR 中使用 `MRT_StreamBufferSendFromISR`。
@@ -1056,6 +1080,18 @@ int main(void)
 - 调用示例：`MRT_StreamBufferSpacesAvailable(stream, &spaces);`
 - 常见错误：查询后假定后续写入一定完整。
 
+### MRT_StreamBufferReset
+- 函数原型：`MRT_Result MRT_StreamBufferReset(MRT_StreamBufferHandle stream);`
+- 功能说明：清空流缓冲并复位读写索引。
+- 参数：流缓冲句柄，不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 调用上下文：任务上下文。
+- 阻塞行为：不阻塞。
+- ISR 限制：不建议在 ISR 中复位共享流缓冲。
+- 配置宏：无特殊依赖。
+- 调用示例：`MRT_StreamBufferReset(stream);`
+- 常见错误：复位仍有任务等待的流缓冲，造成应用层协议丢包。
+
 ### MRT_MessageBufferCreateStatic
 - 函数原型：`MRT_Result MRT_MessageBufferCreateStatic(size_t capacity, void *buffer, MRT_MessageBuffer *storage, MRT_MessageBufferHandle *out_message_buffer);`
 - 功能说明：创建静态消息缓冲，保留消息边界。
@@ -1078,13 +1114,25 @@ int main(void)
 - ISR 限制：禁止在 ISR 中调用。
 - 配置宏：动态分配支持和 heap。
 - 调用示例：`MRT_MessageBufferCreate(256u, &mb);`
-- 常见错误：忽略当前版本尚未提供消息缓冲删除 API，短生命周期反复动态创建会消耗 heap。
+- 常见错误：动态创建后忘记在对象生命周期结束时调用 `MRT_MessageBufferDelete`，导致 heap 长期占用。
+
+### MRT_MessageBufferDelete
+- 函数原型：`MRT_Result MRT_MessageBufferDelete(MRT_MessageBufferHandle message_buffer);`
+- 功能说明：删除动态创建的消息缓冲，并把控制块和字节存储所在堆块归还给 MyRTOS heap。
+- 参数：消息缓冲句柄；不能为空，且必须来自 `MRT_MessageBufferCreate`。
+- 返回值：成功返回 `MRT_RESULT_OK`；空句柄返回 `MRT_RESULT_INVALID_ARGUMENT`；静态对象或仍有等待任务时返回 `MRT_RESULT_OBJECT_BUSY`。
+- 调用上下文：任务上下文。
+- 阻塞行为：不阻塞。
+- ISR 限制：禁止在 ISR 中删除。
+- 配置宏：动态分配支持和 heap。
+- 调用示例：`MRT_MessageBufferDelete(message_buffer);`
+- 常见错误：对静态创建的消息缓冲调用动态删除；删除前没有确保读者/写者等待链表为空。
 
 ### MRT_MessageBufferSend
 - 函数原型：`MRT_Result MRT_MessageBufferSend(MRT_MessageBufferHandle message_buffer, const void *message, size_t length, MRT_Timeout timeout, size_t *out_sent);`
 - 功能说明：写入一条完整消息。
 - 参数：消息缓冲句柄、消息地址、长度、等待 tick 和可选实际写入字节数输出。
-- 返回值：成功返回 `MRT_RESULT_OK`；空间不足返回 `MRT_RESULT_OBJECT_FULL`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 返回值：成功返回 `MRT_RESULT_OK`；空间不足且 `timeout` 为 0 返回 `MRT_RESULT_OBJECT_FULL`；空间不足且 `timeout` 非 0 时进入写等待并在当前 host 模型中返回 `MRT_RESULT_TIMEOUT`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文。
 - 阻塞行为：空间不足且 timeout 非 0 时可阻塞。
 - ISR 限制：ISR 中使用 `MRT_MessageBufferSendFromISR`。
@@ -1128,6 +1176,42 @@ int main(void)
 - 调用示例：`size_t received; MRT_MessageBufferReceiveFromISR(mb, buf, sizeof(buf), &received);`
 - 常见错误：在 ISR 中等待消息。
 
+### MRT_MessageBufferBytesAvailable
+- 函数原型：`MRT_Result MRT_MessageBufferBytesAvailable(MRT_MessageBufferHandle message_buffer, size_t *out_bytes);`
+- 功能说明：查询消息缓冲当前已使用字节数，包含消息长度头和消息载荷。
+- 参数：消息缓冲句柄和输出字节数指针；二者都不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 调用上下文：任务上下文或诊断代码。
+- 阻塞行为：不阻塞。
+- ISR 限制：ISR 中仅建议用于诊断。
+- 配置宏：无特殊依赖。
+- 调用示例：`MRT_MessageBufferBytesAvailable(message_buffer, &bytes);`
+- 常见错误：把已使用字节数误认为下一条消息的载荷长度。
+
+### MRT_MessageBufferSpacesAvailable
+- 函数原型：`MRT_Result MRT_MessageBufferSpacesAvailable(MRT_MessageBufferHandle message_buffer, size_t *out_spaces);`
+- 功能说明：查询消息缓冲当前可写空闲字节数。
+- 参数：消息缓冲句柄和输出空间指针；二者都不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 调用上下文：任务上下文或诊断代码。
+- 阻塞行为：不阻塞。
+- ISR 限制：ISR 中仅建议用于诊断。
+- 配置宏：无特殊依赖。
+- 调用示例：`MRT_MessageBufferSpacesAvailable(message_buffer, &spaces);`
+- 常见错误：只比较载荷长度，忘记消息缓冲还要保存 4 字节长度头。
+
+### MRT_MessageBufferReset
+- 函数原型：`MRT_Result MRT_MessageBufferReset(MRT_MessageBufferHandle message_buffer);`
+- 功能说明：清空消息缓冲并复位读写索引，丢弃所有未读消息。
+- 参数：消息缓冲句柄，不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 调用上下文：任务上下文。
+- 阻塞行为：不阻塞。
+- ISR 限制：不建议在 ISR 中复位共享消息缓冲。
+- 配置宏：无特殊依赖。
+- 调用示例：`MRT_MessageBufferReset(message_buffer);`
+- 常见错误：复位后还期望旧消息可以继续读取。
+
 ### MRT_HeapInitialize
 - 函数原型：`MRT_Result MRT_HeapInitialize(void *memory, size_t bytes, MRT_HeapMode mode);`
 - 功能说明：初始化 MyRTOS heap 区域和分配策略。
@@ -1165,27 +1249,27 @@ int main(void)
 - 常见错误：释放非 MyRTOS heap 指针。
 
 ### MRT_HeapGetFreeSize
-- 函数原型：`size_t MRT_HeapGetFreeSize(void);`
+- 函数原型：`MRT_Result MRT_HeapGetFreeSize(size_t *out_free_size);`
 - 功能说明：查询当前 heap 剩余字节数。
-- 参数：无。
-- 返回值：返回当前剩余字节数。
+- 参数：输出当前空闲字节数的指针，不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；堆未初始化返回 `MRT_RESULT_NOT_STARTED`；输出指针为空返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文或诊断代码。
 - 阻塞行为：不阻塞。
 - ISR 限制：ISR 中仅建议用于诊断。
 - 配置宏：无特殊依赖。
-- 调用示例：`size_t free_bytes = MRT_HeapGetFreeSize();`
+- 调用示例：`size_t free_bytes = 0u; MRT_HeapGetFreeSize(&free_bytes);`
 - 常见错误：把剩余总量当作最大连续块大小。
 
 ### MRT_HeapGetMinimumEverFreeSize
-- 函数原型：`size_t MRT_HeapGetMinimumEverFreeSize(void);`
+- 函数原型：`MRT_Result MRT_HeapGetMinimumEverFreeSize(size_t *out_minimum_free_size);`
 - 功能说明：查询 heap 历史最低剩余字节数。
-- 参数：无。
-- 返回值：返回最低水位。
+- 参数：输出历史最低剩余字节数的指针，不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK`；堆未初始化返回 `MRT_RESULT_NOT_STARTED`；输出指针为空返回 `MRT_RESULT_INVALID_ARGUMENT`。
 - 调用上下文：任务上下文或诊断代码。
 - 阻塞行为：不阻塞。
 - ISR 限制：ISR 中仅建议用于诊断。
 - 配置宏：无特殊依赖。
-- 调用示例：`size_t low = MRT_HeapGetMinimumEverFreeSize();`
+- 调用示例：`size_t low = 0u; MRT_HeapGetMinimumEverFreeSize(&low);`
 - 常见错误：重新初始化 heap 后仍使用旧水位数据。
 
 ### MRT_MemoryPoolCreateStatic
@@ -1223,6 +1307,18 @@ int main(void)
 - 配置宏：无特殊依赖。
 - 调用示例：`MRT_MemoryPoolFree(pool, block);`
 - 常见错误：归还不属于该池的指针。
+
+### MRT_MemoryPoolGetFreeCount
+- 函数原型：`MRT_Result MRT_MemoryPoolGetFreeCount(MRT_MemoryPoolHandle pool, size_t *out_free_count);`
+- 功能说明：查询固定块内存池当前仍可分配的空闲块数量。
+- 参数：内存池句柄和输出空闲块数量指针，二者均不能为空。
+- 返回值：成功返回 `MRT_RESULT_OK` 并写入 `out_free_count`；参数错误返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 调用上下文：任务上下文、初始化诊断或调试统计路径。
+- 阻塞行为：不阻塞。
+- ISR 限制：ISR 中仅建议用于诊断读取；若与任务同时访问同一池，应由端口临界区或上层策略保护。
+- 配置宏：无特殊依赖。
+- 调用示例：`size_t free_count = 0u; MRT_MemoryPoolGetFreeCount(pool, &free_count);`
+- 常见错误：把空闲块数量当作剩余字节数；剩余字节数等于 `free_count * block_size`。
 
 ### MRT_TicklessGetExpectedIdleTicks
 - 函数原型：`MRT_Result MRT_TicklessGetExpectedIdleTicks(MRT_Tick *out_ticks);`
@@ -1452,6 +1548,18 @@ int main(void)
 - 调用示例：`MRT_PortStm32CmEncodeBasepri(4u, 5u, &basepri);`
 - 常见错误：把逻辑优先级 0 用作可屏蔽内核临界区阈值。
 
+### MRT_PortStm32CmNormalizeMpuRegion
+- 函数原型：`MRT_Result MRT_PortStm32CmNormalizeMpuRegion(uintptr_t base_address, size_t size_bytes, uintptr_t *out_region_base, size_t *out_region_size, uint32_t *out_region_shift);`
+- 功能说明：把任意 STM32 Cortex-M 内存范围规整为 MPU 可表达的 power-of-two 区域，输出向下对齐后的区域基址、规整后区域大小和 `log2(size)`。
+- 参数：原始内存起始地址、原始字节数、输出区域基址、输出区域大小和输出区域 shift。
+- 返回值：成功返回 `MRT_RESULT_OK`；原始大小为 0、输出指针为空、地址范围溢出或无法规整时返回 `MRT_RESULT_INVALID_ARGUMENT`。
+- 调用上下文：板级 MPU 初始化、任务栈保护区计算、DMA/外设缓冲区属性规划路径。
+- 阻塞行为：不阻塞。
+- ISR 限制：禁止在 ISR 中重新计算并改写 MPU；ISR 只能使用已经配置好的内存属性。
+- 配置宏：`MRT_PORT_STM32_CM_MPU_MIN_REGION_BYTES` 定义最小区域 32 字节。
+- 调用示例：`MRT_PortStm32CmNormalizeMpuRegion(0x20001234u, 6000u, &base, &size, &shift);`
+- 常见错误：把规整后的区域误认为等于原始范围；忽略起始偏移会导致区域从 8 KiB 继续扩大到 16 KiB；真实硬件仍需要把 `shift` 转换成目标 MPU 寄存器的 size 编码。
+
 ### MRT_PortDspC28xInitializeStack
 - 函数原型：`MRT_Result MRT_PortDspC28xInitializeStack(MRT_StackType *stack_memory, size_t stack_words, void (*entry)(void *), void *argument, void (*task_exit)(void), MRT_StackType **out_stack_top);`
 - 功能说明：构造 DSP C28x 风格初始任务栈帧。
@@ -1566,6 +1674,24 @@ int main(void)
 
 本节面向 Cortex-M4/M7，M3 也可按同样流程处理。M0/M0+ 没有 BASEPRI 或能力不同，需要把临界区策略改为 PRIMASK 并重新验证。
 
+### 5.1 移植前准备
+
+- 确认目标芯片的 Cortex-M 版本、是否带 FPU、NVIC 优先级位宽、SysTick 时钟源、FLASH/RAM 容量，以及是否启用 MPU。
+- 准备 ARM GNU Toolchain、烧录器、仿真器和串口日志工具，并确认 `arm-none-eabi-gcc`、`arm-none-eabi-objcopy`、`arm-none-eabi-size` 可用。
+- 先决定工程是基于 HAL 还是 CMSIS 直写寄存器；MyRTOS 只要求启动、tick、临界区、上下文切换和低功耗语义一致。
+- 先保留一份可工作的厂商工程备份，避免第一次接入时把向量表和链接脚本改乱。
+- 先把 `examples/stm32/` 当作参考模板，而不是从零拼接端口。
+
+### 5.2 工程分层
+
+- `main.c` 只放应用对象创建、外设初始化和 `MRT_KernelStart()`。
+- `startup_stm32cm.c` 只负责向量表、Reset_Handler 和 `.data`/`.bss` 启动流程。
+- `linker.ld` 只负责 FLASH/RAM 布局、主栈、任务栈、heap 和 DMA/MPU 保留区。
+- `mrt_port_stm32_smoke.c` 只负责公共端口语义：临界区、PendSV、SVC、tickless sleep 和必要的板级 glue。
+- `runtime_stubs.c` 或厂商库文件只补齐启动和调试所需的弱符号，不要把调度逻辑塞回启动文件。
+
+### 5.3 关键接入顺序
+
 1. 工具链：安装 ARM GNU Toolchain，确认 `arm-none-eabi-gcc`、`arm-none-eabi-objcopy`、`arm-none-eabi-size` 可用。CMake 工程中把 MyRTOS `include/` 加入 include path，把 `src/kernel/*.c`、目标端口 C 文件和 PendSV/SVC 汇编文件加入目标。
 2. 启动文件：在 STM32 startup 文件中保留厂商默认 Reset_Handler、栈顶符号和 `.data`/`.bss` 初始化流程。不要在 Reset_Handler 中启动调度器，应用应先初始化时钟、GPIO、外设、heap 和任务，再调用 `MRT_KernelStart()`。
 3. 向量表：把 `SysTick_Handler` 指向 MyRTOS tick 入口，把 `PendSV_Handler` 指向上下文切换入口，把 `SVC_Handler` 指向首任务启动入口。若项目已有同名 handler，必须合并逻辑，不能重复定义。
@@ -1575,9 +1701,19 @@ int main(void)
 7. 临界区：M3/M4/M7 推荐使用 BASEPRI 屏蔽不高于内核阈值的中断。使用 `MRT_PortStm32CmEncodeBasepri(nvic_bits, logical_priority, &basepri)` 生成左对齐值。优先级 0 不得被 MyRTOS 屏蔽，应留给最高紧急中断。M0/M0+ 使用 PRIMASK 时会屏蔽全部可屏蔽中断，需评估实时性。
 8. 中断优先级：所有调用 MyRTOS FromISR API 的外设中断，其抢占优先级必须低于或等于内核可屏蔽阈值。高于阈值的中断不得调用任何 MyRTOS API，只能写硬件寄存器或置原子标志。
 9. 低功耗：tickless idle 中由 `MRT_TicklessEnterIdle()` 调用 `MRT_PortSuppressTicksAndSleep()`。STM32 端口应先关闭 SysTick 或改写下一次唤醒比较值，执行 `WFI`，唤醒后读取实际睡眠 tick 并回报。进入 STOP/STANDBY 前必须确认时钟恢复后 SysTick 时钟源仍正确。
-10. 链接脚本：为 `.bss`、`.data`、heap、主栈和任务栈保留足够 RAM。静态任务栈可以放在普通 `.bss`；DMA 相关栈或缓冲需要按 MCU cache/MPU 规则放入非缓存区或执行 cache clean/invalidate。
-11. 示例 smoke test：创建两个任务，一个 500 ms 翻转 LED，一个通过队列接收 UART RX ISR 发来的字节；创建一个周期软件定时器翻转第二个 GPIO；在 SysTick 中调用 `MRT_KernelTick()`；在 UART ISR 中调用 `MRT_QueueSendFromISR()` 并把 `should_yield` 传给 `MRT_PortYieldFromISR()`。
-12. 排错：若首任务不运行，检查 SVC/PendSV 向量和 PSP 初始化；若 HardFault，检查 PC 是否为 Thumb 地址、栈 8 字节对齐、任务栈是否溢出；若 ISR API 无效，检查 `MRT_PortIsInsideISR()` 和 NVIC 优先级；若 tick 不准，检查 reload、时钟源和 `SystemCoreClock` 更新。
+10. MPU 布局：若目标 MCU 启用 MPU，用 `MRT_PortStm32CmNormalizeMpuRegion()` 先把任务栈、heap、外设寄存器窗口、DMA 缓冲和只读表规整为 power-of-two 区域，再按芯片 MPU 寄存器格式写入属性。规整区域可能大于原始范围，必须检查额外覆盖的 RAM 是否允许同样权限。
+11. 链接脚本：为 `.bss`、`.data`、heap、主栈和任务栈保留足够 RAM。静态任务栈可以放在普通 `.bss`；DMA 相关栈或缓冲需要按 MCU cache/MPU 规则放入非缓存区或执行 cache clean/invalidate。
+12. 示例 smoke test：创建两个任务，一个 500 ms 翻转 LED，一个通过队列接收 UART RX ISR 发来的字节；创建一个周期软件定时器翻转第二个 GPIO；在 SysTick 中调用 `MRT_KernelTick()`；在 UART ISR 中调用 `MRT_QueueSendFromISR()` 并把 `should_yield` 传给 `MRT_PortYieldFromISR()`。
+13. 排错：若首任务不运行，检查 SVC/PendSV 向量和 PSP 初始化；若 HardFault，检查 PC 是否为 Thumb 地址、栈 8 字节对齐、任务栈是否溢出；若 ISR API 无效，检查 `MRT_PortIsInsideISR()` 和 NVIC 优先级；若 tick 不准，检查 reload、时钟源和 `SystemCoreClock` 更新；若启用 MPU 后异常，检查规整区域是否覆盖了不该共享权限的相邻对象。
+
+### 5.4 首次联调
+
+1. 先只验证编译和链接，确认 `include/`、`src/kernel/`、端口源码和启动文件都进入最终镜像。
+2. 再确认 `Reset_Handler -> main()` 路径可达，且 `MRT_KernelInitialize()`、`MRT_HeapInitialize()`、任务创建、队列创建和定时器启动命令都能成功。
+3. 再验证 `SysTick_Handler` 只负责推进 `MRT_KernelTick()`，`PendSV_Handler` 只负责延迟切换，`SVC_Handler` 只负责首任务启动。
+4. 再验证 UART、DMA 或 GPIO 中断中的 FromISR API 只在 `should_yield=true` 时请求延迟切换，而不是在 ISR 内直接切任务。
+5. 若启用 MPU，先只保护任务栈和 heap，稳定后再扩展到外设窗口、DMA buffer 和只读表。
+6. 每次只改一个接入点，避免把 startup、tick、临界区和低功耗同时改动后无法定位故障。
 
 STM32 最小接入骨架如下，真实工程中可把寄存器写入替换为厂商 HAL 或 CMSIS 调用，但必须保持 tick、PendSV 和 ISR 延迟切换语义一致。
 
@@ -1595,7 +1731,7 @@ void USARTx_IRQHandler(void)
     (void)MRT_QueueSendFromISR(rx_queue, &byte, &should_yield);
     if (should_yield)
     {
-        MRT_PortYieldFromISR();
+        MRT_PortYieldFromISR(should_yield);
     }
 }
 
@@ -1618,6 +1754,22 @@ int main(void)
 }
 ```
 
+STM32 smoke 工程落地步骤：
+
+1. 在仓库根目录运行 `python tools\verify\check_embedded_smoke_projects.py`。该命令会检查 `examples/stm32/` 文件是否齐全，并使用 `arm-none-eabi-gcc` 编译链接 `build/embedded-smoke/stm32_smoke.elf`。
+2. 打开 `examples/stm32/README.md`，确认工程角色划分：`main.c` 负责任务、队列、定时器和 ISR 连接；`startup_stm32cm.c` 负责向量表和 Reset_Handler；`linker.ld` 负责 FLASH/RAM 布局；`mrt_port_stm32_smoke.c` 负责公共端口接口。
+3. 第一轮板级移植先保留 `main.c` 的对象创建顺序，只替换 `mrt_port_stm32_smoke.c` 中的临界区、PendSV、SVC 和 tickless sleep 实现。这样可以把“应用对象是否创建成功”和“CPU 上下文切换是否正确”分开排错。
+4. 把 `startup_stm32cm.c` 与厂商 startup 文件合并时，只保留一个向量表。若厂商工程已经定义 `SysTick_Handler`、`PendSV_Handler` 或 `SVC_Handler`，必须把 MyRTOS 调用合并进去，不能产生重复符号。
+5. 链接脚本迁移时，先按 `examples/stm32/linker.ld` 检查 `.isr_vector`、`.text`、`.data`、`.bss`、`_estack`、`_sidata`、`_sdata`、`_edata`、`_sbss`、`_ebss` 是否齐全，再替换为目标芯片真实 FLASH/RAM 容量。
+6. 首次烧录后按顺序验证：Reset_Handler 能进入 `main()`；`MRT_HeapInitialize()` 返回成功；两个静态任务创建成功；UART 队列创建成功；软件定时器启动命令经 `MRT_TimerServiceRunPending()` 生效；SysTick 能推进 `MRT_KernelTick()`。
+7. 接入真实 PendSV 汇编前，不要把 smoke 现象解释为完整调度成功。`examples/stm32/mrt_port_stm32_smoke.c` 是交叉编译和接线骨架，真实任务切换仍需要目标端口保存/恢复 PSP、R4-R11、LR、异常返回值以及可选 FPU 状态。
+8. 板级记录应至少包含：编译命令、ELF/map 路径、芯片型号、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、PendSV/SVC 汇编来源、LED/UART/timer smoke 结果。
+
+### 5.5 板级验收
+
+- 记录编译命令、ELF/map 路径、芯片型号、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、PendSV/SVC 汇编来源、LED/UART/timer smoke 结果。
+- 验证项至少包括：编译通过、首任务运行、SysTick 计数推进、ISR 唤醒延迟切换、临界区嵌套恢复、MPU 规整区域生效、tickless 睡眠后顺序不乱。
+
 STM32 移植验收清单：
 
 - 编译检查：`arm-none-eabi-gcc` 无未定义 handler，map 文件中 MyRTOS 内核、端口汇编、任务栈和 heap 均已链接。
@@ -1625,14 +1777,40 @@ STM32 移植验收清单：
 - tick 检查：1 秒内 `MRT_KernelGetTick()` 增量等于 `MRT_CFG_TICK_RATE_HZ`，误差只来自晶振和测量工具。
 - 切换检查：高优先级任务被 ISR 唤醒后，在 ISR 退出后抢占低优先级任务，而不是在 ISR 内直接切换。
 - 临界区检查：嵌套进入/退出临界区后中断屏蔽状态恢复到进入前状态，高紧急中断不调用 MyRTOS API。
-- 低功耗检查：tickless 睡眠前后任务延时和软件定时器到期顺序保持一致。
-- 故障检查：开启断言 hook、trace hook 和栈水位查询，至少覆盖任务创建失败、队列满、ISR 唤醒任务、tickless 唤醒四类场景。
+  - MPU 检查：任务栈、heap、DMA buffer 的 MPU 规整区域覆盖原始范围，额外覆盖字节已经在链接脚本中隔离或允许相同权限。
+  - 低功耗检查：tickless 睡眠前后任务延时和软件定时器到期顺序保持一致。
+  - 故障检查：开启断言 hook、trace hook 和栈水位查询，至少覆盖任务创建失败、队列满、ISR 唤醒任务、tickless 唤醒四类场景。
+
+### 5.6 真实板级证据归档
+
+1. 先从 `docs/verification/hardware_smoke/stm32_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/stm32_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
+2. 证据至少要记录：芯片型号、板卡型号、编译器版本、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、上下文切换来源、SysTick、PendSV/SVC、ISR 队列、软件定时器、tickless、运行时长、断言次数、heap 最小剩余量和 UART/trace 摘要。
+3. 真实验收时，必须能从日志里看出 `Reset -> main -> 首任务 -> SysTick -> ISR 唤醒 -> 延迟切换 -> 退出` 这条链路闭环，而不是只有“能编译”。
+4. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/stm32_board_smoke.md` 是否满足最终格式。
+5. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，STM32 板级 smoke 才算最终可交付。
 
 ## 6. DSP 移植步骤
 
 ### DSP 移植步骤
 
 本节以 TI C2000/C28x 风格为模型。其他 DSP 族应保留 MyRTOS 公共语义，但按实际 ABI 替换寄存器保存列表、栈方向和软件中断机制。
+
+### 6.1 移植前准备
+
+- 确认目标 DSP 编译器、ABI 文档、链接脚本格式、栈元素宽度、可用 RAM 分区和软件中断资源。
+- 明确寄存器分类：调用者保存、被调用者保存、状态寄存器、返回地址寄存器、栈指针、参数传递寄存器，以及必要的扩展寄存器。
+- 先决定 tick 源是 CPU timer、ePWM timer 还是片上通用 timer，并确认它能稳定触发 `MRT_KernelTick()`。
+- 先决定软件中断或 trap 作为上下文切换触发路径，避免后面再改 ISR 嵌套模型。
+- 先准备一份可跑的 host model，确保公共端口语义先验收，再替换成真实汇编。
+
+### 6.2 工程分层
+
+- `main.c` 只负责时钟、外设、对象创建和 `MRT_KernelStart()`。
+- `portable/dsp/<family>/` 只放公共 C helper、上下文切换汇编、timer ISR glue 和启动 glue。
+- `linker.cmd` 或等价脚本只负责任务栈、heap、DMA buffer、采样帧和中断栈分区。
+- `mrt_port_dsp_model.c` 或 host model 只表达调用顺序和耦合关系，不要把真实 ABI 假装成已完成。
+
+### 6.3 关键接入顺序
 
 1. 工具链：确认目标 DSP 编译器、ABI 文档和链接脚本格式。建立独立 `portable/dsp/<family>/` 目录，把公共 C helper、真实汇编上下文切换文件、timer ISR 文件和启动 glue 文件分开。
 2. ABI 确认：记录寄存器分类：调用者保存、被调用者保存、状态寄存器、返回地址寄存器、栈指针、参数传递寄存器。若栈元素不是 32 bit，需要在端口头文件中重新定义栈槽宽度或适配 `MRT_StackType`。
@@ -1645,6 +1823,15 @@ STM32 移植验收清单：
 9. 链接脚本：为任务栈、heap、DMA 缓冲、采样帧和中断栈分区。DSP 项目常有快 RAM、共享 RAM、外部 RAM，任务栈应放在访问延迟可预测的区域。
 10. 示例 smoke test：创建一个采样处理任务和一个通信任务；timer ISR 每 1 ms 推进 tick；ADC ISR 把采样块指针写入固定块内存池或队列；软件中断执行上下文切换；低优先级任务用事件组等待处理完成。
 11. 排错：若任务入口参数错误，检查 ABI 参数槽；若切换后状态寄存器异常，检查 ST0/ST1 保存恢复；若 ISR 嵌套后不切换，检查进入/退出计数是否回到 0；若随机崩溃，检查栈对齐、双字访问和链接脚本栈区大小。
+
+### 6.4 首次联调
+
+1. 先只验证编译和链接，确认 DSP 端口源码、启动 glue、timer ISR 和上下文切换文件都进入镜像。
+2. 再确认 `MRT_PortDspC28xInitializeStack()` 的栈帧位置、返回地址和参数槽位与目标 ABI 一致。
+3. 再验证 CPU timer ISR 只推进 `MRT_KernelTick()`，软件中断只负责延迟切换，不在 ISR 中执行长算法。
+4. 再验证 ADC/DMA ISR 通过队列、事件组或固定块内存池把数据交给任务，然后再请求切换。
+5. 若启用多层 ISR 嵌套，先确认进入/退出计数不会下溢，再看最外层退出后是否触发切换。
+6. 每次只改一个寄存器组或一个 ISR 路径，避免同时改 ABI、tick 和中断控制器。
 
 DSP 最小接入骨架如下。不同 DSP 的寄存器名称不同，示例只表达调用顺序和耦合关系。
 
@@ -1689,15 +1876,39 @@ int main(void)
 }
 ```
 
+DSP smoke/model 落地步骤：
+
+1. 在仓库根目录运行 `python tools\verify\check_embedded_smoke_projects.py`。当前环境没有 TI DSP 工具链，因此脚本会用 host `gcc` 编译并运行 `examples/dsp/` 的 C28x 风格模型。
+2. `examples/dsp/main.c` 会执行 DSP 栈帧 helper、任务创建、队列创建、定时器启动、ISR 模型进入/退出、软件中断式切换请求和 tickless sleep 模型检查。它用于证明公共语义和调用顺序，而不是替代真实 DSP 汇编。
+3. 真实 TI C2000/C28x 工程中，把 `examples/dsp/mrt_port_dsp_model.c` 拆成三个文件：中断屏蔽/恢复 C 文件、上下文保存恢复汇编文件、硬件 timer/软件中断 glue 文件。
+4. 按目标 ABI 校验 `MRT_PortDspC28xInitializeStack()` 的槽位。若真实 ABI 需要保存更多寄存器，应扩展槽位枚举、修改端口 helper，并补充对应 host 测试。
+5. 把 CPU timer ISR 写成短路径：清硬件中断标志、调用 `MRT_KernelTick()`、按 `should_yield` 请求软件中断、确认中断控制器分组。不要在 timer ISR 中运行算法或定时器回调。
+6. ADC/DMA ISR 先通过固定块内存池或队列把数据交给任务，再通过软件中断请求延迟切换。多层 ISR 嵌套时只允许最外层退出后执行任务切换。
+7. 链接脚本要把任务栈、heap、采样 buffer、DMA buffer、通信 buffer 放入确定 RAM 区域，并记录 cache/共享 RAM 同步策略。
+8. 真实板级 smoke 结果应记录：DSP 型号、编译器版本、ABI 模式、栈方向、任务栈地址范围、timer tick 精度、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量和 30 分钟混合负载结果。
+
+### 6.5 板级验收
+
+- 记录 DSP 型号、编译器版本、ABI 模式、栈方向、任务栈地址范围、timer tick 精度、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量和 30 分钟混合负载结果。
+- 验证项至少包括：编译通过、首任务运行、tick 推进、软件中断切换、嵌套 ISR 退栈正确、数据通路能唤醒任务、缓存或共享 RAM 策略可复现。
+
 DSP 移植验收清单：
 
 - ABI 检查：上下文切换汇编保存并恢复所有被调用者保存寄存器、状态寄存器、返回地址、栈指针和必要的扩展寄存器。
 - 栈检查：任务栈满足目标 ABI 对齐要求，入口参数能被任务函数稳定读取，任务误返回时进入统一退出兜底函数。
 - tick 检查：硬件 timer ISR 只推进内核 tick 并请求延迟切换，不执行长时间 DSP 算法。
 - 嵌套检查：多层 ISR 中只有最外层退出后允许切换，`MRT_PortDspC28xGetInterruptNesting()` 不出现下溢。
-- 数据通路检查：ADC/DMA ISR 通过队列、事件组或固定块内存池把数据交给任务，任务侧能在预期 tick 内被唤醒。
-- 内存检查：任务栈、heap、DMA buffer、采样 buffer 放在确定的 RAM 区域，cache 或共享 RAM 同步策略已写入端口说明。
-- smoke 检查：至少运行 30 分钟采样/通信/定时器混合负载，记录 tick 计数、队列峰值、内存最小剩余量和断言 hook 触发次数。
+  - 数据通路检查：ADC/DMA ISR 通过队列、事件组或固定块内存池把数据交给任务，任务侧能在预期 tick 内被唤醒。
+  - 内存检查：任务栈、heap、DMA buffer、采样 buffer 放在确定的 RAM 区域，cache 或共享 RAM 同步策略已写入端口说明。
+  - smoke 检查：至少运行 30 分钟采样/通信/定时器混合负载，记录 tick 计数、队列峰值、内存最小剩余量和断言 hook 触发次数。
+
+### 6.6 真实板级证据归档
+
+1. 先从 `docs/verification/hardware_smoke/dsp_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/dsp_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
+2. 证据至少要记录：DSP 型号、板卡型号、编译器版本、ABI 模式、栈方向、上下文切换来源、timer tick 精度、软件中断切换、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量、运行时长和 UART/trace 摘要。
+3. 实机联调时，必须能从日志里看出 `timer ISR -> MRT_KernelTick() -> 软件中断请求 -> 最外层 ISR 退出 -> 切换发生` 这条链路闭合。
+4. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/dsp_board_smoke.md` 是否满足最终格式。
+5. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，DSP 板级 smoke 才算最终可交付。
 
 ## 7. 附录
 
@@ -1743,7 +1954,8 @@ DSP 移植验收清单：
 
 ```powershell
 python tools\run_host_tests.py
-python tools\verify\check_api_manual_coverage.py
-python tools\verify\check_chinese_comments.py
-python tools\verify\check_original_symbols.py
-```
+  python tools\verify\check_api_manual_coverage.py
+  python tools\verify\check_chinese_comments.py
+  python tools\verify\check_original_symbols.py
+  python tools\verify\check_hardware_smoke_evidence.py
+  ```

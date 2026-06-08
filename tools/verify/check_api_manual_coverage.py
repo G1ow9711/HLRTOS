@@ -26,6 +26,11 @@ REQUIRED_API_FIELDS = [
 ]
 
 PORTING_REQUIRED_TERMS = [
+    "移植前准备",
+    "工程分层",
+    "关键接入顺序",
+    "首次联调",
+    "板级验收",
     "STM32 Cortex-M 移植步骤",
     "DSP 移植步骤",
     "工具链",

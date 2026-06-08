@@ -6,8 +6,8 @@
  * @brief STM32 Cortex-M 移植层契约辅助接口。
  *
  * 本文件只暴露可在 host 上测试的 Cortex-M 移植契约：任务初始栈帧、
- * tick 参数计算和中断优先级编码。真实 SysTick、PendSV、SVC 和
- * BASEPRI/PRIMASK 寄存器访问由后续板级端口文件按本契约接入。
+ * tick 参数计算、中断优先级编码和 MPU 区域布局规整。真实 SysTick、
+ * PendSV、SVC 和 BASEPRI/PRIMASK 寄存器访问由后续板级端口文件按本契约接入。
  */
 
 #include "myrtos/mrt_types.h"
@@ -26,6 +26,9 @@
 
 /** @brief Cortex-M SysTick reload 寄存器的 24 位最大装载值。 */
 #define MRT_PORT_STM32_CM_SYSTICK_RELOAD_MAX 0x00FFFFFFu
+
+/** @brief Cortex-M MPU 最小区域大小，单位字节。 */
+#define MRT_PORT_STM32_CM_MPU_MIN_REGION_BYTES 32u
 
 /**
  * @brief Cortex-M 初始栈帧内各寄存器槽位。
@@ -116,5 +119,25 @@ MRT_Result MRT_PortStm32CmCalculateSysTickReload(uint32_t cpu_clock_hz,
 MRT_Result MRT_PortStm32CmEncodeBasepri(uint32_t nvic_priority_bits,
                                         uint32_t logical_priority,
                                         uint32_t *out_encoded_priority);
+
+/**
+ * @brief 将任意 STM32 Cortex-M 内存范围规整为 MPU 兼容区域。
+ * @param base_address 待保护或映射的内存起始地址。
+ * @param size_bytes 待保护或映射的原始字节数，必须大于 0。
+ * @param out_region_base 输出规整后的区域基址，不能为空。
+ * @param out_region_size 输出规整后的区域大小，单位字节，不能为空。
+ * @param out_region_shift 输出规整后区域大小的 log2 值，例如 8192 字节对应 13，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示规整成功；参数非法、地址范围溢出或无法规整时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * uintptr_t region_base;
+ * size_t region_size;
+ * uint32_t region_shift;
+ * MRT_PortStm32CmNormalizeMpuRegion(0x20001234u, 6000u, &region_base, &region_size, &region_shift);
+ */
+MRT_Result MRT_PortStm32CmNormalizeMpuRegion(uintptr_t base_address,
+                                             size_t size_bytes,
+                                             uintptr_t *out_region_base,
+                                             size_t *out_region_size,
+                                             uint32_t *out_region_shift);
 
 #endif

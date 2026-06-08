@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SCAN_DIRS = [ROOT / "include", ROOT / "src", ROOT / "docs" / "manual"]
+SCAN_DIRS = [ROOT / "include", ROOT / "src", ROOT / "examples", ROOT / "tests", ROOT / "docs" / "manual"]
 BANNED_PATTERNS = [
     r"\bxTask[A-Za-z0-9_]*\b",
     r"\bvTask[A-Za-z0-9_]*\b",

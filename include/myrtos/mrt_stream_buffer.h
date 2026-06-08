@@ -76,14 +76,25 @@ MRT_Result MRT_StreamBufferCreate(size_t capacity,
                                   MRT_StreamBufferHandle *out_stream);
 
 /**
+ * @brief 删除动态创建的流缓冲并归还堆内存。
+ * @param stream 待删除流缓冲句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态对象或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_StreamBufferDelete(stream);
+ */
+MRT_Result MRT_StreamBufferDelete(MRT_StreamBufferHandle stream);
+
+/**
  * @brief 向流缓冲写入字节流。
  * @param stream 目标流缓冲句柄，不能为空。
  * @param data 待写入数据地址；length 大于 0 时不能为空。
  * @param length 请求写入字节数。
  * @param timeout 等待可写空间的 tick 数；当前阶段非阻塞路径会在无空间时返回。
  * @param out_sent 输出实际写入字节数，允许为空。
- * @return MRT_Result 返回 MRT_RESULT_OK 表示写入了请求字节或部分字节；无空间时返回 MRT_RESULT_OBJECT_FULL；
- *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示写入了请求字节或部分字节；无空间且 timeout 为 0 时返回
+ *         MRT_RESULT_OBJECT_FULL；无空间且 timeout 非 0 时进入写等待并在当前 host 模型中返回
+ *         MRT_RESULT_TIMEOUT；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
  * @example
  * size_t sent;
  * MRT_StreamBufferSend(stream, data, len, 0, &sent);

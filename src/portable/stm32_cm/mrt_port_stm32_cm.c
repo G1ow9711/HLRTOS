@@ -232,3 +232,99 @@ MRT_Result MRT_PortStm32CmEncodeBasepri(uint32_t nvic_priority_bits,
     /* BASEPRI 编码完成。 */
     return MRT_RESULT_OK;
 }
+
+/**
+ * @brief 将任意 STM32 Cortex-M 内存范围规整为 MPU 兼容区域。
+ * @param base_address 待保护或映射的内存起始地址。
+ * @param size_bytes 待保护或映射的原始字节数，必须大于 0。
+ * @param out_region_base 输出规整后的区域基址，不能为空。
+ * @param out_region_size 输出规整后的区域大小，单位字节，不能为空。
+ * @param out_region_shift 输出规整后区域大小的 log2 值，例如 8192 字节对应 13，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示规整成功；参数非法、地址范围溢出或无法规整时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @example
+ * uintptr_t region_base;
+ * size_t region_size;
+ * uint32_t region_shift;
+ * MRT_PortStm32CmNormalizeMpuRegion(0x20001234u, 6000u, &region_base, &region_size, &region_shift);
+ */
+MRT_Result MRT_PortStm32CmNormalizeMpuRegion(uintptr_t base_address,
+                                             size_t size_bytes,
+                                             uintptr_t *out_region_base,
+                                             size_t *out_region_size,
+                                             uint32_t *out_region_shift)
+{
+    /* 输出参数只要有一个为空，就无法完整回传 MPU 布局结果。 */
+    if ((out_region_base == 0) || (out_region_size == 0) || (out_region_shift == 0)) {
+        /* 返回统一参数错误码。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 先把输出清零，避免失败路径遗留旧值。 */
+    *out_region_base = 0u;
+    *out_region_size = 0u;
+    *out_region_shift = 0u;
+
+    /* 原始大小必须大于 0。 */
+    if (size_bytes == 0u) {
+        /* 返回统一参数错误码。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* MPU 区域至少为 32 字节。 */
+    size_t region_size = MRT_PORT_STM32_CM_MPU_MIN_REGION_BYTES;
+
+    /* 计算原始范围末尾，若发生回绕则说明参数组合不合法。 */
+    uintptr_t requested_end = base_address + (uintptr_t)size_bytes;
+    if (requested_end < base_address) {
+        /* 返回统一参数错误码。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 逐步翻倍区域大小，直到某个 power-of-two 区域能够完整覆盖原始范围。 */
+    for (;;) {
+        /* 生成当前候选区域的向下对齐基址。 */
+        uintptr_t region_base = base_address & ~((uintptr_t)region_size - 1u);
+
+        /* 计算当前候选区域的末尾地址，注意这里是末尾之后的地址。 */
+        uintptr_t region_end = region_base + (uintptr_t)region_size;
+
+        /* 若末尾回绕，说明区域大小过大或平台地址空间不支持。 */
+        if (region_end < region_base) {
+            /* 返回统一参数错误码。 */
+            return MRT_RESULT_INVALID_ARGUMENT;
+        }
+
+        /* 候选区域必须同时覆盖起点和终点。 */
+        if ((region_base <= base_address) && (region_end >= requested_end)) {
+            /* 写回规整后的基址。 */
+            *out_region_base = region_base;
+
+            /* 写回规整后的区域大小。 */
+            *out_region_size = region_size;
+
+            /* 计算区域大小对应的 log2 值。 */
+            uint32_t shift = 0u;
+            size_t temp = region_size;
+            while (temp > 1u) {
+                /* 逐步右移得到幂次。 */
+                temp >>= 1u;
+                shift++;
+            }
+
+            /* 写回 shift，供后续硬件寄存器编码使用。 */
+            *out_region_shift = shift;
+
+            /* 规整成功。 */
+            return MRT_RESULT_OK;
+        }
+
+        /* 若已无法继续扩大，则返回参数错误。 */
+        if (region_size > (SIZE_MAX / 2u)) {
+            /* 返回统一参数错误码。 */
+            return MRT_RESULT_INVALID_ARGUMENT;
+        }
+
+        /* 区域翻倍后重新尝试。 */
+        region_size <<= 1u;
+    }
+}

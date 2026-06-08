@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 6 extension: remaining hardware smoke and policy coupling closure
+Phase 11 complete: Hardware smoke evidence gate and manual porting proof; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -33,15 +33,15 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 - [x] Write failing tests before production code
 - [x] Implement foundation kernel core incrementally
 - [x] Implement task scheduler core incrementally
-- [ ] Implement portable layers and demos
+- [x] Implement portable layers and demos
   - [x] STM32 Cortex-M stack/tick/priority helper contract
   - [x] DSP C28x-style stack/software-interrupt helper contract
-- [ ] Add detailed Chinese comments to every public and internal function
+- [x] Add detailed Chinese comments to every public and internal function
 - [ ] Close preview API implementation gaps
   - [x] Task lifecycle APIs: dynamic create/delete, suspend/resume, delay-until, priority set, stack water mark
   - [x] Dynamic synchronization/buffer APIs
   - [x] Runtime stats API: task runtime tick accounting
-- **Status:** in_progress
+- **Status:** complete
 
 ### Phase 5: Documentation
 - [x] Write original Chinese user manual in FreeRTOS-like structure
@@ -61,6 +61,48 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 - [x] Close held-mutex task deletion policy coupling (`C-012`)
 - [x] Close timer service command queue and callback service coupling (`C-017`, `C-018`)
 - **Status:** complete
+
+### Phase 7: Embedded Smoke Projects
+- [x] Add a failing smoke/build check for missing `examples/stm32/` and `examples/dsp/`
+- [x] Add STM32 smoke project scaffold and ARM GCC build path
+- [x] Add DSP smoke/model project scaffold and host-verifiable build path
+- [x] Expand manual porting steps with explicit example wiring and build commands
+- [x] Update requirement/coupling matrices and final report for smoke evidence
+- **Status:** complete
+
+### Phase 8: STM32 MPU Helper
+- [x] Add a failing test for STM32 MPU region layout helper
+- [x] Implement host-verifiable MPU layout normalization API
+- [x] Update manual/API catalog and verification matrices
+- [x] Re-run host/static/smoke verification
+- **Status:** complete
+
+### Phase 9: Dynamic Buffer Delete Lifecycle
+- [x] Add failing coverage for dynamic stream/message buffer delete APIs
+- [x] Implement `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete`
+- [x] Update API catalog and Chinese manual sections
+- [x] Re-run host/static/smoke verification
+- **Status:** complete
+
+### Phase 10: Buffer Writer Wait Coupling and API Prototype Audit
+- [x] Add failing coverage for stream/message buffer writer wait paths that must block dynamic deletion while waiters exist
+- [x] Implement `MRT_TASK_WAIT_REASON_STREAM_SEND`, `MRT_TASK_WAIT_REASON_MESSAGE_SEND`, and per-task `object_wait_bytes`
+- [x] Wake blocked buffer writers when receive/reset releases enough space
+- [x] Add `tools/verify/check_api_catalog_prototypes.py` to verify API catalog, headers, and source definitions align
+- [x] Add missing catalog/manual coverage for `MRT_TimerGetName` and `MRT_MemoryPoolGetFreeCount`
+- [x] Update requirement/coupling/final audit evidence and re-run host/static/smoke verification
+- **Status:** complete
+
+### Phase 11: Hardware Smoke Evidence Gate
+- [x] Validate `tests/static/test_hardware_smoke_evidence_checker.py`
+- [x] Improve `tools/verify/check_hardware_smoke_evidence.py` so missing required fields do not hide present-but-failing status/numeric fields
+- [x] Add `docs/verification/hardware_smoke/README.md`
+- [x] Add STM32 and DSP real-board evidence templates under `docs/verification/hardware_smoke/`
+- [x] Expand manual STM32/DSP porting chapters with real-board evidence archival steps
+- [x] Update verification plan, final report, completion audit, and requirement matrix to reference the hardware evidence gate
+- [x] Re-run host/static/smoke verification
+- [ ] Replace templates with real `stm32_board_smoke.md` and `dsp_board_smoke.md` after actual board runs
+- **Status:** complete for repo-side gate/template work; real hardware evidence remains pending
 
 ## Key Questions
 1. Which first target should drive the port: STM32 Cortex-M3/M4/M7, Cortex-M0/M0+, or a specific DSP family?
@@ -90,6 +132,9 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 | Mutex timeout rollback | When a mutex waiter times out, the owner effective priority is recalculated from remaining waiters and restored to base priority if no higher waiter remains. |
 | Held mutex deletion policy | `MRT_TaskDelete` rejects deletion of a task that still owns a mutex, preserving owner, waiters, and task state until the application releases the lock explicitly. |
 | Timer service command queue | Timer control APIs enqueue service commands; tick expiry enqueues callback events; `MRT_TimerServiceRunPending` drains commands, callbacks, and pending functions in FIFO order. |
+| Buffer writer wait model | Stream buffer write wait records 1 byte because partial send is allowed; message buffer write wait records full record length (`4 + payload`) so wakeup only happens when a whole message can fit. |
+| API prototype verifier | Public API catalog must match public headers and source definitions; test-only `MRT_PortMock*`/`MRT_KernelTest*`, list primitives, priority bitmap helpers, and `MRT_ASSERT` macro are handled explicitly. |
+| Hardware evidence templates | Do not commit fake PASS board logs. Keep templates under `docs/verification/hardware_smoke/` and require real `stm32_board_smoke.md` / `dsp_board_smoke.md` before final hardware completion. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -100,6 +145,8 @@ Phase 6 extension: remaining hardware smoke and policy coupling closure
 | `cmake` command not found | 1 | Verified GCC exists; added project-local Python host test runner as fallback while preserving CMake build files. |
 | Dynamic object GREEN first run failed: `filler != 0` | 1 | Replaced full-free-size allocation with a repeated heap exhaustion helper in dynamic allocation tests. |
 | Timer service GREEN first run failed four legacy tests | 1 | Updated timer control, timer expiry, and tickless tests to drain `MRT_TimerServiceRunPending` before expecting queued commands or callbacks to take effect. |
+| Parallel full verification timed out on host tests | 1 | Static/smoke checks completed; reran `python tools\run_host_tests.py` alone with longer timeout and confirmed `[summary] 69 test target(s) passed`. |
+| Hardware evidence checker static test failed because early missing-field return hid `Evidence-Status: FAIL` | 1 | Removed the early return after required-field checks so present failing fields and numeric bounds are still reported. |
 
 ## Notes
 - Re-read this file before major design decisions.

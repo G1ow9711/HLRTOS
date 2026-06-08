@@ -1,7 +1,9 @@
 #include "mrt_test.h"
 #include "myrtos/mrt_heap.h"
+#include "myrtos/mrt_kernel.h"
 #include "myrtos/mrt_message_buffer.h"
 #include "myrtos/mrt_stream_buffer.h"
+#include "myrtos/mrt_task.h"
 
 /**
  * @brief 初始化一个可合并堆并读取初始空闲空间。
@@ -20,6 +22,19 @@ static void init_heap(uintptr_t *heap_words, size_t heap_bytes, size_t *out_free
 
     /* 读取初始空闲空间。 */
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_HeapGetFreeSize(out_free));
+}
+
+/**
+ * @brief 测试用任务入口函数。
+ * @param arg 用户参数，本测试不使用。
+ * @return void 无返回值。
+ * @example
+ * DummyTask(NULL);
+ */
+static void DummyTask(void *arg)
+{
+    /* 显式丢弃未使用参数，避免编译器告警。 */
+    (void)arg;
 }
 
 /**
@@ -59,6 +74,12 @@ static void assert_dynamic_stream_buffer_send_receive(void)
         /* 每个字节都必须保持 FIFO 顺序。 */
         MRT_TEST_ASSERT_EQ_U32((unsigned)input[index], (unsigned)output[index]);
     }
+
+    /* 删除动态流缓冲应归还整块堆空间。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_StreamBufferDelete(stream));
+    size_t free_after_delete = 0u;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_HeapGetFreeSize(&free_after_delete));
+    MRT_TEST_ASSERT_EQ_U32((unsigned)free_before, (unsigned)free_after_delete);
 }
 
 /**
@@ -95,6 +116,128 @@ static void assert_dynamic_stream_buffer_failure_and_invalid_arguments(void)
                            (unsigned)MRT_StreamBufferCreate(8u, 9u, &stream));
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_INVALID_ARGUMENT,
                            (unsigned)MRT_StreamBufferCreate(8u, 1u, 0));
+
+    /* 空删除参数应被拒绝。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_INVALID_ARGUMENT,
+                           (unsigned)MRT_StreamBufferDelete(0));
+}
+
+/**
+ * @brief 验证流缓冲删除拒绝静态对象。
+ * @param void 无输入参数。
+ * @return void 断言失败时测试进程直接退出。
+ * @example
+ * assert_stream_buffer_delete_rejects_static_object();
+ */
+static void assert_stream_buffer_delete_rejects_static_object(void)
+{
+    /* 创建一个静态流缓冲。 */
+    MRT_StreamBuffer storage;
+    uint8_t buffer[16u];
+    MRT_StreamBufferHandle stream = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_StreamBufferCreateStatic(sizeof(buffer),
+                                                                  4u,
+                                                                  buffer,
+                                                                  &storage,
+                                                                  &stream));
+
+    /* 静态对象不归堆删除路径所有，必须拒绝。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OBJECT_BUSY,
+                           (unsigned)MRT_StreamBufferDelete(stream));
+}
+
+/**
+ * @brief 验证动态流缓冲删除会拒绝仍有写者等待的对象，并在读出空间后唤醒写者。
+ * @param void 无输入参数。
+ * @return void 断言失败时测试进程直接退出。
+ * @example
+ * assert_dynamic_stream_buffer_delete_rejects_waiting_writer();
+ */
+static void assert_dynamic_stream_buffer_delete_rejects_waiting_writer(void)
+{
+    /* 定义内核任务与堆存储。 */
+    MRT_Task writer_storage;
+    MRT_Task background_storage;
+    MRT_StackType writer_stack[128u];
+    MRT_StackType background_stack[128u];
+    uintptr_t heap_words[256u];
+
+    /* 初始化内核和可合并堆。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_KernelInitialize());
+    size_t free_before = 0u;
+    init_heap(heap_words, sizeof(heap_words), &free_before);
+
+    /* 创建低优先级后台任务。 */
+    MRT_TaskHandle background_task = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_TaskCreateStatic("background",
+                                                          DummyTask,
+                                                          0,
+                                                          1u,
+                                                          background_stack,
+                                                          128u,
+                                                          &background_storage,
+                                                          &background_task));
+
+    /* 创建高优先级写者任务。 */
+    MRT_TaskHandle writer_task = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_TaskCreateStatic("writer",
+                                                          DummyTask,
+                                                          0,
+                                                          5u,
+                                                          writer_stack,
+                                                          128u,
+                                                          &writer_storage,
+                                                          &writer_task));
+
+    /* 动态创建一个 4 字节流缓冲。 */
+    MRT_StreamBufferHandle stream = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_StreamBufferCreate(4u, 1u, &stream));
+    MRT_TEST_ASSERT_TRUE(stream != 0);
+
+    /* 在调度器启动前填满流缓冲。 */
+    const uint8_t initial[4u] = {1u, 2u, 3u, 4u};
+    size_t transferred = 0u;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_StreamBufferSend(stream, initial, sizeof(initial), 0u, &transferred));
+    MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)transferred);
+
+    /* 启动调度器后应先运行高优先级写者。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_KernelStart());
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == writer_task);
+
+    /* 写者尝试向满流缓冲写入，非零 timeout 应进入写等待链表。 */
+    const uint8_t byte = 9u;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_TIMEOUT,
+                           (unsigned)MRT_StreamBufferSend(stream, &byte, 1u, 20u, &transferred));
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)transferred);
+
+    /* 写者阻塞后，低优先级后台任务应成为当前任务。 */
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == background_task);
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_TASK_WAIT_REASON_STREAM_SEND,
+                           (unsigned)writer_storage.wait_reason);
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)writer_storage.object_wait_bytes);
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)MRT_ListGetCount(&stream->waiting_writers));
+
+    /* 对象仍有等待写者时，动态删除必须拒绝，避免等待链表悬空。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OBJECT_BUSY,
+                           (unsigned)MRT_StreamBufferDelete(stream));
+
+    /* 低优先级任务读出 1 字节后应释放空间并唤醒高优先级写者。 */
+    uint8_t output = 0u;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_StreamBufferReceive(stream, &output, 1u, 0u, &transferred));
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)transferred);
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)output);
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)MRT_ListGetCount(&stream->waiting_writers));
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == writer_task);
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)writer_storage.object_wait_bytes);
+
+    /* 等待链表清空后，动态删除应能释放堆内存。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_StreamBufferDelete(stream));
 }
 
 /**
@@ -134,6 +277,12 @@ static void assert_dynamic_message_buffer_send_receive(void)
         /* 每个消息字节都必须一致。 */
         MRT_TEST_ASSERT_EQ_U32((unsigned)input[index], (unsigned)output[index]);
     }
+
+    /* 删除动态消息缓冲应归还整块堆空间。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_MessageBufferDelete(message_buffer));
+    size_t free_after_delete = 0u;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_HeapGetFreeSize(&free_after_delete));
+    MRT_TEST_ASSERT_EQ_U32((unsigned)free_before, (unsigned)free_after_delete);
 }
 
 /**
@@ -166,6 +315,140 @@ static void assert_dynamic_message_buffer_failure_and_invalid_arguments(void)
                            (unsigned)MRT_MessageBufferCreate(4u, &message_buffer));
     MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_INVALID_ARGUMENT,
                            (unsigned)MRT_MessageBufferCreate(8u, 0));
+
+    /* 空删除参数应被拒绝。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_INVALID_ARGUMENT,
+                           (unsigned)MRT_MessageBufferDelete(0));
+}
+
+/**
+ * @brief 验证消息缓冲删除拒绝静态对象。
+ * @param void 无输入参数。
+ * @return void 断言失败时测试进程直接退出。
+ * @example
+ * assert_message_buffer_delete_rejects_static_object();
+ */
+static void assert_message_buffer_delete_rejects_static_object(void)
+{
+    /* 创建一个静态消息缓冲。 */
+    MRT_MessageBuffer storage;
+    uint8_t buffer[16u];
+    MRT_MessageBufferHandle message_buffer = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_MessageBufferCreateStatic(sizeof(buffer),
+                                                                   buffer,
+                                                                   &storage,
+                                                                   &message_buffer));
+
+    /* 静态对象不归堆删除路径所有，必须拒绝。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OBJECT_BUSY,
+                           (unsigned)MRT_MessageBufferDelete(message_buffer));
+}
+
+/**
+ * @brief 验证动态消息缓冲删除会拒绝仍有写者等待的对象，并在读出完整消息后唤醒写者。
+ * @param void 无输入参数。
+ * @return void 断言失败时测试进程直接退出。
+ * @example
+ * assert_dynamic_message_buffer_delete_rejects_waiting_writer();
+ */
+static void assert_dynamic_message_buffer_delete_rejects_waiting_writer(void)
+{
+    /* 定义内核任务与堆存储。 */
+    MRT_Task writer_storage;
+    MRT_Task background_storage;
+    MRT_StackType writer_stack[128u];
+    MRT_StackType background_stack[128u];
+    uintptr_t heap_words[256u];
+
+    /* 初始化内核和可合并堆。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_KernelInitialize());
+    size_t free_before = 0u;
+    init_heap(heap_words, sizeof(heap_words), &free_before);
+
+    /* 创建低优先级后台任务。 */
+    MRT_TaskHandle background_task = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_TaskCreateStatic("background",
+                                                          DummyTask,
+                                                          0,
+                                                          1u,
+                                                          background_stack,
+                                                          128u,
+                                                          &background_storage,
+                                                          &background_task));
+
+    /* 创建高优先级写者任务。 */
+    MRT_TaskHandle writer_task = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_TaskCreateStatic("writer",
+                                                          DummyTask,
+                                                          0,
+                                                          5u,
+                                                          writer_stack,
+                                                          128u,
+                                                          &writer_storage,
+                                                          &writer_task));
+
+    /* 动态创建一个 8 字节消息缓冲，可被 4 字节载荷完整填满。 */
+    MRT_MessageBufferHandle message_buffer = 0;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_MessageBufferCreate(8u, &message_buffer));
+    MRT_TEST_ASSERT_TRUE(message_buffer != 0);
+
+    /* 在调度器启动前写入一条完整消息并填满缓冲。 */
+    const uint8_t initial[4u] = {1u, 2u, 3u, 4u};
+    size_t transferred = 0u;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_MessageBufferSend(message_buffer,
+                                                          initial,
+                                                          sizeof(initial),
+                                                          0u,
+                                                          &transferred));
+    MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)transferred);
+
+    /* 启动调度器后应先运行高优先级写者。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_KernelStart());
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == writer_task);
+
+    /* 写者尝试向满消息缓冲写入，非零 timeout 应进入写等待链表。 */
+    const uint8_t byte = 9u;
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_TIMEOUT,
+                           (unsigned)MRT_MessageBufferSend(message_buffer,
+                                                          &byte,
+                                                          1u,
+                                                          20u,
+                                                          &transferred));
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)transferred);
+
+    /* 写者阻塞后，低优先级后台任务应成为当前任务。 */
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == background_task);
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_TASK_WAIT_REASON_MESSAGE_SEND,
+                           (unsigned)writer_storage.wait_reason);
+    MRT_TEST_ASSERT_EQ_U32(5u, (unsigned)writer_storage.object_wait_bytes);
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)MRT_ListGetCount(&message_buffer->waiting_writers));
+
+    /* 对象仍有等待写者时，动态删除必须拒绝。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OBJECT_BUSY,
+                           (unsigned)MRT_MessageBufferDelete(message_buffer));
+
+    /* 低优先级任务读出完整消息后应释放空间并唤醒高优先级写者。 */
+    uint8_t output[4u] = {0u, 0u, 0u, 0u};
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK,
+                           (unsigned)MRT_MessageBufferReceive(message_buffer,
+                                                             output,
+                                                             sizeof(output),
+                                                             0u,
+                                                             &transferred));
+    MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)transferred);
+    MRT_TEST_ASSERT_EQ_U32(1u, (unsigned)output[0]);
+    MRT_TEST_ASSERT_EQ_U32(4u, (unsigned)output[3]);
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)MRT_ListGetCount(&message_buffer->waiting_writers));
+    MRT_TEST_ASSERT_TRUE(MRT_TaskGetCurrent() == writer_task);
+    MRT_TEST_ASSERT_EQ_U32(0u, (unsigned)writer_storage.object_wait_bytes);
+
+    /* 等待链表清空后，动态删除应能释放堆内存。 */
+    MRT_TEST_ASSERT_EQ_U32((unsigned)MRT_RESULT_OK, (unsigned)MRT_MessageBufferDelete(message_buffer));
 }
 
 /**
@@ -183,11 +466,23 @@ int main(void)
     /* 验证动态流缓冲失败路径。 */
     assert_dynamic_stream_buffer_failure_and_invalid_arguments();
 
+    /* 验证流缓冲删除拒绝静态对象。 */
+    assert_stream_buffer_delete_rejects_static_object();
+
+    /* 验证流缓冲删除拒绝等待写者并在读出后唤醒写者。 */
+    assert_dynamic_stream_buffer_delete_rejects_waiting_writer();
+
     /* 验证动态消息缓冲成功路径。 */
     assert_dynamic_message_buffer_send_receive();
 
     /* 验证动态消息缓冲失败路径。 */
     assert_dynamic_message_buffer_failure_and_invalid_arguments();
+
+    /* 验证消息缓冲删除拒绝静态对象。 */
+    assert_message_buffer_delete_rejects_static_object();
+
+    /* 验证消息缓冲删除拒绝等待写者并在读出后唤醒写者。 */
+    assert_dynamic_message_buffer_delete_rejects_waiting_writer();
 
     /* 所有动态缓冲测试均通过。 */
     return 0;

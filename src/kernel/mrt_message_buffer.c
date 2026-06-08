@@ -229,6 +229,58 @@ static bool MRT_MessageWakeReaderIfAvailable(MRT_MessageBufferHandle message_buf
 }
 
 /**
+ * @brief 在消息缓冲释放出可写空间后唤醒一个等待写者。
+ * @param message_buffer 消息缓冲句柄，不能为 NULL。
+ * @param switch_now true 表示任务上下文立即重选调度，false 表示延后到 ISR 退出。
+ * @return bool 返回 true 表示唤醒了一个写者，返回 false 表示没有满足条件的写者。
+ * @example
+ * bool woke = MRT_MessageWakeWriterIfSpace(message_buffer, true);
+ */
+static bool MRT_MessageWakeWriterIfSpace(MRT_MessageBufferHandle message_buffer, bool switch_now)
+{
+    /* 没有写者等待时无需处理。 */
+    if (MRT_ListIsEmpty(&message_buffer->waiting_writers)) {
+        /* 没有任务等待可写空间。 */
+        return false;
+    }
+
+    /* 计算当前剩余可写空间。 */
+    size_t spaces = message_buffer->capacity - message_buffer->bytes_used;
+
+    /* 头部等待者是当前最高优先级写者。 */
+    MRT_ListNode *head = MRT_ListGetHead(&message_buffer->waiting_writers);
+    if (head == 0) {
+        /* 链表状态异常时保守不唤醒。 */
+        return false;
+    }
+
+    /* 从等待节点恢复任务控制块。 */
+    MRT_Task *task = (MRT_Task *)head->item;
+    if (task == 0) {
+        /* 节点内容异常时保守不唤醒。 */
+        return false;
+    }
+
+    /* 写者记录的是完整消息记录大小，包含 4 字节长度头。 */
+    size_t required = task->object_wait_bytes;
+    if (required == 0u) {
+        /* 未记录请求时按最小一字节消息记录处理。 */
+        required = MRT_MESSAGE_BUFFER_MIN_CAPACITY;
+    }
+
+    /* 空间不足以保存头部写者的完整消息时不唤醒。 */
+    if (spaces < required) {
+        /* 保持等待状态。 */
+        return false;
+    }
+
+    /* 唤醒最高优先级等待写者。 */
+    return MRT_TaskKernelWakeFirstObjectWaiter(&message_buffer->waiting_writers,
+                                               MRT_RESULT_OK,
+                                               switch_now);
+}
+
+/**
  * @brief 使用调用方提供的控制块和字节存储静态创建消息缓冲。
  * @param capacity 字节存储容量，必须至少能容纳 4 字节长度头和 1 字节消息。
  * @param buffer 底层字节存储，大小至少为 capacity，不能为空。
@@ -390,6 +442,44 @@ MRT_Result MRT_MessageBufferCreate(size_t capacity, MRT_MessageBufferHandle *out
 }
 
 /**
+ * @brief 删除动态创建的消息缓冲并归还堆内存。
+ * @param message_buffer 待删除消息缓冲句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态对象或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_MessageBufferDelete(message_buffer);
+ */
+MRT_Result MRT_MessageBufferDelete(MRT_MessageBufferHandle message_buffer)
+{
+    /* 消息缓冲句柄不能为空。 */
+    if (message_buffer == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 静态消息缓冲内存不归堆释放路径所有。 */
+    if (message_buffer->static_storage) {
+        /* 返回对象忙，提示调用方不能释放静态对象。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 仍有任务等待完整消息时不能删除。 */
+    if (!MRT_ListIsEmpty(&message_buffer->waiting_readers)) {
+        /* 返回对象忙，避免等待链表悬空。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 仍有任务等待可写空间时不能删除。 */
+    if (!MRT_ListIsEmpty(&message_buffer->waiting_writers)) {
+        /* 返回对象忙，避免等待链表悬空。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 动态消息缓冲控制块就是堆块起始地址。 */
+    return MRT_Free(message_buffer);
+}
+
+/**
  * @brief 查询消息缓冲当前已使用字节数。
  * @param message_buffer 消息缓冲句柄，不能为空。
  * @param out_bytes 输出已使用字节数，不能为空。
@@ -426,8 +516,9 @@ MRT_Result MRT_MessageBufferBytesAvailable(MRT_MessageBufferHandle message_buffe
  * @param length 消息载荷字节数，必须大于 0。
  * @param timeout 等待可写空间的 tick 数；当前阶段非阻塞路径会在空间不足时返回。
  * @param out_sent 输出实际写入的消息载荷字节数，允许为空。
- * @return MRT_Result 返回 MRT_RESULT_OK 表示整条消息写入成功；空间不足返回 MRT_RESULT_OBJECT_FULL；
- *         参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示整条消息写入成功；空间不足且 timeout 为 0 时返回
+ *         MRT_RESULT_OBJECT_FULL；空间不足且 timeout 非 0 时在当前 host 模型中返回 MRT_RESULT_TIMEOUT 并
+ *         将当前任务挂入写等待链表；参数非法返回 MRT_RESULT_INVALID_ARGUMENT。
  * @example
  * size_t sent;
  * MRT_MessageBufferSend(message_buffer, data, len, 0, &sent);
@@ -443,9 +534,6 @@ MRT_Result MRT_MessageBufferSend(MRT_MessageBufferHandle message_buffer,
         /* 默认写入 0 字节载荷。 */
         *out_sent = 0u;
     }
-
-    /* 当前阶段未接入写者阻塞，timeout 暂不参与空间等待。 */
-    (void)timeout;
 
     /* 消息缓冲句柄不能为空。 */
     if (message_buffer == 0) {
@@ -482,6 +570,22 @@ MRT_Result MRT_MessageBufferSend(MRT_MessageBufferHandle message_buffer,
 
     /* 当前空闲空间不足时，不写入任何半条消息。 */
     if ((message_buffer->capacity - message_buffer->bytes_used) < required) {
+        /* 非零 timeout 表示当前任务愿意等待完整消息空间。 */
+        if (timeout != 0u) {
+            /* 当前任务存在时，记录重新尝试所需的完整记录字节数。 */
+            MRT_TaskHandle current = MRT_TaskGetCurrent();
+            if (current != 0) {
+                /* 消息缓冲必须等到整条记录都能写入才唤醒写者。 */
+                current->object_wait_bytes = required;
+            }
+
+            /* 将当前任务加入消息缓冲写等待链表。 */
+            return MRT_TaskKernelBlockCurrentOnObject(&message_buffer->waiting_writers,
+                                                      timeout,
+                                                      MRT_TASK_WAIT_REASON_MESSAGE_SEND,
+                                                      MRT_RESULT_TIMEOUT);
+        }
+
         /* 返回对象满，保持已有消息不变。 */
         return MRT_RESULT_OBJECT_FULL;
     }
@@ -598,6 +702,9 @@ MRT_Result MRT_MessageBufferReceive(MRT_MessageBufferHandle message_buffer,
         /* 读取当前载荷字节。 */
         out[index] = MRT_MessageReadByte(message_buffer);
     }
+
+    /* 读取完整消息后释放了空间，尝试唤醒一个等待写者。 */
+    (void)MRT_MessageWakeWriterIfSpace(message_buffer, true);
 
     /* 写回实际读取载荷长度。 */
     if (out_received != 0) {
@@ -799,6 +906,9 @@ MRT_Result MRT_MessageBufferReceiveFromISR(MRT_MessageBufferHandle message_buffe
         out[index] = MRT_MessageReadByte(message_buffer);
     }
 
+    /* 读取完整消息后释放了空间，尝试唤醒一个等待写者。 */
+    (void)MRT_MessageWakeWriterIfSpace(message_buffer, false);
+
     /* 写回实际读取载荷长度。 */
     if (out_received != 0) {
         /* 告诉调用方读取了完整消息长度。 */
@@ -862,6 +972,9 @@ MRT_Result MRT_MessageBufferReset(MRT_MessageBufferHandle message_buffer)
 
     /* 清空已使用字节数。 */
     message_buffer->bytes_used = 0u;
+
+    /* 复位后拥有全部可写空间，尝试唤醒一个等待写者。 */
+    (void)MRT_MessageWakeWriterIfSpace(message_buffer, true);
 
     /* 复位成功。 */
     return MRT_RESULT_OK;

@@ -140,6 +140,62 @@ static bool MRT_StreamWakeReaderIfTriggered(MRT_StreamBufferHandle stream, bool 
 }
 
 /**
+ * @brief 在流缓冲释放出可写空间后唤醒一个等待写者。
+ * @param stream 流缓冲句柄，不能为空。
+ * @param switch_now true 表示任务上下文立即重选调度，false 表示延后到 ISR 退出。
+ * @return bool 返回 true 表示唤醒了一个写者，返回 false 表示没有满足条件的写者。
+ * @example
+ * bool woke = MRT_StreamWakeWriterIfSpace(stream, true);
+ */
+static bool MRT_StreamWakeWriterIfSpace(MRT_StreamBufferHandle stream, bool switch_now)
+{
+    /* 没有等待写者时无需唤醒。 */
+    if (MRT_ListIsEmpty(&stream->waiting_writers)) {
+        /* 没有任务等待可写空间。 */
+        return false;
+    }
+
+    /* 计算当前可写空间。 */
+    size_t spaces = stream->capacity - stream->bytes_used;
+
+    /* 没有空间时无法唤醒写者。 */
+    if (spaces == 0u) {
+        /* 保持写者阻塞状态。 */
+        return false;
+    }
+
+    /* 头部等待者是最高优先级写者。 */
+    MRT_ListNode *head = MRT_ListGetHead(&stream->waiting_writers);
+    if (head == 0) {
+        /* 链表状态异常时保守不唤醒。 */
+        return false;
+    }
+
+    /* 从等待节点恢复任务控制块。 */
+    MRT_Task *task = (MRT_Task *)head->item;
+    if (task == 0) {
+        /* 节点内容异常时保守不唤醒。 */
+        return false;
+    }
+
+    /* 流缓冲写者至少需要 1 字节空间才能重新尝试。 */
+    size_t required = task->object_wait_bytes;
+    if (required == 0u) {
+        /* 未记录请求时按 1 字节处理。 */
+        required = 1u;
+    }
+
+    /* 仍不满足头部写者需求时保持等待状态。 */
+    if (spaces < required) {
+        /* 空间不足。 */
+        return false;
+    }
+
+    /* 唤醒最高优先级等待写者。 */
+    return MRT_TaskKernelWakeFirstObjectWaiter(&stream->waiting_writers, MRT_RESULT_OK, switch_now);
+}
+
+/**
  * @brief 使用调用方提供的控制块和字节存储静态创建流缓冲。
  * @param capacity 字节存储容量，单位为字节，必须大于 0。
  * @param trigger_level 读者唤醒触发水位，必须在 1 到 capacity 之间。
@@ -321,6 +377,44 @@ MRT_Result MRT_StreamBufferCreate(size_t capacity,
 }
 
 /**
+ * @brief 删除动态创建的流缓冲并归还堆内存。
+ * @param stream 待删除流缓冲句柄，不能为空。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示删除成功；空句柄返回 MRT_RESULT_INVALID_ARGUMENT；
+ *         静态对象或仍有等待任务时返回 MRT_RESULT_OBJECT_BUSY。
+ * @example
+ * MRT_StreamBufferDelete(stream);
+ */
+MRT_Result MRT_StreamBufferDelete(MRT_StreamBufferHandle stream)
+{
+    /* 流缓冲句柄不能为空。 */
+    if (stream == 0) {
+        /* 返回参数错误。 */
+        return MRT_RESULT_INVALID_ARGUMENT;
+    }
+
+    /* 静态流缓冲内存不归堆释放路径所有。 */
+    if (stream->static_storage) {
+        /* 返回对象忙，提示调用方不能释放静态对象。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 仍有任务等待可读字节时不能删除。 */
+    if (!MRT_ListIsEmpty(&stream->waiting_readers)) {
+        /* 返回对象忙，避免等待链表悬空。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 仍有任务等待可写空间时不能删除。 */
+    if (!MRT_ListIsEmpty(&stream->waiting_writers)) {
+        /* 返回对象忙，避免等待链表悬空。 */
+        return MRT_RESULT_OBJECT_BUSY;
+    }
+
+    /* 动态流缓冲控制块就是堆块起始地址。 */
+    return MRT_Free(stream);
+}
+
+/**
  * @brief 查询流缓冲当前可读字节数。
  * @param stream 流缓冲句柄，不能为空。
  * @param out_bytes 输出可读字节数，不能为空。
@@ -357,8 +451,9 @@ MRT_Result MRT_StreamBufferBytesAvailable(MRT_StreamBufferHandle stream, size_t 
  * @param length 请求写入字节数。
  * @param timeout 等待可写空间的 tick 数；当前阶段非阻塞路径会在无空间时返回。
  * @param out_sent 输出实际写入字节数，允许为空。
- * @return MRT_Result 返回 MRT_RESULT_OK 表示写入了请求字节或部分字节；无空间时返回 MRT_RESULT_OBJECT_FULL；
- *         参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
+ * @return MRT_Result 返回 MRT_RESULT_OK 表示写入了请求字节或部分字节；无空间且 timeout 为 0 时返回
+ *         MRT_RESULT_OBJECT_FULL；无空间且 timeout 非 0 时在当前 host 模型中返回 MRT_RESULT_TIMEOUT 并
+ *         将当前任务挂入写等待链表；参数非法时返回 MRT_RESULT_INVALID_ARGUMENT。
  * @example
  * size_t sent;
  * MRT_StreamBufferSend(stream, data, len, 0, &sent);
@@ -374,9 +469,6 @@ MRT_Result MRT_StreamBufferSend(MRT_StreamBufferHandle stream,
         /* 默认实际写入 0 字节。 */
         *out_sent = 0u;
     }
-
-    /* 当前阶段还没有写者阻塞队列，timeout 仅用于无空间时区分结果。 */
-    (void)timeout;
 
     /* 流缓冲句柄不能为空。 */
     if (stream == 0) {
@@ -401,6 +493,22 @@ MRT_Result MRT_StreamBufferSend(MRT_StreamBufferHandle stream,
 
     /* 没有任何空间时无法写入。 */
     if (spaces == 0u) {
+        /* 非零 timeout 表示调用方愿意等待可写空间。 */
+        if (timeout != 0u) {
+            /* 当前任务存在时，记录重新尝试所需的最小空间。 */
+            MRT_TaskHandle current = MRT_TaskGetCurrent();
+            if (current != 0) {
+                /* 流缓冲允许部分写入，因此 1 字节空间即可唤醒写者重试。 */
+                current->object_wait_bytes = 1u;
+            }
+
+            /* 将当前任务加入流缓冲写等待链表。 */
+            return MRT_TaskKernelBlockCurrentOnObject(&stream->waiting_writers,
+                                                      timeout,
+                                                      MRT_TASK_WAIT_REASON_STREAM_SEND,
+                                                      MRT_RESULT_TIMEOUT);
+        }
+
         /* 返回对象满。 */
         return MRT_RESULT_OBJECT_FULL;
     }
@@ -493,6 +601,9 @@ MRT_Result MRT_StreamBufferReceive(MRT_StreamBufferHandle stream,
 
     /* 执行环形读取。 */
     MRT_StreamReadBytes(stream, (uint8_t *)out_data, readable);
+
+    /* 读取释放出空间后，尝试唤醒一个等待写者。 */
+    (void)MRT_StreamWakeWriterIfSpace(stream, true);
 
     /* 写回实际读取数量。 */
     if (out_received != 0) {
@@ -651,6 +762,9 @@ MRT_Result MRT_StreamBufferReceiveFromISR(MRT_StreamBufferHandle stream,
     /* 执行环形读取。 */
     MRT_StreamReadBytes(stream, (uint8_t *)out_data, readable);
 
+    /* 读取释放出空间后，尝试唤醒一个等待写者。 */
+    (void)MRT_StreamWakeWriterIfSpace(stream, false);
+
     /* 写回实际读取数量。 */
     if (out_received != 0) {
         /* 告诉调用方本次读取了多少字节。 */
@@ -714,6 +828,9 @@ MRT_Result MRT_StreamBufferReset(MRT_StreamBufferHandle stream)
 
     /* 清空已使用字节数。 */
     stream->bytes_used = 0u;
+
+    /* 复位后拥有全部可写空间，尝试唤醒一个写者。 */
+    (void)MRT_StreamWakeWriterIfSpace(stream, true);
 
     /* 复位成功。 */
     return MRT_RESULT_OK;
