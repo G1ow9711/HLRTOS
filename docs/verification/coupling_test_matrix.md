@@ -52,7 +52,9 @@
 | C-035 | STM32 端口 + MPU 布局 | 任意内存范围需要转换为 MPU 可表达区域 | 规整结果为覆盖原始范围的 power-of-two 区域，且基址按区域大小向下对齐 | 端口 mock | 已验证：`test_port_stm32_mpu` 覆盖非法参数、最小 32 字节区域、已对齐 power-of-two 区域保持不变，以及 `0x20001234 + 6000` 字节范围规整为 `0x20000000 + 16384` 字节且 shift 为 14 |
 | C-036 | 流缓冲 + 写者等待 + 动态删除 | 满流缓冲上高优先级写者带 timeout 写入，随后删除对象 | 写者进入 `waiting_writers`，删除返回 `MRT_RESULT_OBJECT_BUSY`；读出释放至少 1 字节后唤醒写者并清空等待字节记录 | host 耦合测试 | 已验证：`test_buffer_dynamic_allocation` 覆盖动态流缓冲满载后 `MRT_StreamBufferSend(..., timeout>0)` 进入 `MRT_TASK_WAIT_REASON_STREAM_SEND`，`object_wait_bytes=1`，删除 busy；后台任务读出 1 字节后 waiting writer 被唤醒并允许后续动态删除释放 heap |
 | C-037 | 消息缓冲 + 写者等待 + 动态删除 | 满消息缓冲上高优先级写者带 timeout 写入完整消息，随后删除对象 | 写者进入 `waiting_writers`，删除返回 `MRT_RESULT_OBJECT_BUSY`；读出完整消息后按完整记录长度唤醒写者 | host 耦合测试 | 已验证：`test_buffer_dynamic_allocation` 覆盖动态消息缓冲满载后 `MRT_MessageBufferSend(..., timeout>0)` 进入 `MRT_TASK_WAIT_REASON_MESSAGE_SEND`，`object_wait_bytes=4+payload`，删除 busy；后台任务读出完整消息后 waiting writer 被唤醒并允许后续动态删除释放 heap |
+| C-038 | 硬件 smoke 采集流水线 + 证据生成 | 预检、构建、烧录、采集、raw log 生成最终证据和目标级校验 | 默认 dry-run 不执行硬件命令；显式 `--execute` 才运行真实命令；生成器和目标级校验按顺序执行 | 静态工具测试 | 已验证：`test_hardware_smoke_capture_runner.py` 覆盖 dry-run 顺序、无害执行、生成器去重和目标级证据校验；真实 STM32/DSP 板级 PASS 仍待真实硬件补证 |
 | C-039 | DSP C2000 smoke 工程 + 启动/链接/ISR glue | 从 host DSP model 迁移到真实 C2000 板级工程 | 启动向量、CPU Timer0 tick、软件中断上下文切换、ADC/DMA FromISR 队列、RTOS heap/任务栈/DMA/trace 分区均有可审计骨架，且明确不替代真实板级 smoke | 静态检查/smoke 路径检查 | 已验证：`test_dsp_c2000_project_scaffold.py` 检查 `startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c`、`linker_c28x.cmd` 的入口符号、tick/FromISR/软件中断接线和 RTOS 分区标记；`check_embedded_smoke_projects.py` 把这些文件纳入 required path 检查；真实 TI 工具链编译和 DSP 板级运行仍待补证 |
+| C-040 | 硬件 smoke 原始日志 schema + 证据生成器 + 示例 C 头文件 | 真实板级 UART/trace 字段由文档、生成器和板级输出端共同使用 | `COMMON_REQUIRED_FIELDS`、STM32/DSP 专属字段、`raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h` 和采集指南必须保持一致；release 默认链路必须包含该检查 | 静态检查 | 已验证：`test_hardware_smoke_raw_log_schema.py` 和 `check_hardware_smoke_raw_log_schema.py` 覆盖字段存在性、指南链接和 release runner 步骤；该检查只证明字段契约一致，不替代真实板级 smoke |
 
 ## 最新增量证据：STM32 上下文切换入口
 
@@ -63,6 +65,7 @@
 
 - `C-032`：新增 `tools/verify/check_hardware_smoke_preflight.py`、`tests/static/test_hardware_smoke_preflight.py` 和 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，用于在真实 STM32/DSP 采集前检查目标配置、采集命令、最短运行时长、必需日志字段和可选工具链可用性；该检查只证明采集前置配置完整，不替代真实板级运行证据。
 - `C-032`：`tools/verify/generate_hardware_smoke_evidence.py` 现在从原始日志派生 `Raw-Log-Path` 和 `Raw-Log-SHA256`，`tools/verify/check_hardware_smoke_evidence.py` 会读取原始日志并拒绝 SHA-256 错配；`tests/static/test_hardware_smoke_evidence_generator.py` 与 `tests/static/test_hardware_smoke_evidence_checker.py` 覆盖该追溯链路。
+- `C-040`：`docs/verification/hardware_smoke/raw_log_schema.md` 给出 STM32/DSP 原始日志字段契约，`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 给出 C 输出端字段常量，`tools/verify/check_hardware_smoke_raw_log_schema.py` 防止字段漂移。
 
 ## 后续落地
 
@@ -91,4 +94,10 @@
 - `C-039`：新增 `examples/dsp/mrt_port_dsp_c2000_smoke.c`，记录 `MRT_Port*` 公共端口、`MRT_KernelTick()`、`MRT_QueueSendFromISR()`、`MRT_PortYieldFromISR()`、C28x 汇编钩子和任务栈顶切换契约。
 - `C-039`：新增 `examples/dsp/linker_c28x.cmd`，记录 `.mrtos_heap`、`.mrtos_tasks`、`.mrtos_dma`、`.mrtos_trace` 分区名称和真实 map 文件检查点。
 - `C-039`：新增 `tests/static/test_dsp_c2000_project_scaffold.py` 并纳入 release runner；当前证据证明 C2000 工程文件清单和接线顺序可审计，不证明 TI 工具链编译或真实 DSP 板级 smoke 已通过。
+
+## 最新增量证据：硬件 smoke raw-log schema
+
+- `C-040`：新增 `docs/verification/hardware_smoke/raw_log_schema.md`，集中列出通用字段、STM32 字段、DSP 字段、示例日志和字段填写规则。
+- `C-040`：新增 `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`，让真实板级 UART/trace 输出端复用 `MRT_SMOKE_FIELD_*` 字段常量。
+- `C-040`：新增 `tools/verify/check_hardware_smoke_raw_log_schema.py` 和 `tests/static/test_hardware_smoke_raw_log_schema.py`，并纳入默认 release runner；该检查证明字段契约一致，但不生成或接受真实板级 PASS 证据。
 

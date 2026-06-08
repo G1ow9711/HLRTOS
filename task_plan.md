@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 21 repo-side complete: DSP C2000 board smoke startup/linker/ISR glue scaffold is static-audited and in the 14-step release chain; overall goal still awaits real STM32/DSP board logs
+Phase 22 repo-side complete: hardware smoke raw-log schema contract is in the 15-step release chain; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -156,6 +156,7 @@ Phase 21 repo-side complete: DSP C2000 board smoke startup/linker/ISR glue scaff
 | Hardware evidence templates | Do not commit fake PASS board logs. Keep templates under `docs/verification/hardware_smoke/` and require real `stm32_board_smoke.md` / `dsp_board_smoke.md` before final hardware completion. |
 | Hardware capture checklist | Keep real-board collection steps separate from templates so users capture UART/trace proof first, then fill evidence files. |
 | TCB stack-top contract | Task creation initializes `stack_top`, STM32 smoke task setup writes the port-initialized PSP back into each TCB, scheduler records the task being switched out, and STM32 PendSV smoke hook uses `MRT_TaskKernelSwitchStackTop()` to save old PSP and return current PSP. |
+| Hardware raw-log schema contract | The generator constants, `raw_log_schema.md`, `mrt_hardware_smoke_log_schema.h`, capture guides, and release runner must stay aligned so real STM32/DSP board logs do not miss required fields. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -254,3 +255,14 @@ Phase 21 repo-side complete: DSP C2000 board smoke startup/linker/ISR glue scaff
 - [x] Re-run focused/static/full release verification after documentation sync
 - [ ] Replace scaffold proof with real DSP board runtime evidence after actual hardware smoke
 - **Status:** complete for repo-side C2000 scaffold; real DSP board evidence remains pending
+
+## Phase 22: Hardware Smoke Raw-Log Schema Contract
+- [x] Add failing static coverage for missing raw-log schema docs, example C field constants, schema checker, guide links, and release-runner integration
+- [x] Add `docs/verification/hardware_smoke/raw_log_schema.md`
+- [x] Add `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`
+- [x] Add `tools/verify/check_hardware_smoke_raw_log_schema.py`
+- [x] Add `hardware-smoke-raw-log-schema` to the default release verification runner
+- [x] Update hardware smoke README/checklist, STM32/DSP READMEs, manual, verification report, requirement matrix, coupling matrix, test-suite plan, completion audit, findings, and progress
+- [x] Re-run focused/static/full release verification after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
+- **Status:** complete for repo-side schema contract; real hardware evidence remains pending

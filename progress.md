@@ -863,3 +863,30 @@
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
 - Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
+
+## Hardware Smoke Raw-Log Schema
+- Added RED static coverage in `tests\static\test_hardware_smoke_raw_log_schema.py`.
+  - `python tests\static\test_hardware_smoke_raw_log_schema.py` failed on missing `tools\verify\check_hardware_smoke_raw_log_schema.py`.
+  - `python tests\static\test_release_verification_runner.py` failed because `hardware-smoke-raw-log-schema` was absent from the default release chain.
+- Added `docs\verification\hardware_smoke\raw_log_schema.md` for common, STM32, and DSP raw UART/trace `Key: Value` fields and examples.
+- Added `examples\hardware_smoke\mrt_hardware_smoke_log_schema.h` with `MRT_SMOKE_FIELD_*` constants and target X-macro required-field lists.
+- Added `tools\verify\check_hardware_smoke_raw_log_schema.py` and wired `hardware-smoke-raw-log-schema` into `tools\verify\run_release_verification.py`.
+- Updated hardware smoke README/checklist and STM32/DSP example READMEs to point at `raw_log_schema.md`.
+- Focused checks passed:
+  - `python tests\static\test_hardware_smoke_raw_log_schema.py`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_hardware_smoke_raw_log_schema.py` -> `[hardware-raw-log-schema] schema fields aligned`
+- Updated manual, final verification report, requirement matrix, coupling matrix, test-suite plan, completion audit, findings, progress, and task plan for the schema contract and continued real-board boundary.
+- Focused/static checks after docs sync passed:
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `python tools\verify\check_original_symbols.py` -> `[original-symbols] no banned FreeRTOS-style public symbols found`
+  - `python tools\verify\check_hardware_smoke_preflight.py` -> hardware smoke preflight config accepted
+  - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 70 test target(s) passed`; `[release] 15 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`

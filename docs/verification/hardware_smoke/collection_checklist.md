@@ -5,6 +5,7 @@
 ## 通用流程
 
 0. 预检配置：先按当前板卡修改 `hardware_smoke_preflight.json`，运行 `python tools\verify\check_hardware_smoke_preflight.py`。该命令检查 STM32/DSP 节点是否齐全、是否还有 TODO/PENDING 占位符、最短运行时长是否至少 30 分钟、预期日志字段是否覆盖必需项。需要确认工具链、烧录器和采集工具在当前机器可执行时，再追加 `--check-tools`。
+0. 字段对齐：先阅读 `raw_log_schema.md`，确认 UART/trace 将输出完整 `Key: Value` 字段；修改字段清单后运行 `python tools\verify\check_hardware_smoke_raw_log_schema.py`，确保生成器、文档和示例头文件一致。
 0. 流水线预演：运行 `python tools\verify\run_hardware_smoke_capture.py --target STM32` 或 `--target DSP`，先只看 dry-run 顺序。确认 `capture_command` 会写入 `raw_log` 后，再运行同一命令并追加 `--execute`；不要在未连接真实板卡时执行烧录命令。
 1. 保留原始日志：UART、trace、调试器输出或仿真器控制台日志建议另存为 `stm32_uart_raw.log`、`dsp_uart_raw.log` 或等价文件名。
 2. 运行负载：至少 30 分钟，期间必须覆盖任务切换、ISR 唤醒、软件定时器、tickless、heap 查询和断言 hook。

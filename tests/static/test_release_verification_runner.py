@@ -37,6 +37,7 @@ def test_default_plan_skips_real_board_gate() -> None:
         "dsp-c2000-project-scaffold",
         "embedded-smoke",
         "hardware-smoke-preflight",
+        "hardware-smoke-raw-log-schema",
         "hardware-smoke-capture-runner",
         "hardware-evidence-checker",
         "hardware-evidence-generator",

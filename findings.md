@@ -89,7 +89,7 @@
 - STM32/DSP 手册移植章已加细粒度骨架：`移植前准备`、`工程分层`、`关键接入顺序`、`首次联调`、`板级验收`；`check_api_manual_coverage.py` 也把这些词纳入必检项。
 - `test_port_stm32_mpu` 已单独纳入 `C-035`，把 STM32 MPU 区域规整 helper 从“附带证据”变成独立耦合项。
 - Requirement traceability now has 11 top-level requirements (`R-001` through `R-011`); `R-011` requires the final manual to include detailed STM32 and DSP porting steps.
-- Coupling matrix now has 37 coverage rows (`C-001` through `C-037`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, source comments, runtime stats, STM32 MPU layout, and buffer writer wait/delete coupling.
+- Coupling matrix now has 40 coverage rows (`C-001` through `C-040`) spanning scheduler, tick, queues, ISR APIs, semaphores, mutexes, event groups, task notifications, timers, stream/message buffers, heap behavior, trace, assertions, STM32 port, DSP port, manual, source comments, runtime stats, STM32 MPU layout, buffer writer wait/delete coupling, hardware capture flow, DSP C2000 scaffold, and hardware raw-log schema alignment.
 - Implementation plan self-review placeholder scan found no `TBD`, `TODO`, `implement later`, `fill in details`, or stale draft-design path strings.
 - Queue Task 2 non-blocking FIFO send/receive is implemented with caller-provided storage, circular byte-copy semantics, empty/full status returns, and temporary nonzero-timeout handling through `MRT_RESULT_TIMEOUT` until queue blocking coupling is implemented.
 - Queue Task 3 queue variants are implemented: `MRT_QueuePeek` preserves queue state, `MRT_QueueSendFront` inserts before existing head, `MRT_QueueOverwrite` is intentionally restricted to one-slot queues, and `MRT_QueueReset` clears count/read/write indexes without clearing backing bytes.
@@ -338,3 +338,13 @@
 - Follow-up review changed `startup_c28x.c` to declare ISR entry points as `extern` and let `mrt_port_dsp_c2000_smoke.c` define them, avoiding weak-placeholder collisions in real target builds.
 - `tools/verify/check_embedded_smoke_projects.py` now requires the C2000 scaffold files to exist while still compiling/running only the host-verifiable DSP model in the current environment.
 - The new scaffold improves DSP portability evidence but still does not prove TI toolchain compilation or real DSP board execution. Final completion still needs real `dsp_board_smoke.md` and matching raw log.
+
+## Hardware Smoke Raw-Log Schema Findings
+- RED evidence: `python tests\\static\\test_hardware_smoke_raw_log_schema.py` failed because `tools\\verify\\check_hardware_smoke_raw_log_schema.py` was missing.
+- RED evidence: `python tests\\static\\test_release_verification_runner.py` failed because `hardware-smoke-raw-log-schema` was not in the default release chain.
+- Implementation adds `docs/verification/hardware_smoke/raw_log_schema.md`, listing common, STM32, and DSP required `Key: Value` fields plus STM32/DSP example raw logs.
+- Implementation adds `examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` with `MRT_SMOKE_FIELD_*` constants and X-macro required-field lists for real board UART/trace output code to reuse without header-level unused objects.
+- Implementation adds `tools/verify/check_hardware_smoke_raw_log_schema.py`, which loads `COMMON_REQUIRED_FIELDS`, `STM32_REQUIRED_FIELDS`, and `DSP_REQUIRED_FIELDS` from `generate_hardware_smoke_evidence.py` and checks the schema doc, C header, capture guides, and example READMEs for drift.
+- Focused GREEN checks now pass: `python tests\\static\\test_hardware_smoke_raw_log_schema.py`, `python tests\\static\\test_release_verification_runner.py`, and `python tools\\verify\\check_hardware_smoke_raw_log_schema.py`.
+- Full default release verification now passes with `[release] 15 step(s) passed`; `--require-hardware` still fails only at `hardware-smoke-evidence` because real STM32/DSP board evidence files are absent.
+- This phase improves real-board readiness and field consistency, but still does not create or replace real `stm32_board_smoke.md` or `dsp_board_smoke.md` evidence.
