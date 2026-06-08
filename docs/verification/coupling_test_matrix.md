@@ -113,5 +113,6 @@
 
 - `C-042`：新增 `examples/hardware_smoke/mrt_hardware_smoke_report.h`，把 common 字段、STM32 专属字段和 DSP 专属字段组织成可复用结构体，并复用日志 helper 输出完整 raw log。
 - `C-042`：新增 `tests/unit/test_hardware_smoke_report.c` 并纳入 host test runner 与 CMake，验证 STM32/DSP 必填字段全集输出和非法参数无半份报告输出。
+- `C-042`：`tools/verify/check_hardware_smoke_raw_log_schema.py` 现在同时检查 `mrt_hardware_smoke_report.h` 是否引用生成器要求的全部 `MRT_SMOKE_FIELD_*` 字段常量，避免后续新增 raw-log 字段时 report emitter 漏同步。
 - `C-042`：该 emitter 只减少真机采集漏字段风险，不判断 `Evidence-Status`，不替代真实 `stm32_board_smoke.md`、`dsp_board_smoke.md` 和匹配 raw log。
 

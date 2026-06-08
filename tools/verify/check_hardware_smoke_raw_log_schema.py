@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 GENERATOR = ROOT / "tools" / "verify" / "generate_hardware_smoke_evidence.py"
 SCHEMA_DOC = ROOT / "docs" / "verification" / "hardware_smoke" / "raw_log_schema.md"
 SCHEMA_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_log_schema.h"
+REPORT_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_report.h"
 GUIDE_FILES = (
     ROOT / "docs" / "verification" / "hardware_smoke" / "README.md",
     ROOT / "docs" / "verification" / "hardware_smoke" / "collection_checklist.md",
@@ -89,6 +90,19 @@ def unique_fields(fields_by_target: dict[str, list[str]]) -> list[str]:
     return ordered
 
 
+def field_macro_token(field: str) -> str:
+    """把 raw log 字段名转换为示例 C 头文件里的字段宏名。
+    参数:
+        field: 生成器要求的原始日志字段名，例如 `Evidence-Status`。
+    返回:
+        返回对应的 `MRT_SMOKE_FIELD_*` 宏名字符串。
+    调用示例:
+        `token = field_macro_token("Evidence-Status")`
+    """
+    macro_body = "".join(character if character.isalnum() else "_" for character in field)
+    return f"MRT_SMOKE_FIELD_{macro_body.upper()}"
+
+
 def check_artifacts_exist() -> list[str]:
     """检查 schema 文档和示例头文件是否存在。
     参数:
@@ -99,7 +113,7 @@ def check_artifacts_exist() -> list[str]:
         `failures = check_artifacts_exist()`
     """
     failures: list[str] = []
-    for path in (SCHEMA_DOC, SCHEMA_HEADER):
+    for path in (SCHEMA_DOC, SCHEMA_HEADER, REPORT_HEADER):
         if not path.exists():
             failures.append(f"missing {path.relative_to(ROOT)}")
     return failures
@@ -124,6 +138,28 @@ def check_field_coverage(fields: list[str], doc_text: str, header_text: str) -> 
             failures.append(f"mrt_hardware_smoke_log_schema.h missing field {field}")
     if HEADER_PREFIX_TOKEN not in header_text:
         failures.append(f"header missing {HEADER_PREFIX_TOKEN} constants")
+    return failures
+
+
+def check_report_header_coverage(fields: list[str], report_text: str) -> list[str]:
+    """检查完整报告 emitter 是否引用所有生成器必填字段。
+    参数:
+        fields: 需要由 STM32/DSP 完整报告输出的去重字段列表。
+        report_text: `mrt_hardware_smoke_report.h` 的文件内容。
+    返回:
+        返回 report header 字段引用缺失错误列表。
+    调用示例:
+        `failures = check_report_header_coverage(fields, report_text)`
+    """
+    failures: list[str] = []
+    for field in fields:
+        token = field_macro_token(field)
+        if token not in report_text:
+            failures.append(f"mrt_hardware_smoke_report.h missing field token {token}")
+    if "MRT_SmokeEmitStm32Report" not in report_text:
+        failures.append("mrt_hardware_smoke_report.h missing MRT_SmokeEmitStm32Report")
+    if "MRT_SmokeEmitDspReport" not in report_text:
+        failures.append("mrt_hardware_smoke_report.h missing MRT_SmokeEmitDspReport")
     return failures
 
 
@@ -160,7 +196,9 @@ def check_schema() -> list[str]:
     fields = unique_fields(expected_fields())
     doc_text = read_text(SCHEMA_DOC)
     header_text = read_text(SCHEMA_HEADER)
+    report_text = read_text(REPORT_HEADER)
     failures.extend(check_field_coverage(fields, doc_text, header_text))
+    failures.extend(check_report_header_coverage(fields, report_text))
     failures.extend(check_guides_link_schema())
     return failures
 

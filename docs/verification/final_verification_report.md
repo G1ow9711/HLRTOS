@@ -14,7 +14,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 - Embedded smoke：STM32 smoke 可由 ARM GCC 交叉编译，其中包含 `mrt_port_stm32_cm_context.S` 的 SVC/PendSV 汇编入口骨架、初始任务栈帧写回 TCB 的 C 接线；DSP smoke/model 可在 host 上编译并运行，`mrt_port_dsp_c28x_context.asm` 已作为真实 DSP ABI 汇编骨架接受静态审计，`startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c` 和 `linker_c28x.cmd` 已作为 C2000 板级工程骨架接受静态审计。
 - 真实硬件证据 gate：`tools/verify/check_hardware_smoke_evidence.py` 已提供，证据模板位于 `docs/verification/hardware_smoke/`，并要求最终证据中的 `Raw-Log-Path` 与 `Raw-Log-SHA256` 能回溯到保留的原始日志。
 - 原始日志生成器：`tools/verify/generate_hardware_smoke_evidence.py` 已提供，可把含 `Key: Value` 字段的 UART/trace 原始日志规范化为最终板级证据文件，并自动写入原始日志路径和 SHA-256。
-- 原始日志字段 schema、输出 helper 与完整报告 emitter：`docs/verification/hardware_smoke/raw_log_schema.md`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`examples/hardware_smoke/mrt_hardware_smoke_report.h` 和 `tools/verify/check_hardware_smoke_raw_log_schema.py` 已提供，用于防止生成器、文档、示例头文件和采集指南字段漂移，并让真实板级 UART/trace 代码按 `Key: Value` 输出字段全集。
+- 原始日志字段 schema、输出 helper 与完整报告 emitter：`docs/verification/hardware_smoke/raw_log_schema.md`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`examples/hardware_smoke/mrt_hardware_smoke_report.h` 和 `tools/verify/check_hardware_smoke_raw_log_schema.py` 已提供，用于防止生成器、文档、schema 头文件、完整报告 emitter 和采集指南字段漂移，并让真实板级 UART/trace 代码按 `Key: Value` 输出字段全集。
 - 硬件 smoke 预检配置：`tools/verify/check_hardware_smoke_preflight.py` 已提供，默认检查 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，确认 STM32/DSP 板级采集命令、最短运行时长和必需日志字段无占位符。
 - 硬件 smoke 采集执行器：`tools/verify/run_hardware_smoke_capture.py` 已提供，默认 dry-run 只打印预检、编译、构建、烧录、采集、证据生成和目标级证据校验顺序；只有显式 `--execute` 才运行真实命令。
 - 统一 release 入口：`tools/verify/run_release_verification.py` 默认模式已通过，`--require-hardware` 在真实板级日志缺失处失败。
@@ -48,7 +48,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | `python tests\static\test_hardware_smoke_preflight.py` | 硬件 smoke 预检配置规则单测通过 |
 | `python tools\verify\check_hardware_smoke_preflight.py` | 默认硬件 smoke 预检配置通过；`--check-tools` 可额外检查本机工具链、烧录器和采集工具 |
 | `python tests\static\test_hardware_smoke_capture_runner.py` | 硬件 smoke 采集执行器 dry-run 计划和无害执行契约通过 |
-| `python tools\verify\check_hardware_smoke_raw_log_schema.py` | 硬件 smoke 原始日志 schema 与生成器、文档、C 头文件和指南字段对齐 |
+| `python tools\verify\check_hardware_smoke_raw_log_schema.py` | 硬件 smoke 原始日志 schema 与生成器、文档、schema C 头文件、完整报告 emitter 和指南字段对齐 |
 | `python tests\static\test_hardware_smoke_raw_log_schema.py` | 硬件 smoke raw-log schema 静态契约通过 |
 | `python tests\static\test_hardware_smoke_evidence_checker.py` | 硬件证据校验脚本规则单测通过，包含原始日志 SHA-256 错配拒绝 |
 | `python tests\static\test_hardware_smoke_evidence_generator.py` | 原始 UART/trace 日志到最终证据文件的生成器单测通过，包含 `Raw-Log-Path` 与 `Raw-Log-SHA256` 派生 |
@@ -107,7 +107,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 ## 6. 建议下一步
 
 1. 在真实 STM32 板卡运行前，先按目标板修改 `hardware_smoke_preflight.json` 并运行 `python tools\verify\check_hardware_smoke_preflight.py`；实机采集机器上可追加 `--check-tools`。
-2. 运行 `python tools\verify\check_hardware_smoke_raw_log_schema.py`，确认 `raw_log_schema.md`、生成器字段常量、示例 C 头文件和采集指南一致。
+2. 运行 `python tools\verify\check_hardware_smoke_raw_log_schema.py`，确认 `raw_log_schema.md`、生成器字段常量、schema C 头文件、完整报告 emitter 和采集指南一致。
 3. 运行 `python tools\verify\run_hardware_smoke_capture.py --target STM32` 或 `--target DSP` 预演硬件采集流水线；确认 `capture_command` 会产出 raw log 后再追加 `--execute`。
 4. 在真实 STM32 板卡运行 `examples/stm32` 派生工程，按 `docs/verification/hardware_smoke/raw_log_schema.md` 和 `docs/verification/hardware_smoke/collection_checklist.md` 记录 LED、UART ISR 队列、软件定时器、tickless idle、PendSV/SVC 汇编证据，保留原始日志，并填写或生成带 `Raw-Log-SHA256` 的 `docs/verification/hardware_smoke/stm32_board_smoke.md`。
 5. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke，按 `docs/verification/hardware_smoke/raw_log_schema.md` 和 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，并填写或生成带 `Raw-Log-SHA256` 的 `docs/verification/hardware_smoke/dsp_board_smoke.md`。

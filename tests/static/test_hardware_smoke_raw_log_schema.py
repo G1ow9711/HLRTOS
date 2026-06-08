@@ -12,6 +12,7 @@ GENERATOR = ROOT / "tools" / "verify" / "generate_hardware_smoke_evidence.py"
 SCHEMA_CHECKER = ROOT / "tools" / "verify" / "check_hardware_smoke_raw_log_schema.py"
 SCHEMA_DOC = ROOT / "docs" / "verification" / "hardware_smoke" / "raw_log_schema.md"
 SCHEMA_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_log_schema.h"
+REPORT_HEADER = ROOT / "examples" / "hardware_smoke" / "mrt_hardware_smoke_report.h"
 HARDWARE_README = ROOT / "docs" / "verification" / "hardware_smoke" / "README.md"
 COLLECTION_CHECKLIST = ROOT / "docs" / "verification" / "hardware_smoke" / "collection_checklist.md"
 STM32_README = ROOT / "examples" / "stm32" / "README.md"
@@ -44,9 +45,15 @@ def expected_fields() -> dict[str, list[str]]:
     }
 
 
+def field_macro_token(field: str) -> str:
+    """把 raw log 字段名转换为 schema 头文件中的 `MRT_SMOKE_FIELD_*` 宏名。"""
+    macro_body = "".join(character if character.isalnum() else "_" for character in field)
+    return f"MRT_SMOKE_FIELD_{macro_body.upper()}"
+
+
 def test_schema_artifacts_exist() -> None:
     """raw log schema 必须有文档、示例头文件和独立校验脚本。"""
-    for path in [SCHEMA_CHECKER, SCHEMA_DOC, SCHEMA_HEADER]:
+    for path in [SCHEMA_CHECKER, SCHEMA_DOC, SCHEMA_HEADER, REPORT_HEADER]:
         assert path.exists(), f"missing {path.relative_to(ROOT)}"
 
 
@@ -58,6 +65,16 @@ def test_schema_doc_and_header_cover_generator_fields() -> None:
         for field in fields:
             assert field in doc_text
             assert field in header_text
+
+
+def test_report_header_covers_generator_fields() -> None:
+    """完整报告 emitter 必须引用生成器要求的 STM32/DSP 必填字段常量。"""
+    report_text = read_text(REPORT_HEADER)
+    for fields in expected_fields().values():
+        for field in fields:
+            assert field_macro_token(field) in report_text
+    assert "MRT_SmokeEmitStm32Report" in report_text
+    assert "MRT_SmokeEmitDspReport" in report_text
 
 
 def test_guides_point_to_raw_log_schema() -> None:
@@ -72,6 +89,7 @@ def test_schema_checker_and_release_runner_are_wired() -> None:
     checker_text = read_text(SCHEMA_CHECKER)
     assert "COMMON_REQUIRED_FIELDS" in checker_text
     assert "MRT_SMOKE_FIELD" in checker_text
+    assert "mrt_hardware_smoke_report.h" in checker_text
     runner = load_module(RUNNER, "run_release_verification")
     names = [step.name for step in runner.build_steps(require_hardware=False)]
     assert "hardware-smoke-raw-log-schema" in names
@@ -81,6 +99,7 @@ def main() -> int:
     """运行硬件 smoke raw log schema 静态测试。"""
     test_schema_artifacts_exist()
     test_schema_doc_and_header_cover_generator_fields()
+    test_report_header_covers_generator_fields()
     test_guides_point_to_raw_log_schema()
     test_schema_checker_and_release_runner_are_wired()
     return 0

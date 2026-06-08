@@ -28,6 +28,7 @@
 - `R-011`：最终硬件证据新增 `Raw-Log-Path` 和 `Raw-Log-SHA256` 规则，生成器自动派生，checker 读取原始日志并拒绝 SHA-256 错配。
 - `R-011`：新增 `run_hardware_smoke_capture.py` 和 `test_hardware_smoke_capture_runner.py`，用于 dry-run 或执行预检、编译、构建、烧录、采集、证据生成和目标级证据校验流水线。
 - `R-011`：新增 `raw_log_schema.md`、`mrt_hardware_smoke_log_schema.h`、`mrt_hardware_smoke_log.h`、`mrt_hardware_smoke_report.h`、`check_hardware_smoke_raw_log_schema.py`、`test_hardware_smoke_raw_log_schema.py`、`test_hardware_smoke_log.c` 和 `test_hardware_smoke_report.c`，把 STM32/DSP 原始 UART/trace 字段契约、`Key: Value` 输出格式和必填字段全集 emitter 集中校验；默认 release 验证保持 15 步，host 测试扩展为 72 个目标。
+- `R-009`/`R-011`：`check_hardware_smoke_raw_log_schema.py` 现在把 `mrt_hardware_smoke_report.h` 纳入字段漂移检查，确保生成器新增 STM32/DSP 必填字段时，完整报告 emitter 也必须引用对应 `MRT_SMOKE_FIELD_*` 常量。
 - `R-004`/`R-011`：新增 `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` 和 `tests/static/test_dsp_context_scaffold.py`，记录 DSP 首任务启动、软件中断 yield、寄存器保存/恢复和真实移植边界。
 - `R-004`/`R-011`：新增 `examples/dsp/startup_c28x.c`、`examples/dsp/mrt_port_dsp_c2000_smoke.c`、`examples/dsp/linker_c28x.cmd` 和 `tests/static/test_dsp_c2000_project_scaffold.py`，记录 C2000 启动向量、CPU Timer0 tick、软件中断、ADC/DMA ISR、RTOS heap、任务栈、DMA buffer、trace buffer 分区和真实移植边界。
 

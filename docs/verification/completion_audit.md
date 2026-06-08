@@ -52,7 +52,7 @@
 - 新增 `tools/verify/check_hardware_smoke_preflight.py`、`tests/static/test_hardware_smoke_preflight.py` 和 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，用于在采集真实板级日志前检查 STM32/DSP 目标配置、运行时长、必需字段和可选工具链可用性。
 - 新增 `tools/verify/run_hardware_smoke_capture.py` 和 `tests/static/test_hardware_smoke_capture_runner.py`，用于 dry-run 或执行预检、编译、构建、烧录、采集、证据生成和目标级证据校验；默认不执行硬件命令。
 - 新增 raw log 追溯规则：`tools/verify/generate_hardware_smoke_evidence.py` 会自动写入 `Raw-Log-Path` 和 `Raw-Log-SHA256`，`tools/verify/check_hardware_smoke_evidence.py` 会读取原始日志并拒绝 SHA-256 错配证据。
-- 新增 raw-log schema 契约：`docs/verification/hardware_smoke/raw_log_schema.md` 集中列出 STM32/DSP 原始日志字段，`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 提供 C 输出端字段常量，`tools/verify/check_hardware_smoke_raw_log_schema.py` 和 `tests/static/test_hardware_smoke_raw_log_schema.py` 防止生成器、文档、示例头文件和采集指南字段漂移。
+- 新增 raw-log schema 契约：`docs/verification/hardware_smoke/raw_log_schema.md` 集中列出 STM32/DSP 原始日志字段，`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h` 提供 C 输出端字段常量，`examples/hardware_smoke/mrt_hardware_smoke_report.h` 输出完整字段集合，`tools/verify/check_hardware_smoke_raw_log_schema.py` 和 `tests/static/test_hardware_smoke_raw_log_schema.py` 防止生成器、文档、schema 头文件、完整报告 emitter 和采集指南字段漂移。
 - 新增硬件 smoke 日志输出 helper：`examples/hardware_smoke/mrt_hardware_smoke_log.h` 使用板级单字符回调输出 `Key: Value\n` 和十进制整数字段，`tests/unit/test_hardware_smoke_log.c` 覆盖正常输出与非法参数无半行输出。
 - 新增硬件 smoke 完整报告 emitter：`examples/hardware_smoke/mrt_hardware_smoke_report.h` 输出 STM32/DSP 必填字段全集，`tests/unit/test_hardware_smoke_report.c` 覆盖完整字段和非法参数无半份报告输出。
 

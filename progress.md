@@ -951,3 +951,39 @@
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
 - Remaining: commit/push repo-side report emitter, then collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
+
+## Hardware Smoke Report Schema Drift Coverage
+- Started Phase 25 from a clean worktree on `feature/embedded-smoke-projects`.
+- First `apply_patch` attempt targeted the parent `F:\My_RTOS` path instead of the active worktree and failed with file-not-found; repeated the patch against `.worktrees/embedded-smoke-projects`.
+- RED test added to `tests\static\test_hardware_smoke_raw_log_schema.py`:
+  - `REPORT_HEADER` must exist.
+  - Every generator-required STM32/DSP field must map to a `MRT_SMOKE_FIELD_*` token referenced by `mrt_hardware_smoke_report.h`.
+  - The checker itself must mention `mrt_hardware_smoke_report.h`.
+- RED run:
+  - `python tests\static\test_hardware_smoke_raw_log_schema.py` -> failed at `assert "mrt_hardware_smoke_report.h" in checker_text`.
+- GREEN implementation:
+  - `tools\verify\check_hardware_smoke_raw_log_schema.py` now loads `REPORT_HEADER`, checks artifact existence, derives field tokens with `field_macro_token()`, and rejects missing report emitter field tokens or missing STM32/DSP emit functions.
+- Focused GREEN checks:
+  - `python tests\static\test_hardware_smoke_raw_log_schema.py` -> pass.
+  - `python tools\verify\check_hardware_smoke_raw_log_schema.py` -> `[hardware-raw-log-schema] schema fields aligned`.
+- Follow-up RED/GREEN for release runner description:
+  - `python tests\static\test_release_verification_runner.py` failed until `hardware-smoke-raw-log-schema` step description mentioned `完整报告 emitter`.
+  - Updated `tools\verify\run_release_verification.py` description to say the schema step checks generator, docs, schema C header, and complete report emitter alignment.
+  - `python tests\static\test_release_verification_runner.py` -> pass.
+- Documentation sync completed for coupling matrix, test suite plan, requirements traceability, final report, completion audit, findings, progress, and task plan.
+- Focused/static checks after docs sync passed:
+  - `python tests\static\test_hardware_smoke_raw_log_schema.py`
+  - `python tools\verify\check_hardware_smoke_raw_log_schema.py` -> `[hardware-raw-log-schema] schema fields aligned`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_original_symbols.py` -> `[original-symbols] no banned FreeRTOS-style public symbols found`
+  - `python tools\verify\check_hardware_smoke_preflight.py` -> `[hardware-preflight] hardware smoke preflight config accepted`
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+- `python tools\run_host_tests.py` timed out once while running in parallel with embedded smoke at 244 seconds; reran it alone with a longer timeout and got `[summary] 72 test target(s) passed`.
+- `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`.
+- Full default release verification passed after the release runner description update:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 72 test target(s) passed`; `[release] 15 step(s) passed`.
+- Hardware-required verification remains correctly gated:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`.
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`.

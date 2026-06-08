@@ -84,7 +84,7 @@ def build_steps(require_hardware: bool = False) -> list[Step]:
         Step(
             name="hardware-smoke-raw-log-schema",
             command=[sys.executable, str(ROOT / "tools" / "verify" / "check_hardware_smoke_raw_log_schema.py")],
-            description="检查真实板级 smoke 原始日志 schema 与生成器、文档和 C 头文件一致",
+            description="检查真实板级 smoke 原始日志 schema 与生成器、文档、schema C 头文件和完整报告 emitter 一致",
         ),
         Step(
             name="hardware-smoke-capture-runner",

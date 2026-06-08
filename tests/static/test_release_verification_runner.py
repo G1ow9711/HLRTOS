@@ -54,10 +54,19 @@ def test_hardware_plan_appends_real_board_gate() -> None:
     assert "hardware-smoke-evidence" in names
 
 
+def test_raw_log_schema_step_mentions_report_header() -> None:
+    """raw-log schema release 步骤说明必须覆盖完整报告 emitter 漂移检查。"""
+    runner = load_runner()
+    steps = runner.build_steps(require_hardware=False)
+    raw_log_step = next(step for step in steps if step.name == "hardware-smoke-raw-log-schema")
+    assert "完整报告 emitter" in raw_log_step.description
+
+
 def main() -> int:
     """运行静态测试。"""
     test_default_plan_skips_real_board_gate()
     test_hardware_plan_appends_real_board_gate()
+    test_raw_log_schema_step_mentions_report_header()
     return 0
 
 
