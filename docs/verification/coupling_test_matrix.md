@@ -72,3 +72,9 @@
 - `examples/stm32/`：板级 smoke test。
 - `examples/dsp/`：DSP mock/真实端口示例。
 
+## 最新增量证据：硬件 smoke 采集执行器
+
+- `C-038`：新增 `tools/verify/run_hardware_smoke_capture.py` 和 `tests/static/test_hardware_smoke_capture_runner.py`，把硬件 smoke 预检、编译器检查、构建、烧录、采集、raw log 到最终证据生成、目标级证据校验连成流水线。
+- `C-038`：默认模式只执行 dry-run，打印步骤顺序，不运行真实硬件命令；只有显式追加 `--execute` 才会调用 `hardware_smoke_preflight.json` 中的命令。
+- `C-038`：静态测试使用临时无害命令写入 raw log，再由 `generate_hardware_smoke_evidence.py` 生成带 `Raw-Log-Path` 和 `Raw-Log-SHA256` 的证据，最后调用目标级证据校验；该测试证明流水线契约，不替代真实 STM32/DSP 板级 PASS。
+

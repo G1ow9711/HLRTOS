@@ -786,3 +786,27 @@
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
 - Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
+
+## Hardware Smoke Capture Runner
+- Added RED static coverage:
+  - `python tests\static\test_hardware_smoke_capture_runner.py` failed on missing `tools\verify\run_hardware_smoke_capture.py`
+  - `python tests\static\test_release_verification_runner.py` failed because `hardware-smoke-capture-runner` was absent from the default release chain
+- Added `tools\verify\run_hardware_smoke_capture.py`.
+  - Default mode is dry-run only.
+  - `--execute` runs the configured compiler/build/flash/capture commands.
+  - The runner invokes preflight validation, raw-log evidence generation, and target-level evidence validation.
+- Added `hardware-smoke-capture-runner` to `tools\verify\run_release_verification.py`.
+- Added a follow-up RED case for generator duplication when `capture_command` already calls `generate_hardware_smoke_evidence.py`; fixed the runner to skip the extra `generate-evidence` step in that case.
+- Updated manual, hardware smoke README/checklist, final verification report, completion audit, requirements matrix, coupling matrix, test suite plan, and task plan.
+- Focused checks passed:
+  - `python tests\static\test_hardware_smoke_capture_runner.py`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_hardware_smoke_preflight.py` -> hardware smoke preflight config accepted
+  - `python tools\verify\run_hardware_smoke_capture.py --target STM32` -> dry-run printed preflight/compiler/build/flash/capture/verify plan without executing hardware commands
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 70 test target(s) passed`; `[release] 12 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+- Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.

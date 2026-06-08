@@ -15,6 +15,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 - 真实硬件证据 gate：`tools/verify/check_hardware_smoke_evidence.py` 已提供，证据模板位于 `docs/verification/hardware_smoke/`，并要求最终证据中的 `Raw-Log-Path` 与 `Raw-Log-SHA256` 能回溯到保留的原始日志。
 - 原始日志生成器：`tools/verify/generate_hardware_smoke_evidence.py` 已提供，可把含 `Key: Value` 字段的 UART/trace 原始日志规范化为最终板级证据文件，并自动写入原始日志路径和 SHA-256。
 - 硬件 smoke 预检配置：`tools/verify/check_hardware_smoke_preflight.py` 已提供，默认检查 `docs/verification/hardware_smoke/hardware_smoke_preflight.json`，确认 STM32/DSP 板级采集命令、最短运行时长和必需日志字段无占位符。
+- 硬件 smoke 采集执行器：`tools/verify/run_hardware_smoke_capture.py` 已提供，默认 dry-run 只打印预检、编译、构建、烧录、采集、证据生成和目标级证据校验顺序；只有显式 `--execute` 才运行真实命令。
 - 统一 release 入口：`tools/verify/run_release_verification.py` 默认模式已通过，`--require-hardware` 在真实板级日志缺失处失败。
 - API 手册覆盖：135 个 API 条目均有中文手册章节。
 - API 原型一致性：API 目录、公共头文件和源文件定义三方对齐。
@@ -43,10 +44,11 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | `python tests\static\test_stm32_context_scaffold.py` | STM32 Cortex-M SVC/PendSV 汇编骨架、C 钩子、初始栈帧写回 TCB 和 smoke 构建接线静态检查通过 |
 | `python tests\static\test_hardware_smoke_preflight.py` | 硬件 smoke 预检配置规则单测通过 |
 | `python tools\verify\check_hardware_smoke_preflight.py` | 默认硬件 smoke 预检配置通过；`--check-tools` 可额外检查本机工具链、烧录器和采集工具 |
+| `python tests\static\test_hardware_smoke_capture_runner.py` | 硬件 smoke 采集执行器 dry-run 计划和无害执行契约通过 |
 | `python tests\static\test_hardware_smoke_evidence_checker.py` | 硬件证据校验脚本规则单测通过，包含原始日志 SHA-256 错配拒绝 |
 | `python tests\static\test_hardware_smoke_evidence_generator.py` | 原始 UART/trace 日志到最终证据文件的生成器单测通过，包含 `Raw-Log-Path` 与 `Raw-Log-SHA256` 派生 |
 | `docs/verification/hardware_smoke/collection_checklist.md` | 实机日志采集流程和字段填写规则 |
-| `python tools\verify\run_release_verification.py` | `[release] 11 step(s) passed` |
+| `python tools\verify\run_release_verification.py` | `[release] 12 step(s) passed` |
 | `python tools\verify\run_release_verification.py --require-hardware` | `[release] 1 step(s) failed`；真实 STM32/DSP 板级日志仍缺失 |
 | `python tools\verify\check_hardware_smoke_evidence.py` | 当前预期失败：真实 `stm32_board_smoke.md` 与 `dsp_board_smoke.md` 尚未提交 |
 
@@ -64,7 +66,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | R-008 | 部分验证 | 70 个 host 测试目标通过；embedded smoke 脚本通过；新增 timer service command queue、运行统计、mutex timeout rollback、持锁任务删除策略、TCB 栈顶保存契约、STM32/DSP smoke 验证；stream/message buffer 动态删除与写者等待保护也已测试 | 真实硬件测试待补 |
 | R-009 | 部分验证 | C-001 到 C-037 中大量耦合项已有自动化证据，新增 STM32 cross-build smoke、STM32 SVC/PendSV 汇编骨架静态检查、初始 PSP 写回 TCB 接线、TCB 栈顶保存/恢复契约、STM32 MPU helper 与 DSP host model smoke 证据；动态 buffer delete 生命周期和写者等待 busy 删除保护已落表 | 真实端口项仍待硬件补证 |
 | R-010 | 部分实现 | 高级模块包含 stream/message buffer、多 heap、tickless、trace、runtime stats、assert、动态对象创建/删除，以及 STM32 MPU 区域规整 helper | 真实板级端口后续补齐 |
-| R-011 | 部分验证 | 手册第 5、6 节包含 STM32/DSP 详细移植步骤、移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收、smoke 工程落地步骤、真实板级证据归档步骤、硬件证据模板、原始日志生成器命令和 raw log SHA-256 追溯要求 | 真实移植完成后补 `stm32_board_smoke.md`、`dsp_board_smoke.md` 和原始板级日志 |
+| R-011 | 部分验证 | 手册第 5、6 节包含 STM32/DSP 详细移植步骤、移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收、smoke 工程落地步骤、真实板级证据归档步骤、硬件证据模板、采集执行器 dry-run/execute 命令、原始日志生成器命令和 raw log SHA-256 追溯要求 | 真实移植完成后补 `stm32_board_smoke.md`、`dsp_board_smoke.md` 和原始板级日志 |
 
 ## 4. 耦合状态摘要
 
@@ -93,14 +95,15 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | Embedded smoke | `examples/stm32/`、`examples/dsp/` |
 | Host 测试 | `tests/unit/`、`tests/sim/`、`tests/coupling/`、`tests/port_mock/` |
 | 中文手册 | `docs/manual/MyRTOS_Reference_Manual_zh.md` |
-| 静态/烟雾验证 | `tools/verify/run_release_verification.py`、`tools/verify/check_api_manual_coverage.py`、`tools/verify/check_api_catalog_prototypes.py`、`tools/verify/check_chinese_comments.py`、`tools/verify/check_original_symbols.py`、`tools/verify/check_embedded_smoke_projects.py`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tools/verify/generate_hardware_smoke_evidence.py` |
+| 静态/烟雾验证 | `tools/verify/run_release_verification.py`、`tools/verify/check_api_manual_coverage.py`、`tools/verify/check_api_catalog_prototypes.py`、`tools/verify/check_chinese_comments.py`、`tools/verify/check_original_symbols.py`、`tools/verify/check_embedded_smoke_projects.py`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tools/verify/generate_hardware_smoke_evidence.py` |
 | 真实硬件证据模板 | `docs/verification/hardware_smoke/` |
 | 追踪矩阵 | `docs/verification/requirements_traceability_matrix.md`、`docs/verification/coupling_test_matrix.md` |
 
 ## 6. 建议下一步
 
 1. 在真实 STM32 板卡运行前，先按目标板修改 `hardware_smoke_preflight.json` 并运行 `python tools\verify\check_hardware_smoke_preflight.py`；实机采集机器上可追加 `--check-tools`。
-2. 在真实 STM32 板卡运行 `examples/stm32` 派生工程，按 `docs/verification/hardware_smoke/collection_checklist.md` 记录 LED、UART ISR 队列、软件定时器、tickless idle、PendSV/SVC 汇编证据，保留原始日志，并填写或生成带 `Raw-Log-SHA256` 的 `docs/verification/hardware_smoke/stm32_board_smoke.md`。
-3. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke，按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，并填写或生成带 `Raw-Log-SHA256` 的 `docs/verification/hardware_smoke/dsp_board_smoke.md`。
-4. 运行 `python tools\verify\check_hardware_smoke_evidence.py`，确认真实 STM32/DSP 板级日志通过最终 gate。
-5. 如后续需要真实内核自动创建服务任务，可把 `MRT_TimerServiceRunPending` 绑定到调度器管理的专用任务入口。
+2. 运行 `python tools\verify\run_hardware_smoke_capture.py --target STM32` 或 `--target DSP` 预演硬件采集流水线；确认 `capture_command` 会产出 raw log 后再追加 `--execute`。
+3. 在真实 STM32 板卡运行 `examples/stm32` 派生工程，按 `docs/verification/hardware_smoke/collection_checklist.md` 记录 LED、UART ISR 队列、软件定时器、tickless idle、PendSV/SVC 汇编证据，保留原始日志，并填写或生成带 `Raw-Log-SHA256` 的 `docs/verification/hardware_smoke/stm32_board_smoke.md`。
+4. 根据用户指定 DSP 型号补真实 ABI 汇编端口和 timer/software interrupt smoke，按 `docs/verification/hardware_smoke/collection_checklist.md` 采集原始日志，并填写或生成带 `Raw-Log-SHA256` 的 `docs/verification/hardware_smoke/dsp_board_smoke.md`。
+5. 运行 `python tools\verify\check_hardware_smoke_evidence.py`，确认真实 STM32/DSP 板级日志通过最终 gate。
+6. 如后续需要真实内核自动创建服务任务，可把 `MRT_TimerServiceRunPending` 绑定到调度器管理的专用任务入口。

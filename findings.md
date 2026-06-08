@@ -316,3 +316,10 @@
 - Final real board evidence now must preserve raw UART/trace logs and include a matching `Raw-Log-SHA256`; this strengthens traceability but still does not create real STM32/DSP board evidence.
 - Latest repo-side verification passed: API catalog prototype audit, original-symbol scan, hardware smoke preflight, whitespace check, and `python tools\\verify\\run_release_verification.py` with `[release] 11 step(s) passed`.
 - Hardware-required verification remains correctly gated: `python tools\\verify\\check_hardware_smoke_evidence.py` reports missing real `stm32_board_smoke.md` and `dsp_board_smoke.md`, and `python tools\\verify\\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.
+
+## Hardware Smoke Capture Runner Findings
+- RED evidence: `python tests\\static\\test_hardware_smoke_capture_runner.py` first failed because `tools\\verify\\run_hardware_smoke_capture.py` was missing; `python tests\\static\\test_release_verification_runner.py` then failed because the default release chain did not include `hardware-smoke-capture-runner`.
+- Implementation adds `run_hardware_smoke_capture.py` with default dry-run, explicit `--execute`, target selection, preflight validation, configured compiler/build/flash/capture command execution, raw-log evidence generation, and target-level evidence validation.
+- Follow-up RED evidence found default dry-run duplicated evidence generation when `capture_command` already invoked `generate_hardware_smoke_evidence.py`; the runner now detects that command and skips the extra `generate-evidence` step.
+- Latest repo-side verification passed: capture runner static test, release-runner static test, manual coverage, hardware preflight, `git diff --check`, and `python tools\\verify\\run_release_verification.py` with `[release] 12 step(s) passed`.
+- Hardware-required verification remains correctly gated: real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs are still absent, so `python tools\\verify\\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.

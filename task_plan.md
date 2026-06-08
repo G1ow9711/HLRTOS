@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 18 in progress: hardware evidence now gains raw-log path/SHA-256 traceability so final STM32/DSP board logs must link back to retained UART/trace files; overall goal still awaits real STM32/DSP board logs
+Phase 19 in progress: hardware smoke capture runner now provides dry-run/execute orchestration for preflight, build, flash, capture, evidence generation, and target evidence validation; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -225,3 +225,13 @@ Phase 18 in progress: hardware evidence now gains raw-log path/SHA-256 traceabil
 - [x] Re-run release verification and expected hardware-gate failure after documentation sync
 - [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
 - **Status:** complete for repo-side raw-log traceability; real hardware evidence remains pending
+
+## Phase 19: Hardware Smoke Capture Runner
+- [x] Add failing static coverage for a hardware smoke capture runner and release-runner integration
+- [x] Add `tools/verify/run_hardware_smoke_capture.py` with default dry-run and explicit `--execute`
+- [x] Orchestrate preflight, compiler/build/flash/capture commands, raw-log evidence generation, and target-level evidence validation
+- [x] Add `hardware-smoke-capture-runner` to the default release verification runner
+- [x] Update manual, hardware smoke docs, requirements matrix, coupling matrix, test-suite plan, completion audit, and final report
+- [x] Re-run focused/static/full release verification after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
+- **Status:** complete for repo-side capture runner; real hardware evidence remains pending
