@@ -320,3 +320,13 @@ Phase 27 repo-side complete: hardware smoke raw-log direct checker added before 
 - [x] Re-run focused/static/full release verification after documentation sync
 - [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
 - **Status:** complete for repo-side raw-log direct checker; real hardware evidence remains pending
+
+## Phase 28: Reference Manual Structure Gate
+- [x] Add RED static coverage for missing `tools/verify/check_manual_structure.py`
+- [x] Add API family navigation to `docs/manual/MyRTOS_Reference_Manual_zh.md`
+- [x] Add `check_manual_structure.py` to validate top-level chapter order, API family navigation, API field markers, and porting markers
+- [x] Add `manual-structure` to default release verification
+- [x] Re-run focused manual structure and release-runner checks
+- [x] Re-run full release verification after documentation sync
+- [ ] Replace templates with real `stm32_board_smoke.md`, `dsp_board_smoke.md`, and matching raw logs after actual board runs
+- **Status:** complete for repo-side manual structure gate; real hardware evidence remains pending

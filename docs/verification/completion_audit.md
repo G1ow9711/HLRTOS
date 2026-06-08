@@ -29,7 +29,7 @@
 | 适配 STM32 | `test_port_stm32_stack`、`test_port_stm32_tick_priority`、`test_port_stm32_mpu`，以及 `examples/stm32` 交叉编译通过 | 部分验证 |
 | 适配 DSP | `test_port_dsp_stack`、`test_port_dsp_context`、`test_dsp_context_scaffold.py`、`test_dsp_c2000_project_scaffold.py`，以及 `examples/dsp` host model 通过 | 部分验证 |
 | 专业详细中文注释 | `check_chinese_comments.py` 通过，覆盖 `include/`、`src/`、`examples/`、`tests/` | 已验证 |
-| 类 FreeRTOS 官方风格中文手册 | `check_api_manual_coverage.py` 通过，135 个 API 条目覆盖；`check_api_catalog_prototypes.py` 通过，135 个 API 原型对齐 | 已验证 |
+| 类 FreeRTOS 官方风格中文手册 | `check_api_manual_coverage.py` 通过，135 个 API 条目覆盖；`check_api_catalog_prototypes.py` 通过，135 个 API 原型对齐；`check_manual_structure.py` 通过，覆盖章节顺序、API 分类导航、API 字段模板和 STM32/DSP 移植标记 | 已验证 |
 | 手册含详细移植步骤 | 手册第 5、6 节包含移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收、raw-log schema 和证据生成命令 | 已验证 |
 | 所有功能必须测试 | 72 个 host test target 通过，embedded smoke 脚本通过 | 大部分已验证 |
 | 所有耦合情况测试清楚 | `docs/verification/coupling_test_matrix.md` 已扩展到 `C-044`，对应 host / smoke / 静态证据已落表 | 大部分已验证 |

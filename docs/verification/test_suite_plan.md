@@ -36,12 +36,13 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 python tools/verify/run_release_verification.py
 python tools/verify/check_hardware_smoke_preflight.py
+python tools/verify/check_manual_structure.py
 python tools/verify/check_hardware_smoke_raw_log_schema.py
 python tools/verify/run_hardware_smoke_capture.py --target STM32
 python tools/verify/run_release_verification.py --require-hardware
 ```
 
-`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、DSP 汇编骨架、DSP C2000 工程骨架、embedded smoke、硬件 smoke 预检配置、硬件 raw-log schema 对齐、硬件 raw-log 直检工具自测、硬件日志输出 helper 和完整报告 emitter 单测、硬件采集执行器自测、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
+`run_release_verification.py` 作为最终验收入口，默认执行 host、手册 API 覆盖、手册结构、静态、原型、STM32 汇编骨架、DSP 汇编骨架、DSP C2000 工程骨架、embedded smoke、硬件 smoke 预检配置、硬件 raw-log schema 对齐、硬件 raw-log 直检工具自测、硬件日志输出 helper 和完整报告 emitter 单测、硬件采集执行器自测、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
 
 ## 4. 测试分层策略
 

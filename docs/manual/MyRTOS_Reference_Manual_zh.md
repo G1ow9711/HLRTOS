@@ -48,6 +48,24 @@ int main(void)
 
 ## 4. API 参考
 
+### 4.1 API 分类导航
+
+| 分类 | 主要 API |
+|------|----------|
+| 内核控制 | `MRT_KernelInitialize`、`MRT_KernelStart`、`MRT_KernelGetTick`、`MRT_KernelTick`、`MRT_KernelYield`、`MRT_KernelSuspendAll`、`MRT_KernelResumeAll` |
+| 任务管理 | `MRT_TaskCreateStatic`、`MRT_TaskCreate`、`MRT_TaskDelete`、`MRT_TaskDelay`、`MRT_TaskDelayUntil`、`MRT_TaskSuspend`、`MRT_TaskResume`、`MRT_TaskSetPriority` |
+| 队列 | `MRT_QueueCreateStatic`、`MRT_QueueCreate`、`MRT_QueueSend`、`MRT_QueueReceive`、`MRT_QueueSendFromISR`、`MRT_QueueReset` |
+| 信号量 | `MRT_SemaphoreCreateBinaryStatic`、`MRT_SemaphoreCreateCountingStatic`、`MRT_SemaphoreTake`、`MRT_SemaphoreGive`、`MRT_SemaphoreGiveFromISR` |
+| 互斥锁 | `MRT_MutexCreateStatic`、`MRT_MutexCreateRecursiveStatic`、`MRT_MutexLock`、`MRT_MutexUnlock`、`MRT_MutexGetOwner` |
+| 事件组 | `MRT_EventGroupCreateStatic`、`MRT_EventGroupSetBits`、`MRT_EventGroupWaitBits`、`MRT_EventGroupSetBitsFromISR`、`MRT_EventGroupGetBits` |
+| 任务通知 | `MRT_TaskNotify`、`MRT_TaskNotifyFromISR`、`MRT_TaskNotifyWait`、`MRT_TaskNotifyTake`、`MRT_TaskNotifyStateClear` |
+| 软件定时器 | `MRT_TimerCreateStatic`、`MRT_TimerStart`、`MRT_TimerStop`、`MRT_TimerReset`、`MRT_TimerChangePeriod`、`MRT_TimerServiceRunPending` |
+| 流缓冲区 | `MRT_StreamBufferCreateStatic`、`MRT_StreamBufferSend`、`MRT_StreamBufferReceive`、`MRT_StreamBufferSendFromISR`、`MRT_StreamBufferReset` |
+| 消息缓冲区 | `MRT_MessageBufferCreateStatic`、`MRT_MessageBufferSend`、`MRT_MessageBufferReceive`、`MRT_MessageBufferSendFromISR`、`MRT_MessageBufferReset` |
+| 内存管理 | `MRT_HeapInitialize`、`MRT_Malloc`、`MRT_Free`、`MRT_MemoryPoolCreateStatic`、`MRT_MemoryPoolAlloc`、`MRT_MemoryPoolFree` |
+| 低功耗与诊断 | `MRT_TicklessGetExpectedIdleTicks`、`MRT_TicklessEnterIdle`、`MRT_TraceSetSink`、`MRT_TraceEmit`、`MRT_StatsGetTaskRuntime`、`MRT_ASSERT` |
+| 端口层 | `MRT_PortInitialize`、`MRT_PortStartFirstTask`、`MRT_PortYieldFromISR`、`MRT_PortEnterCritical`、`MRT_PortStm32CmInitializeStack`、`MRT_PortDspC28xInitializeStack` |
+
 ### MRT_KernelInitialize
 - 函数原型：`MRT_Result MRT_KernelInitialize(void);`
 - 功能说明：初始化内核全局状态、端口 mock 状态、任务调度器和定时器内部状态。

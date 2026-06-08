@@ -398,3 +398,12 @@
 - Static verification passed: manual coverage 135, API prototype alignment 135, Chinese comment scan, original-symbol scan, hardware preflight, embedded smoke, raw-log schema checker, and `git diff --check` with only expected CRLF warnings.
 - Default release verification passed: `python tools\verify\run_release_verification.py` produced `[summary] 72 test target(s) passed` and `[release] 16 step(s) passed`.
 - Hardware-required verification remains correctly gated: `python tools\verify\check_hardware_smoke_evidence.py` and `python tools\verify\run_release_verification.py --require-hardware` fail only because real `stm32_board_smoke.md` and `dsp_board_smoke.md` are absent.
+
+## Reference Manual Structure Gate Findings
+- RED evidence: `python tests\static\test_manual_structure.py` failed because `tools\verify\check_manual_structure.py` did not exist.
+- RED evidence: `python tests\static\test_release_verification_runner.py` failed because the default release chain did not include `manual-structure`.
+- Implementation adds `check_manual_structure.py`, which validates top-level chapter order, `### 4.1 API 分类导航`, required API family names, API field markers, and STM32/DSP porting markers.
+- The manual now includes an API family navigation table under section 4 so users can scan by kernel, task, queue, synchronization, timer, buffer, memory, diagnostics, and port-layer families before reading the per-function reference entries.
+- Focused GREEN checks passed: `python tests\static\test_manual_structure.py`, `python tools\verify\check_manual_structure.py`, `python tests\static\test_release_verification_runner.py`, and `python tools\verify\check_api_manual_coverage.py`.
+- Default release verification passed after documentation sync: `python tools\verify\run_release_verification.py` produced `[summary] 72 test target(s) passed` and `[release] 17 step(s) passed`.
+- Hardware-required verification remains correctly gated: `python tools\verify\check_hardware_smoke_evidence.py` and `python tools\verify\run_release_verification.py --require-hardware` fail only because real `stm32_board_smoke.md` and `dsp_board_smoke.md` are absent.

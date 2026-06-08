@@ -42,6 +42,11 @@ def build_steps(require_hardware: bool = False) -> list[Step]:
             description="检查手册 API 覆盖",
         ),
         Step(
+            name="manual-structure",
+            command=[sys.executable, str(ROOT / "tools" / "verify" / "check_manual_structure.py")],
+            description="检查中文参考手册章节顺序、API 分类导航和参考手册字段结构",
+        ),
+        Step(
             name="api-catalog-prototypes",
             command=[sys.executable, str(ROOT / "tools" / "verify" / "check_api_catalog_prototypes.py")],
             description="检查 API 目录与源码原型一致",

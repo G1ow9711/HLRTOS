@@ -20,6 +20,7 @@
 
 ## 最新增量证据：STM32 SVC/PendSV 汇编骨架
 
+- `R-007`：新增 `tools/verify/check_manual_structure.py` 和 `tests/static/test_manual_structure.py`，并在手册第 4 节加入 `### 4.1 API 分类导航`；该门禁检查参考手册顶层章节顺序、API 分类导航、API 字段模板和 STM32/DSP 移植章节标记。
 - `R-003`：新增 `src/portable/stm32_cm/mrt_port_stm32_cm_context.S`，提供 `SVC_Handler`、`PendSV_Handler` 和 `MRT_PortStm32CmStartFirstTaskAsm` 的 Cortex-M 汇编入口骨架；`python tests\static\test_stm32_context_scaffold.py` 验证符号、PSP/R4-R11 保存恢复标记、C 钩子接线、`MRT_TaskKernelSwitchStackTop()` 接入，以及 `examples/stm32/main.c` 的初始 PSP 写回 TCB 接线；`test_task_stack_top` 验证 TCB 栈顶保存/恢复契约。
 - `R-008`：`tools/verify/run_release_verification.py` 默认链路新增 `dsp-c2000-project-scaffold` 步骤，默认 release 验证从 13 步扩展为 14 步。
 - `R-009`：`python tools\verify\check_embedded_smoke_projects.py` 已把 `.S` 文件、`-Isrc/kernel` 内部契约路径、初始 PSP 写回 TCB 接线纳入 ARM GCC 交叉编译，证明 STM32 smoke ELF 同时覆盖 C 端口、汇编入口骨架和 TCB 栈顶 helper 接线。

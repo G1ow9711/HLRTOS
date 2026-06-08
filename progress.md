@@ -785,6 +785,29 @@
 - Hardware-required gate remains intentionally failing until real boards are run:
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+
+## Reference Manual Structure Gate
+- Started Phase 28 from a clean worktree on `feature/embedded-smoke-projects`.
+- RED tests added:
+  - `tests\static\test_manual_structure.py` requires `tools\verify\check_manual_structure.py`, reference-manual top-level heading order, `### 4.1 API 分类导航`, and API family names.
+  - `tests\static\test_release_verification_runner.py` expects `manual-structure` in the default release chain.
+- RED runs:
+  - `python tests\static\test_manual_structure.py` -> failed because `check_manual_structure.py` was missing.
+  - `python tests\static\test_release_verification_runner.py` -> failed because `manual-structure` was absent from the default release chain.
+- GREEN implementation:
+  - Added `tools\verify\check_manual_structure.py`.
+  - Added `### 4.1 API 分类导航` to `docs\manual\MyRTOS_Reference_Manual_zh.md`.
+  - Added `manual-structure` to `tools\verify\run_release_verification.py`.
+- Focused GREEN checks passed:
+  - `python tests\static\test_manual_structure.py`
+  - `python tools\verify\check_manual_structure.py` -> `[manual-structure] reference manual structure covered`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 72 test target(s) passed`; `[release] 17 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
 - Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
 
 ## DSP C2000 Board Smoke Project Scaffold

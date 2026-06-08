@@ -41,6 +41,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | `python tests\static\test_dsp_context_scaffold.py` | DSP C28x 汇编骨架静态契约通过 |
 | `python tests\static\test_dsp_c2000_project_scaffold.py` | DSP C2000 启动、链接和 ISR glue 工程骨架静态契约通过 |
 | `python tools\verify\check_api_manual_coverage.py` | `[manual-coverage] 135 API section(s) covered` |
+| `python tools\verify\check_manual_structure.py` | `[manual-structure] reference manual structure covered` |
 | `python tools\verify\check_api_catalog_prototypes.py` | `[api-catalog] 135 API prototype(s) aligned` |
 | `python tools\verify\check_chinese_comments.py` | `[chinese-comments] include/src/examples/tests function comments covered` |
 | `python tools\verify\check_original_symbols.py` | `[original-symbols] no banned FreeRTOS-style public symbols found` |
@@ -54,7 +55,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | `python tests\static\test_hardware_smoke_evidence_checker.py` | 硬件证据校验脚本规则单测通过，包含原始日志 SHA-256 错配拒绝 |
 | `python tests\static\test_hardware_smoke_evidence_generator.py` | 原始 UART/trace 日志到最终证据文件的生成器单测通过，包含 `Raw-Log-Path` 与 `Raw-Log-SHA256` 派生 |
 | `docs/verification/hardware_smoke/raw_log_schema.md`、`docs/verification/hardware_smoke/collection_checklist.md` | 实机日志字段 schema、采集流程和字段填写规则 |
-| `python tools\verify\run_release_verification.py` | `[summary] 72 test target(s) passed`；`[release] 16 step(s) passed` |
+| `python tools\verify\run_release_verification.py` | `[summary] 72 test target(s) passed`；`[release] 17 step(s) passed` |
 | `python tools\verify\run_release_verification.py --require-hardware` | `[release] 1 step(s) failed`；真实 STM32/DSP 板级日志仍缺失 |
 | `python tools\verify\check_hardware_smoke_evidence.py` | 当前预期失败：真实 `stm32_board_smoke.md` 与 `dsp_board_smoke.md` 尚未提交 |
 
@@ -68,7 +69,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | R-004 | 部分实现 | DSP 栈帧、软件中断上下文模型已测试；`examples/dsp` host model 已编译运行；`mrt_port_dsp_c28x_context.asm` 已提供首任务启动、yield、软件中断入口和寄存器保存/恢复骨架；`startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c`、`linker_c28x.cmd` 已提供 C2000 启动、timer/software interrupt/ADC glue 和 RTOS 分区骨架 | 具体 DSP ABI 汇编仍需目标工具链编译和板级 smoke |
 | R-005 | 部分验证 | include/src/examples/tests 函数头中文 Doxygen 字段通过扫描 | 历史测试文件已纳入严格扫描范围 |
 | R-006 | 部分验证 | include/src/examples/tests 函数体附近中文步骤注释通过扫描 | 后续可继续扩展到更多辅助脚本 |
-| R-007 | 部分验证 | 中文参考手册已写，135 API 条目覆盖；API 目录、头文件、源码原型一致性检查通过 | API 实现状态变化后需同步手册 |
+| R-007 | 部分验证 | 中文参考手册已写，135 API 条目覆盖；API 目录、头文件、源码原型一致性检查通过；新增 `check_manual_structure.py` 检查参考手册章节顺序、API 分类导航、API 字段模板和移植章节标记 | API 实现状态变化后需同步手册 |
 | R-008 | 部分验证 | 72 个 host 测试目标通过；embedded smoke 脚本通过；新增 timer service command queue、运行统计、mutex timeout rollback、持锁任务删除策略、TCB 栈顶保存契约、STM32/DSP smoke 验证、DSP 汇编骨架静态检查、DSP C2000 工程骨架静态检查、硬件 smoke 日志格式 helper 和完整报告 emitter；stream/message buffer 动态删除与写者等待保护也已测试 | 真实硬件测试待补 |
 | R-009 | 部分验证 | C-001 到 C-044 中大量耦合项已有自动化证据，新增 STM32 cross-build smoke、STM32 SVC/PendSV 汇编骨架静态检查、初始 PSP 写回 TCB 接线、TCB 栈顶保存/恢复契约、STM32 MPU helper、DSP host model smoke、DSP C28x 汇编骨架、DSP C2000 工程骨架、硬件 raw-log schema、硬件日志 helper、完整报告 emitter、目标级预检过滤和原始日志直检静态/host 证据；动态 buffer delete 生命周期和写者等待 busy 删除保护已落表 | 真实端口项仍待硬件补证 |
 | R-010 | 部分实现 | 高级模块包含 stream/message buffer、多 heap、tickless、trace、runtime stats、assert、动态对象创建/删除，以及 STM32 MPU 区域规整 helper | 真实板级端口后续补齐 |
@@ -101,7 +102,7 @@ MyRTOS 当前已经形成一套原创 C 语言 RTOS preview：包含任务调度
 | Embedded smoke | `examples/stm32/`、`examples/dsp/` |
 | Host 测试 | `tests/unit/`、`tests/sim/`、`tests/coupling/`、`tests/port_mock/` |
 | 中文手册 | `docs/manual/MyRTOS_Reference_Manual_zh.md` |
-| 静态/烟雾验证 | `tools/verify/run_release_verification.py`、`tools/verify/check_api_manual_coverage.py`、`tools/verify/check_api_catalog_prototypes.py`、`tools/verify/check_chinese_comments.py`、`tools/verify/check_original_symbols.py`、`tools/verify/check_embedded_smoke_projects.py`、`tests/static/test_dsp_context_scaffold.py`、`tests/static/test_dsp_c2000_project_scaffold.py`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_raw_log_schema.py`、`tools/verify/check_hardware_smoke_raw_log.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tools/verify/generate_hardware_smoke_evidence.py` |
+| 静态/烟雾验证 | `tools/verify/run_release_verification.py`、`tools/verify/check_api_manual_coverage.py`、`tools/verify/check_manual_structure.py`、`tools/verify/check_api_catalog_prototypes.py`、`tools/verify/check_chinese_comments.py`、`tools/verify/check_original_symbols.py`、`tools/verify/check_embedded_smoke_projects.py`、`tests/static/test_dsp_context_scaffold.py`、`tests/static/test_dsp_c2000_project_scaffold.py`、`tools/verify/check_hardware_smoke_preflight.py`、`tools/verify/check_hardware_smoke_raw_log_schema.py`、`tools/verify/check_hardware_smoke_raw_log.py`、`tools/verify/run_hardware_smoke_capture.py`、`tools/verify/check_hardware_smoke_evidence.py`、`tools/verify/generate_hardware_smoke_evidence.py` |
 | 真实硬件证据模板、schema、日志 helper 与完整报告 emitter | `docs/verification/hardware_smoke/`、`examples/hardware_smoke/mrt_hardware_smoke_log_schema.h`、`examples/hardware_smoke/mrt_hardware_smoke_log.h`、`examples/hardware_smoke/mrt_hardware_smoke_report.h` |
 | 追踪矩阵 | `docs/verification/requirements_traceability_matrix.md`、`docs/verification/coupling_test_matrix.md` |
 
