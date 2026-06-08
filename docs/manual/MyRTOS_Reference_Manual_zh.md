@@ -1688,6 +1688,7 @@ int main(void)
 - `startup_stm32cm.c` 只负责向量表、Reset_Handler 和 `.data`/`.bss` 启动流程。
 - `linker.ld` 只负责 FLASH/RAM 布局、主栈、任务栈、heap 和 DMA/MPU 保留区。
 - `mrt_port_stm32_smoke.c` 只负责公共端口语义：临界区、PendSV、SVC、tickless sleep 和必要的板级 glue。
+- `src/portable/stm32_cm/mrt_port_stm32_cm_context.S` 提供可交叉编译的 `SVC_Handler`、`PendSV_Handler` 和 `MRT_PortStm32CmStartFirstTaskAsm` 骨架；当前 smoke 端只记录 C 钩子，真实端口必须把钩子扩展为 TCB/PSP 切换。
 - `runtime_stubs.c` 或厂商库文件只补齐启动和调试所需的弱符号，不要把调度逻辑塞回启动文件。
 
 ### 5.3 关键接入顺序
@@ -1696,7 +1697,7 @@ int main(void)
 2. 启动文件：在 STM32 startup 文件中保留厂商默认 Reset_Handler、栈顶符号和 `.data`/`.bss` 初始化流程。不要在 Reset_Handler 中启动调度器，应用应先初始化时钟、GPIO、外设、heap 和任务，再调用 `MRT_KernelStart()`。
 3. 向量表：把 `SysTick_Handler` 指向 MyRTOS tick 入口，把 `PendSV_Handler` 指向上下文切换入口，把 `SVC_Handler` 指向首任务启动入口。若项目已有同名 handler，必须合并逻辑，不能重复定义。
 4. tick 配置：读取 `SystemCoreClock`，调用 `MRT_PortStm32CmCalculateSysTickReload(SystemCoreClock, MRT_CFG_TICK_RATE_HZ, &reload)`，将 reload 写入 SysTick LOAD，清零 VAL，开启 CLKSOURCE、TICKINT、ENABLE。若 reload 超出 24 位，降低 SysTick 输入时钟、降低 tick 频率或改用通用定时器。
-5. 上下文切换：PendSV 设置为最低抢占优先级。任务上下文 `MRT_PortYield()` 只置 PendSV pending，不直接保存/恢复寄存器。ISR 路径根据 `should_yield` 在退出前置 PendSV pending。
+5. 上下文切换：PendSV 设置为最低抢占优先级。任务上下文 `MRT_PortYield()` 只置 PendSV pending，不直接保存/恢复寄存器。ISR 路径根据 `should_yield` 在退出前置 PendSV pending。仓库中的 `mrt_port_stm32_cm_context.S` 已交叉编译验证 SVC/PendSV 入口、PSP 读取、R4-R11 保存/恢复和 C 钩子转交，但它仍是骨架；真实板级端口必须在 TCB 中保存当前 PSP，并从下一任务 TCB 取出 PSP 后恢复。
 6. 栈布局：任务创建时调用 `MRT_PortStm32CmInitializeStack()`，初始栈帧包含 R4-R11、R0 参数、LR 退出兜底函数、PC 入口函数和 xPSR Thumb bit。栈顶必须 8 字节对齐。带 FPU 的 M4F/M7F 需要明确是否启用 lazy stacking，并按 FPU ABI 增加浮点寄存器保存策略。
 7. 临界区：M3/M4/M7 推荐使用 BASEPRI 屏蔽不高于内核阈值的中断。使用 `MRT_PortStm32CmEncodeBasepri(nvic_bits, logical_priority, &basepri)` 生成左对齐值。优先级 0 不得被 MyRTOS 屏蔽，应留给最高紧急中断。M0/M0+ 使用 PRIMASK 时会屏蔽全部可屏蔽中断，需评估实时性。
 8. 中断优先级：所有调用 MyRTOS FromISR API 的外设中断，其抢占优先级必须低于或等于内核可屏蔽阈值。高于阈值的中断不得调用任何 MyRTOS API，只能写硬件寄存器或置原子标志。
@@ -1769,12 +1770,12 @@ int main(void)
 STM32 smoke 工程落地步骤：
 
 1. 在仓库根目录运行 `python tools\verify\check_embedded_smoke_projects.py`。该命令会检查 `examples/stm32/` 文件是否齐全，并使用 `arm-none-eabi-gcc` 编译链接 `build/embedded-smoke/stm32_smoke.elf`。
-2. 打开 `examples/stm32/README.md`，确认工程角色划分：`main.c` 负责任务、队列、定时器和 ISR 连接；`startup_stm32cm.c` 负责向量表和 Reset_Handler；`linker.ld` 负责 FLASH/RAM 布局；`mrt_port_stm32_smoke.c` 负责公共端口接口。
+2. 打开 `examples/stm32/README.md`，确认工程角色划分：`main.c` 负责任务、队列、定时器和 ISR 连接；`startup_stm32cm.c` 负责向量表和 Reset_Handler；`linker.ld` 负责 FLASH/RAM 布局；`mrt_port_stm32_smoke.c` 负责公共端口接口；`src/portable/stm32_cm/mrt_port_stm32_cm_context.S` 负责 SVC/PendSV 汇编入口骨架。
 3. 第一轮板级移植先保留 `main.c` 的对象创建顺序，只替换 `mrt_port_stm32_smoke.c` 中的临界区、PendSV、SVC 和 tickless sleep 实现。这样可以把“应用对象是否创建成功”和“CPU 上下文切换是否正确”分开排错。
 4. 把 `startup_stm32cm.c` 与厂商 startup 文件合并时，只保留一个向量表。若厂商工程已经定义 `SysTick_Handler`、`PendSV_Handler` 或 `SVC_Handler`，必须把 MyRTOS 调用合并进去，不能产生重复符号。
 5. 链接脚本迁移时，先按 `examples/stm32/linker.ld` 检查 `.isr_vector`、`.text`、`.data`、`.bss`、`_estack`、`_sidata`、`_sdata`、`_edata`、`_sbss`、`_ebss` 是否齐全，再替换为目标芯片真实 FLASH/RAM 容量。
 6. 首次烧录后按顺序验证：Reset_Handler 能进入 `main()`；`MRT_HeapInitialize()` 返回成功；两个静态任务创建成功；UART 队列创建成功；软件定时器启动命令经 `MRT_TimerServiceRunPending()` 生效；SysTick 能推进 `MRT_KernelTick()`。
-7. 接入真实 PendSV 汇编前，不要把 smoke 现象解释为完整调度成功。`examples/stm32/mrt_port_stm32_smoke.c` 是交叉编译和接线骨架，真实任务切换仍需要目标端口保存/恢复 PSP、R4-R11、LR、异常返回值以及可选 FPU 状态。
+7. 接入真实 PendSV 汇编前，不要把 smoke 现象解释为完整调度成功。`examples/stm32/mrt_port_stm32_smoke.c` 和 `src/portable/stm32_cm/mrt_port_stm32_cm_context.S` 是交叉编译和接线骨架，真实任务切换仍需要目标端口把 PSP 写入/读出任务控制块，并保存/恢复 R4-R11、LR、异常返回值以及可选 FPU 状态。
 8. 板级记录应至少包含：编译命令、ELF/map 路径、芯片型号、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、PendSV/SVC 汇编来源、LED/UART/timer smoke 结果。
 
 ### 5.5 板级验收

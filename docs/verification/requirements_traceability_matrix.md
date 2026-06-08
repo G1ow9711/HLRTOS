@@ -18,6 +18,13 @@
 | R-010 | C 版大而全范围 | 包含 stream/message buffer、tickless、trace、MPU 预留、多 heap 策略等高级模块 | 设计草案第 4 节 | stream/message buffer 与动态创建/删除路径已实现；多 heap 策略已实现线性、free-list、coalescing 三种模式；固定块 memory pool、动态队列、动态任务和动态同步/定时对象堆分配已实现；tickless idle、trace hook、runtime stats、assert hook、定时器服务命令队列已实现；STM32 MPU 区域规整 helper 已实现并有 host 测试；真实板级 MPU 端口仍待后续计划 | `test_timer_service_task`、`test_stream_buffer_create_static`、`test_stream_buffer_send_receive`、`test_stream_buffer_isr`、`test_stream_buffer_isr_wakes_reader`、`test_message_buffer_create_static`、`test_message_buffer_send_receive`、`test_message_buffer_isr`、`test_buffer_dynamic_allocation`、`test_heap_linear`、`test_heap_free_list`、`test_heap_coalescing`、`test_memory_pool`、`test_queue_dynamic_allocation`、`test_tickless_expected_idle`、`test_tickless_timer_compensation`、`test_trace_task_switch`、`test_trace_queue`、`test_runtime_stats`、`test_assert_hook`、`test_port_stm32_mpu` 通过 | `docs/manual/MyRTOS_Reference_Manual_zh.md` 覆盖高级模块 API、timer service 命令队列、运行统计、动态对象限制和 STM32 MPU 布局步骤 | 部分实现 |
 | R-011 | 手册包含详细移植步骤 | STM32 与 DSP 移植章节必须覆盖工具链、启动文件、向量表、tick、上下文切换、栈布局、临界区、低功耗、示例、排错和真实板级证据归档 | 设计草案第 9 节；`docs/api/myrtos_api_catalog.md` 第 14 节 | 不适用 | `python tools\verify\check_api_manual_coverage.py` 验证 STM32/DSP 移植关键词覆盖；`python tools\verify\check_embedded_smoke_projects.py` 验证手册中的 smoke 工程步骤可被实际目录和构建命令支撑；`python tests\static\test_hardware_smoke_evidence_checker.py` 验证真实板级证据 checker 规则；`python tests\static\test_hardware_smoke_evidence_generator.py` 验证原始 UART/trace 日志到最终证据文件的生成器规则 | `docs/manual/MyRTOS_Reference_Manual_zh.md` 第 5 节“STM32 Cortex-M 移植步骤”和第 6 节“DSP 移植步骤”包含移植前准备、工程分层、关键接入顺序、从厂商裸机工程迁入 MyRTOS 的实际顺序、首次联调、板级验收、真实板级证据归档、详细迁移流程、工程接入点、smoke 工程、示例和排错；`docs/verification/hardware_smoke/collection_checklist.md` 给出 STM32/DSP 实机日志采集步骤；`tools/verify/generate_hardware_smoke_evidence.py` 支持从原始日志生成最终证据；`docs/verification/hardware_smoke/*.template.md` 提供 STM32/DSP 实机日志模板；第 7.4 节列出 release 与硬件证据 gate 命令 | 部分验证 |
 
+## 最新增量证据：STM32 SVC/PendSV 汇编骨架
+
+- `R-003`：新增 `src/portable/stm32_cm/mrt_port_stm32_cm_context.S`，提供 `SVC_Handler`、`PendSV_Handler` 和 `MRT_PortStm32CmStartFirstTaskAsm` 的 Cortex-M 汇编入口骨架；`python tests\static\test_stm32_context_scaffold.py` 验证符号、PSP/R4-R11 保存恢复标记和 C 钩子接线。
+- `R-008`：`tools/verify/run_release_verification.py` 默认链路新增 `stm32-context-scaffold` 步骤，默认 release 验证从 9 步扩展为 10 步。
+- `R-009`：`python tools\verify\check_embedded_smoke_projects.py` 已把 `.S` 文件纳入 ARM GCC 交叉编译，证明 STM32 smoke ELF 同时覆盖 C 端口和汇编入口骨架。
+- `R-011`：手册第 5 节已补充 `.S` 文件角色、SVC/PendSV C 钩子说明和真实 PSP/TCB 切换边界，继续明确真实板级 smoke 证据不能由交叉编译替代。
+
 ## 完成判定
 
 目标完成必须同时满足：

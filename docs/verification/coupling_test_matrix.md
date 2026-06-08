@@ -53,6 +53,11 @@
 | C-036 | 流缓冲 + 写者等待 + 动态删除 | 满流缓冲上高优先级写者带 timeout 写入，随后删除对象 | 写者进入 `waiting_writers`，删除返回 `MRT_RESULT_OBJECT_BUSY`；读出释放至少 1 字节后唤醒写者并清空等待字节记录 | host 耦合测试 | 已验证：`test_buffer_dynamic_allocation` 覆盖动态流缓冲满载后 `MRT_StreamBufferSend(..., timeout>0)` 进入 `MRT_TASK_WAIT_REASON_STREAM_SEND`，`object_wait_bytes=1`，删除 busy；后台任务读出 1 字节后 waiting writer 被唤醒并允许后续动态删除释放 heap |
 | C-037 | 消息缓冲 + 写者等待 + 动态删除 | 满消息缓冲上高优先级写者带 timeout 写入完整消息，随后删除对象 | 写者进入 `waiting_writers`，删除返回 `MRT_RESULT_OBJECT_BUSY`；读出完整消息后按完整记录长度唤醒写者 | host 耦合测试 | 已验证：`test_buffer_dynamic_allocation` 覆盖动态消息缓冲满载后 `MRT_MessageBufferSend(..., timeout>0)` 进入 `MRT_TASK_WAIT_REASON_MESSAGE_SEND`，`object_wait_bytes=4+payload`，删除 busy；后台任务读出完整消息后 waiting writer 被唤醒并允许后续动态删除释放 heap |
 
+## 最新增量证据：STM32 上下文切换入口
+
+- `C-028`：新增 `test_stm32_context_scaffold.py`，检查 `SVC_Handler`、`PendSV_Handler`、`MRT_PortStm32CmStartFirstTaskAsm`、PSP 读取、R4-R11 保存/恢复和 C 钩子转交；`check_embedded_smoke_projects.py` 已把 `mrt_port_stm32_cm_context.S` 纳入 ARM GCC 交叉编译。
+- `C-029`：`examples/stm32/mrt_port_stm32_smoke.c` 新增 `MRT_PortStm32CmSvcHook()` 和 `MRT_PortStm32CmPendSvHook()` 记录异常帧、PSP 和 EXC_RETURN，便于后续真板 smoke 输出证据；当前仍不替代真实 PRIMASK/BASEPRI 和 PendSV 运行验证。
+
 ## 后续落地
 
 - `tests/unit/`：基础算法与单模块。

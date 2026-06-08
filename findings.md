@@ -281,3 +281,12 @@
 - `python tools\\verify\\run_release_verification.py` passed with 9 step(s).
 - `python tools\\verify\\run_release_verification.py --require-hardware` still fails only because `stm32_board_smoke.md` and `dsp_board_smoke.md` are not present yet; no new software regression showed up.
 - Verification docs now mention the generator in the final report, completion audit, test suite plan, and requirement traceability matrix, replacing stale `[release] 8 step(s) passed` evidence with the current 9-step default release result.
+
+## STM32 Context Assembly Scaffold Findings
+- RED evidence: `python tests\\static\\test_stm32_context_scaffold.py` failed because `src/portable/stm32_cm/mrt_port_stm32_cm_context.S` did not exist.
+- RED evidence: `python tests\\static\\test_release_verification_runner.py` failed because the release runner did not include the new `stm32-context-scaffold` step.
+- Implementation adds a Cortex-M4 GNU assembly scaffold with `SVC_Handler`, `PendSV_Handler`, and `MRT_PortStm32CmStartFirstTaskAsm`. PendSV reads PSP, safely skips R4-R11 save/restore if PSP is zero, otherwise saves R4-R11, calls a C hook, restores R4-R11, writes PSP, and returns through EXC_RETURN.
+- `examples/stm32/mrt_port_stm32_smoke.c` now provides `MRT_PortStm32CmSvcHook()` and `MRT_PortStm32CmPendSvHook()` for diagnostic handoff. These hooks record exception frame, PSP, EXC_RETURN, and call counts, but intentionally do not claim full TCB/PSP task switching.
+- `tools/verify/check_embedded_smoke_projects.py` now cross-compiles the `.S` file with ARM GCC. This proves symbol and build wiring only; real STM32 board runtime evidence is still required.
+- `python tools\\verify\\run_release_verification.py` now passes with `[release] 10 step(s) passed`.
+- `python tools\\verify\\check_hardware_smoke_evidence.py` still fails only because `stm32_board_smoke.md` and `dsp_board_smoke.md` are missing; no fake board evidence was generated.

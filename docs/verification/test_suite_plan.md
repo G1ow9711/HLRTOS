@@ -11,7 +11,7 @@
 | `tests/sim/` | 调度仿真测试 | 任务切换、tick、阻塞、超时、优先级继承 |
 | `tests/coupling/` | 跨模块耦合测试 | 矩阵 `C-001` 到 `C-037` |
 | `tests/port_mock/` | 端口抽象 mock 测试 | STM32/DSP 栈、临界区、tickless、ISR |
-| `tests/static/` | 静态检查 | 注释覆盖、API 手册覆盖、符号原创性 |
+| `tests/static/` | 静态检查 | 注释覆盖、API 手册覆盖、符号原创性、STM32 汇编骨架接线 |
 | `examples/stm32/` | STM32 smoke test | LED、UART、ISR 队列、定时器 |
 | `examples/dsp/` | DSP smoke/mock test | tick、软件中断、栈初始化 |
 | `docs/verification/hardware_smoke/` | 真实板级 smoke 证据 | STM32/DSP 实机日志、采集清单与最终验收模板 |
@@ -37,7 +37,7 @@ python tools/verify/run_release_verification.py
 python tools/verify/run_release_verification.py --require-hardware
 ```
 
-`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、embedded smoke、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
+`run_release_verification.py` 作为最终验收入口，默认执行 host、静态、原型、STM32 汇编骨架、embedded smoke、硬件证据校验脚本自测和原始日志生成器自测；`--require-hardware` 会把真实 STM32/DSP 板级证据 gate 纳入同一条链路。
 
 ## 4. 测试分层策略
 
@@ -116,7 +116,7 @@ python tools/verify/run_release_verification.py --require-hardware
 | 缓冲 | `tests/unit/test_stream_buffer_*.c`、`tests/unit/test_message_buffer_*.c`、`tests/coupling/test_buffer_dynamic_allocation.c` | `C-020` 到 `C-023`、`C-036` 到 `C-037` |
 | 内存 | `tests/unit/test_heap_*.c`、`tests/coupling/test_buffer_dynamic_allocation.c` | `C-023` 到 `C-024` |
 | trace/断言 | `tests/unit/test_trace_*.c`、`tests/port_mock/test_assert_context_*.c` | `C-025` 到 `C-027` |
-| STM32 端口 | `tests/port_mock/test_port_stm32_*.c`、`tests/port_mock/test_port_stm32_mpu.c` | `C-028` 到 `C-029`、`C-035` |
+| STM32 端口 | `tests/port_mock/test_port_stm32_*.c`、`tests/port_mock/test_port_stm32_mpu.c`、`tests/static/test_stm32_context_scaffold.py` | `C-028` 到 `C-029`、`C-035` |
 | DSP 端口 | `tests/port_mock/test_port_dsp_*.c` | `C-030` 到 `C-031` |
 | 手册/注释 | `tests/static/*.py` | `C-032` 到 `C-033` |
 | 烟雾工程 | `examples/stm32/`、`examples/dsp/`、`tools/verify/check_embedded_smoke_projects.py` | `C-028` 到 `C-031` |

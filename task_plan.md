@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 14 complete: Manual porting detail refresh and hardware evidence generator integration; overall goal still awaits real STM32/DSP board logs
+Phase 15 complete: STM32 Cortex-M SVC/PendSV assembly scaffold is cross-build verified; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -181,3 +181,13 @@ Phase 14 complete: Manual porting detail refresh and hardware evidence generator
 - [x] Add generator test to the unified release verification runner
 - [x] Re-run manual coverage, generator test, release verification, and hardware-required release verification
 - **Status:** complete for repo-side docs/tooling; real STM32/DSP evidence remains pending
+
+## Phase 15: STM32 Cortex-M SVC/PendSV Assembly Scaffold
+- [x] Add failing static coverage for missing STM32 context assembly scaffold
+- [x] Add `src/portable/stm32_cm/mrt_port_stm32_cm_context.S` with SVC, PendSV, and first-task-start symbols
+- [x] Add smoke C hooks for SVC/PendSV diagnostic handoff
+- [x] Include the assembly file in the ARM GCC embedded smoke build
+- [x] Add `stm32-context-scaffold` to the default release verification runner
+- [x] Update STM32 manual porting steps and verification evidence docs
+- [ ] Replace scaffold proof with real STM32 board runtime evidence after actual hardware smoke
+- **Status:** complete for compile/static scaffold; real STM32 board evidence remains pending

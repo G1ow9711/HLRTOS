@@ -25,6 +25,24 @@ static volatile uint32_t g_last_reload;
 /** @brief 最近一次 BASEPRI 编码结果。 */
 static volatile uint32_t g_last_basepri;
 
+/** @brief SVC 汇编入口最近一次传入的异常帧地址。 */
+static volatile uintptr_t g_last_svc_frame;
+
+/** @brief SVC 汇编入口最近一次传入的 EXC_RETURN。 */
+static volatile uint32_t g_last_svc_exc_return;
+
+/** @brief PendSV 汇编入口最近一次传入的 PSP 栈顶。 */
+static volatile uintptr_t g_last_pendsv_stack_top;
+
+/** @brief PendSV 汇编入口最近一次传入的 EXC_RETURN。 */
+static volatile uint32_t g_last_pendsv_exc_return;
+
+/** @brief SVC 钩子进入次数，用于 smoke 诊断。 */
+static volatile uint32_t g_svc_hook_count;
+
+/** @brief PendSV 钩子进入次数，用于 smoke 诊断。 */
+static volatile uint32_t g_pendsv_hook_count;
+
 /**
  * @brief 读取当前 PRIMASK 状态。
  * @param void 无输入参数。
@@ -122,6 +140,49 @@ void MRT_PortStartFirstTask(void)
 {
     /* smoke 示例只记录启动动作，真实工程会在这里恢复第一个任务上下文。 */
     g_pending_switch = true;
+}
+
+/**
+ * @brief 记录 SVC 汇编入口转交的异常现场。
+ * @param exception_stack SVC 发生时硬件自动异常帧所在的 MSP 或 PSP 地址，可为空。
+ * @param exc_return Cortex-M EXC_RETURN 值，用于判断异常返回模式和栈来源。
+ * @return void 无返回值。
+ * @example
+ * MRT_PortStm32CmSvcHook(exception_stack, exc_return);
+ */
+void MRT_PortStm32CmSvcHook(uint32_t *exception_stack, uint32_t exc_return)
+{
+    /* 保存异常帧地址，便于真板 smoke 通过调试器或 UART 输出检查。 */
+    g_last_svc_frame = (uintptr_t)exception_stack;
+
+    /* 保存 EXC_RETURN，便于确认 SVC 入口来自 MSP 还是 PSP。 */
+    g_last_svc_exc_return = exc_return;
+
+    /* 记录 SVC 钩子被触发次数，证明向量表覆盖和汇编跳转已经接通。 */
+    g_svc_hook_count++;
+}
+
+/**
+ * @brief 记录 PendSV 汇编入口转交的 PSP 并返回待恢复栈顶。
+ * @param stack_top 已保存 R4-R11 后的 PSP 栈顶，当前 smoke 骨架可为空。
+ * @param exc_return Cortex-M EXC_RETURN 值，用于判断异常返回路径。
+ * @return uint32_t* 返回要恢复的 PSP；当前 smoke 骨架返回原值。
+ * @example
+ * uint32_t *next = MRT_PortStm32CmPendSvHook(stack_top, exc_return);
+ */
+uint32_t *MRT_PortStm32CmPendSvHook(uint32_t *stack_top, uint32_t exc_return)
+{
+    /* 保存 PendSV 传入的栈顶，真实端口会在这里切换到下一任务栈顶。 */
+    g_last_pendsv_stack_top = (uintptr_t)stack_top;
+
+    /* 保存 EXC_RETURN，便于检查异常返回是否使用 PSP 线程模式。 */
+    g_last_pendsv_exc_return = exc_return;
+
+    /* 记录 PendSV 钩子被触发次数，证明延迟切换入口已经接通。 */
+    g_pendsv_hook_count++;
+
+    /* smoke 阶段不切换 TCB 栈顶，直接返回原 PSP。 */
+    return stack_top;
 }
 
 /**

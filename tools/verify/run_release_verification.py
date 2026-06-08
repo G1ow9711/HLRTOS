@@ -57,6 +57,11 @@ def build_steps(require_hardware: bool = False) -> list[Step]:
             description="检查原创符号约束",
         ),
         Step(
+            name="stm32-context-scaffold",
+            command=[sys.executable, str(ROOT / "tests" / "static" / "test_stm32_context_scaffold.py")],
+            description="检查 STM32 Cortex-M SVC/PendSV 汇编骨架和 smoke 构建接线",
+        ),
+        Step(
             name="embedded-smoke",
             command=[sys.executable, str(ROOT / "tools" / "verify" / "check_embedded_smoke_projects.py")],
             description="检查 STM32/DSP embedded smoke 工程",

@@ -694,3 +694,25 @@
   - `git diff --check` -> exit 0 with expected CRLF warnings only
   - first `python tools\verify\run_release_verification.py` attempt timed out at 244 seconds with no failure output; reran with longer timeout and got `[release] 9 step(s) passed`
   - `python tools\verify\check_hardware_smoke_evidence.py` -> expected failure on missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+
+## STM32 Context Assembly Scaffold
+- Added RED static checks:
+  - `python tests\static\test_stm32_context_scaffold.py` failed on missing `src\portable\stm32_cm\mrt_port_stm32_cm_context.S`
+  - `python tests\static\test_release_verification_runner.py` failed because the new release step was absent
+- Added `src\portable\stm32_cm\mrt_port_stm32_cm_context.S` with `SVC_Handler`, `PendSV_Handler`, `MRT_PortStm32CmStartFirstTaskAsm`, PSP handling, R4-R11 save/restore markers, and C hook calls.
+- Added STM32 smoke C hooks `MRT_PortStm32CmSvcHook()` and `MRT_PortStm32CmPendSvHook()`.
+- Updated `tools\verify\check_embedded_smoke_projects.py` so ARM GCC cross-build includes the `.S` file.
+- Added `stm32-context-scaffold` to `tools\verify\run_release_verification.py` and updated `tests\static\test_release_verification_runner.py`.
+- Updated STM32 manual porting steps, `examples/stm32/README.md`, final verification report, completion audit, test suite plan, requirement matrix, and coupling matrix.
+- GREEN checks passed:
+  - `python tests\static\test_stm32_context_scaffold.py`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_embedded_smoke_projects.py`
+  - `python tools\verify\check_chinese_comments.py`
+  - `python tools\verify\check_api_manual_coverage.py`
+  - `python tools\verify\check_api_catalog_prototypes.py`
+  - `python tools\verify\check_original_symbols.py`
+  - `python tools\verify\run_release_verification.py` -> `[release] 10 step(s) passed`
+  - `git diff --check` -> exit 0 with expected CRLF warnings only
+- Hardware evidence gate remains expected-failing:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`

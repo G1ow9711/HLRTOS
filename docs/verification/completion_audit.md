@@ -42,6 +42,12 @@
 - DSP helper 已有 host 验证。
 - 手册、注释和原创性静态检查已通过。
 
+## 最新增量
+
+- STM32 端口新增 `src/portable/stm32_cm/mrt_port_stm32_cm_context.S`，提供 SVC/PendSV/首任务启动汇编入口骨架。
+- 新增 `tests/static/test_stm32_context_scaffold.py`，并纳入 `tools/verify/run_release_verification.py` 默认 release 链路。
+- `tools/verify/check_embedded_smoke_projects.py` 已把 `.S` 纳入 ARM GCC 交叉编译；该证据证明入口骨架可构建，不证明真实板级上下文切换已运行。
+
 ## 仍待补证
 
 1. 真实 STM32 板卡运行 `examples/stm32` 派生工程。
