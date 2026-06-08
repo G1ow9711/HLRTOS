@@ -16,6 +16,8 @@
   - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
   - `git diff --check` -> exit 0 with expected CRLF warnings only
 - Expected remaining failure: `python tools\verify\check_hardware_smoke_evidence.py` reports missing `stm32_board_smoke.md` and `dsp_board_smoke.md` because no real STM32/DSP board logs have been produced in this environment.
+- Committed verified repo-side smoke/evidence work as `59b154f` with message `feat: add embedded smoke verification`.
+- Pushed branch `feature/embedded-smoke-projects` to `origin`; GitHub PR URL suggested by remote: `https://github.com/G1ow9711/HLRTOS/pull/new/feature/embedded-smoke-projects`.
 
 ## Session: 2026-06-08 Embedded Smoke Projects
 - Added dynamic `MRT_StreamBufferDelete` and `MRT_MessageBufferDelete` lifecycle APIs with heap-release, null-argument, and static-object rejection coverage.
