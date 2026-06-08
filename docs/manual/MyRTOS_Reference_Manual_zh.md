@@ -7,7 +7,7 @@
 
 本手册采用嵌入式 RTOS 常见参考手册结构：先说明适用范围、调用限制和配置方法，再按 API 族分章列出函数原型、功能说明、参数、返回值、调用上下文、阻塞行为、ISR 限制、配置宏、调用示例和常见错误。本文档为 MyRTOS 原创说明，不复制其他 RTOS 的源码、注释或手册文字。
 
-MyRTOS 当前处于 preview 阶段。已经通过 host 自动化测试的模块包括：基础类型、配置、链表、优先级位图、mock 端口、任务调度、队列、信号量、互斥锁、事件组、任务通知、软件定时器、流缓冲、消息缓冲、堆、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、STM32 MPU 区域布局 helper、DSP C28x 风格端口契约 helper。真实 STM32/DSP 板级 smoke test 需要按本手册移植章节接入具体硬件后补证。
+MyRTOS 当前处于 preview 阶段。已经通过 host 自动化测试的模块包括：基础类型、配置、链表、优先级位图、mock 端口、任务调度、队列、信号量、互斥锁、事件组、任务通知、软件定时器、流缓冲、消息缓冲、堆、固定块内存池、tickless、trace、运行统计、assert、STM32 Cortex-M 端口契约 helper、STM32 MPU 区域布局 helper、DSP C28x 风格端口契约 helper、DSP C28x 汇编骨架和 C2000 启动/链接/ISR glue 骨架。真实 STM32/DSP 板级 smoke test 需要按本手册移植章节接入具体硬件后补证。
 
 ## 2. API 使用规则
 
@@ -1827,6 +1827,7 @@ STM32 移植验收清单：
 - `linker.cmd` 或等价脚本只负责任务栈、heap、DMA buffer、采样帧和中断栈分区。
 - `mrt_port_dsp_model.c` 或 host model 只表达调用顺序和耦合关系，不要把真实 ABI 假装成已完成。
 - `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` 提供 TI C28x 风格首任务启动、软件中断 yield、寄存器保存/恢复和 C 钩子交接顺序的汇编骨架；该文件用于移植审计和静态检查，当前不参与 host 编译，也不替代真实 DSP 板级 smoke。
+- `examples/dsp/startup_c28x.c`、`examples/dsp/mrt_port_dsp_c2000_smoke.c` 和 `examples/dsp/linker_c28x.cmd` 提供 C2000 启动向量、CPU Timer0 tick、软件中断、ADC/DMA ISR、任务栈、heap、DMA buffer 和 trace buffer 分区骨架；这些文件用于移植审计，不替代 TI 工具链编译或真实 DSP 板级 smoke。
 
 ### 6.3 关键接入顺序
 
@@ -1836,8 +1837,9 @@ STM32 移植验收清单：
 4. tick 定时器：选择 CPU timer、ePWM timer 或片上通用 timer 作为 RTOS tick 源。ISR 中只清中断标志、调用 `MRT_KernelTick()`、根据端口策略请求软件中断切换。不要在 tick ISR 中执行长回调。
 5. 上下文切换：选择一个软件中断、trap 或低优先级可挂起中断作为 PendSV 等价物。任务上下文 yield 只置位该软件中断。ISR 中的 `should_yield` 只设置挂起请求，最外层 ISR 退出后再切换。可先按 `mrt_port_dsp_c28x_context.asm` 的保存顺序审计 XAR4-XAR7、ST0/ST1、ACC、P、XT 等寄存器，再按目标 ABI 增删槽位。
 6. 嵌套中断：在 ISR 入口调用端口进入钩子，在 ISR 退出调用端口退出钩子。`MRT_PortDspC28xExitInterrupt()` 的 `out_should_switch` 为 true 时，触发软件中断或直接跳转到尾链切换路径。内层 ISR 退出不得切换。
-7. 临界区：根据 DSP 中断控制器选择全局中断屏蔽位、分组中断屏蔽寄存器或优先级阈值。`MRT_PortEnterCritical()` 必须返回旧状态，`MRT_PortExitCritical()` 必须完整恢复旧状态，支持嵌套。
-8. 低功耗：tickless idle 端口应停止或重装 tick timer，进入 idle/standby 指令，唤醒后读取硬件计数或低功耗 timer 估算实际睡眠 tick。若低功耗会关闭主时钟，必须在恢复时重新同步 tick timer。
+7. C2000 启动与链接：按 `startup_c28x.c` 的向量占位把 CPU Timer0、软件中断、ADC/DMA ISR 接入 PIE 向量表；按 `linker_c28x.cmd` 把 `.mrtos_heap`、`.mrtos_tasks`、`.mrtos_dma` 和 `.mrtos_trace` 映射到目标 RAM，并用 map 文件确认地址不与 CLA、DMA、采样缓冲或 boot ROM 保留区冲突。
+8. 临界区：根据 DSP 中断控制器选择全局中断屏蔽位、分组中断屏蔽寄存器或优先级阈值。`MRT_PortEnterCritical()` 必须返回旧状态，`MRT_PortExitCritical()` 必须完整恢复旧状态，支持嵌套。
+9. 低功耗：tickless idle 端口应停止或重装 tick timer，进入 idle/standby 指令，唤醒后读取硬件计数或低功耗 timer 估算实际睡眠 tick。若低功耗会关闭主时钟，必须在恢复时重新同步 tick timer。
 9. 链接脚本：为任务栈、heap、DMA 缓冲、采样帧和中断栈分区。DSP 项目常有快 RAM、共享 RAM、外部 RAM，任务栈应放在访问延迟可预测的区域。
 10. 示例 smoke test：创建一个采样处理任务和一个通信任务；timer ISR 每 1 ms 推进 tick；ADC ISR 把采样块指针写入固定块内存池或队列；软件中断执行上下文切换；低优先级任务用事件组等待处理完成。
 11. 排错：若任务入口参数错误，检查 ABI 参数槽；若切换后状态寄存器异常，检查 ST0/ST1 保存恢复；若 ISR 嵌套后不切换，检查进入/退出计数是否回到 0；若随机崩溃，检查栈对齐、双字访问和链接脚本栈区大小。
@@ -1909,12 +1911,12 @@ DSP smoke/model 落地步骤：
 
 1. 在仓库根目录运行 `python tools\verify\check_embedded_smoke_projects.py`。当前环境没有 TI DSP 工具链，因此脚本会用 host `gcc` 编译并运行 `examples/dsp/` 的 C28x 风格模型。
 2. `examples/dsp/main.c` 会执行 DSP 栈帧 helper、任务创建、队列创建、定时器启动、ISR 模型进入/退出、软件中断式切换请求和 tickless sleep 模型检查。它用于证明公共语义和调用顺序，而不是替代真实 DSP 汇编。
-3. 真实 TI C2000/C28x 工程中，把 `examples/dsp/mrt_port_dsp_model.c` 拆成三个文件：中断屏蔽/恢复 C 文件、上下文保存恢复汇编文件、硬件 timer/软件中断 glue 文件。上下文保存恢复文件可从 `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` 的骨架开始，但必须按目标编译器 ABI 和芯片寄存器集校正。
+3. 真实 TI C2000/C28x 工程中，把 `examples/dsp/mrt_port_dsp_model.c` 拆成目标端口文件：中断屏蔽/恢复 C 文件、上下文保存恢复汇编文件、启动/向量表文件、硬件 timer/软件中断/ADC glue 文件和链接命令文件。上下文保存恢复文件可从 `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` 的骨架开始，启动和链接可从 `examples/dsp/startup_c28x.c`、`examples/dsp/mrt_port_dsp_c2000_smoke.c`、`examples/dsp/linker_c28x.cmd` 的骨架开始，但必须按目标编译器 ABI、芯片寄存器集、PIE 向量表和 RAM/flash 分区校正。
 4. 按目标 ABI 校验 `MRT_PortDspC28xInitializeStack()` 的槽位。若真实 ABI 需要保存更多寄存器，应扩展槽位枚举、修改端口 helper，并补充对应 host 测试。
 5. 把 CPU timer ISR 写成短路径：清硬件中断标志、调用 `MRT_KernelTick()`、按 `should_yield` 请求软件中断、确认中断控制器分组。不要在 timer ISR 中运行算法或定时器回调。
 6. ADC/DMA ISR 先通过固定块内存池或队列把数据交给任务，再通过软件中断请求延迟切换。多层 ISR 嵌套时只允许最外层退出后执行任务切换。
 7. 链接脚本要把任务栈、heap、采样 buffer、DMA buffer、通信 buffer 放入确定 RAM 区域，并记录 cache/共享 RAM 同步策略。
-8. 真实板级 smoke 结果应记录：DSP 型号、编译器版本、ABI 模式、栈方向、任务栈地址范围、timer tick 精度、上下文汇编来源、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量和 30 分钟混合负载结果。
+8. 真实板级 smoke 结果应记录：DSP 型号、编译器版本、ABI 模式、栈方向、任务栈地址范围、链接 map 中 `.mrtos_heap`/`.mrtos_tasks`/`.mrtos_dma`/`.mrtos_trace` 地址、timer tick 精度、上下文汇编来源、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量和 30 分钟混合负载结果。
 
 ### 6.5 板级验收
 

@@ -327,6 +327,14 @@
 ## DSP C28x Context Assembly Scaffold Findings
 - RED evidence existed for missing DSP context assembly: `tests/static/test_dsp_context_scaffold.py` requires a C28x-style scaffold file, first-task/yield/software-interrupt symbols, save/restore markers, and explicit C hook handoff symbols.
 - Implementation adds `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm` as an audit scaffold for first-task start, software interrupt yield, context switch save/restore order, and hook handoff. It is intentionally not treated as target-toolchain or real-board proof.
-- The default release chain now includes `dsp-context-scaffold` after `stm32-context-scaffold`; the current default release verification passes with `[release] 13 step(s) passed`.
+- Phase 20 default release chain added `dsp-context-scaffold` after `stm32-context-scaffold` and passed with `[release] 13 step(s) passed` before the C2000 project scaffold step was added.
 - Manual section 6 and `examples/dsp/README.md` now tell users to use the scaffold only as a migration/audit template, then adjust it for the exact DSP compiler ABI, register set, interrupt controller, and board smoke evidence.
 - Hardware-required verification remains correctly gated: `python tools\\verify\\check_hardware_smoke_evidence.py` reports missing real `stm32_board_smoke.md` and `dsp_board_smoke.md`, and `python tools\\verify\\run_release_verification.py --require-hardware` fails only at `hardware-smoke-evidence`.
+
+## DSP C2000 Board Smoke Project Scaffold Findings
+- RED evidence: `python tests\\static\\test_dsp_c2000_project_scaffold.py` first failed because `examples\\dsp\\startup_c28x.c` and related C2000 scaffold files were missing.
+- RED evidence: `python tests\\static\\test_release_verification_runner.py` failed because the default release chain did not include `dsp-c2000-project-scaffold`.
+- Implementation adds `startup_c28x.c`, `mrt_port_dsp_c2000_smoke.c`, and `linker_c28x.cmd` under `examples/dsp/`. These files record C2000 vector/timer/software-interrupt/ADC glue plus `.mrtos_heap`, `.mrtos_tasks`, `.mrtos_dma`, and `.mrtos_trace` linker sections.
+- Follow-up review changed `startup_c28x.c` to declare ISR entry points as `extern` and let `mrt_port_dsp_c2000_smoke.c` define them, avoiding weak-placeholder collisions in real target builds.
+- `tools/verify/check_embedded_smoke_projects.py` now requires the C2000 scaffold files to exist while still compiling/running only the host-verifiable DSP model in the current environment.
+- The new scaffold improves DSP portability evidence but still does not prove TI toolchain compilation or real DSP board execution. Final completion still needs real `dsp_board_smoke.md` and matching raw log.

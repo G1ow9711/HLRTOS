@@ -780,11 +780,42 @@
   - `python tools\verify\check_original_symbols.py` -> no banned FreeRTOS-style public symbols
   - `python tools\verify\check_hardware_smoke_preflight.py` -> hardware smoke preflight config accepted
   - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
-- Full default release verification passed:
+- Phase 20 default release verification passed before adding the C2000 project scaffold step:
   - `python tools\verify\run_release_verification.py` -> `[summary] 70 test target(s) passed`; `[release] 11 step(s) passed`
 - Hardware-required gate remains intentionally failing until real boards are run:
   - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
   - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+- Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
+
+## DSP C2000 Board Smoke Project Scaffold
+- Added RED static coverage:
+  - `python tests\static\test_dsp_c2000_project_scaffold.py` failed on missing `examples\dsp\startup_c28x.c`.
+  - `python tests\static\test_release_verification_runner.py` failed because `dsp-c2000-project-scaffold` was absent from the default release chain.
+- Added `examples\dsp\startup_c28x.c` for C2000 timer/software-interrupt/ADC vector placeholders and startup install order.
+- Added `examples\dsp\mrt_port_dsp_c2000_smoke.c` for C2000 `MRT_Port*` glue, CPU Timer0 tick ISR, ADC FromISR queue path, C28x software interrupt handoff, and stack-top switch hook.
+- Added `examples\dsp\linker_c28x.cmd` for C2000 `.mrtos_heap`, `.mrtos_tasks`, `.mrtos_dma`, and `.mrtos_trace` linker section placeholders.
+- Added `dsp-c2000-project-scaffold` to `tools\verify\run_release_verification.py` and required the C2000 files in `tools\verify\check_embedded_smoke_projects.py`.
+- Initial GREEN checks:
+  - `python tests\static\test_dsp_c2000_project_scaffold.py`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_embedded_smoke_projects.py` -> `[embedded-smoke] STM32 cross build and DSP model smoke passed`
+- Follow-up review found `startup_c28x.c` should not define weak ISR placeholders because some TI compiler configurations may not treat the macro as weak and could collide with board glue. Added RED assertions requiring `extern` ISR declarations and no `MRT_DSP_C2000_WEAK`, then changed startup to let `mrt_port_dsp_c2000_smoke.c` own the ISR definitions.
+- Updated manual, README, requirement matrix, coupling matrix, test-suite plan, completion audit, final report, findings, progress, and task plan for the C2000 scaffold and the continued real-board boundary.
+- Focused/static checks after docs sync:
+  - `python tests\static\test_dsp_c2000_project_scaffold.py`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `python tools\verify\check_api_catalog_prototypes.py` -> `[api-catalog] 135 API prototype(s) aligned`
+  - `python tools\verify\check_chinese_comments.py` -> `[chinese-comments] include/src/examples/tests function comments covered`
+  - `python tools\verify\check_original_symbols.py` -> `[original-symbols] no banned FreeRTOS-style public symbols found`
+  - `git diff --check` -> exit 0 with expected CRLF conversion warnings only
+- Full default release verification passed:
+  - `python tools\verify\run_release_verification.py` -> `[summary] 70 test target(s) passed`; `[release] 14 step(s) passed`
+- Hardware-required gate remains intentionally failing until real boards are run:
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
+  - `python tools\verify\run_release_verification.py --require-hardware` -> `[release] 1 step(s) failed` only at `hardware-smoke-evidence`
+- Note: one temporary Python one-liner used only for file inspection failed with a PowerShell newline escaping `SyntaxError`; replaced by direct `Get-Content` inspection and no production files were written by that command.
+- After the follow-up startup/glue ownership fix, reran `python tests\static\test_dsp_c2000_project_scaffold.py`, `python tests\static\test_release_verification_runner.py`, `python tools\verify\check_chinese_comments.py`, `git diff --check`, `python tools\verify\run_release_verification.py`, and `python tools\verify\run_release_verification.py --require-hardware`; results stayed the same: default release passed 14 steps, hardware-required release failed only at `hardware-smoke-evidence`.
 - Remaining: collect real STM32 and DSP board logs, retain matching raw logs, generate/fill final evidence files, and pass the hardware evidence gate.
 
 ## Hardware Smoke Capture Runner

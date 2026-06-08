@@ -12,6 +12,9 @@
 - `main.c`：host smoke 入口，执行 DSP helper、任务、队列和定时器验证。
 - `mrt_port_dsp_model.c`：DSP 公共 port 接口的 host 模型实现。
 - `../../src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm`：TI C28x 风格上下文切换汇编骨架，用于记录首任务启动、软件中断 yield、寄存器保存/恢复和 C 钩子交接顺序；它不参与当前 host 编译，也不替代真实 DSP 板级 smoke。
+- `startup_c28x.c`：C2000/C28x 启动和向量表占位骨架，用于记录 CPU Timer0、软件中断和 ADC/DMA ISR 的目标接入口。
+- `mrt_port_dsp_c2000_smoke.c`：C2000 板级 glue 骨架，用于记录 `MRT_Port*` 公共端口、tick ISR、FromISR 队列和软件中断上下文切换的接线顺序。
+- `linker_c28x.cmd`：C2000 链接命令模板，保留 RTOS heap、任务栈、DMA buffer 和 trace buffer 分区名称。
 
 ## 构建方式
 
@@ -24,7 +27,7 @@
 ## DSP 迁移步骤
 
 1. 先运行 host model，确认 API 接线、调度请求和 ISR 嵌套计数逻辑正确。
-2. 以 `mrt_port_dsp_c28x_context.asm` 为审计模板，把 `mrt_port_dsp_model.c` 中的模型实现替换为目标 DSP 的中断屏蔽、上下文切换和睡眠代码。
+2. 以 `mrt_port_dsp_c28x_context.asm`、`startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c` 和 `linker_c28x.cmd` 为审计模板，把 `mrt_port_dsp_model.c` 中的模型实现替换为目标 DSP 的中断屏蔽、上下文切换、向量表、链接分区和睡眠代码。
 3. 用目标工具链替换当前 host `gcc`。
 4. 把 `MRT_PortDspC28xInitializeStack()` 的契约映射到目标 ABI 的真实保存槽位。
 5. 在 `CpuTimer0Isr`、`AdcIsr`、软件中断和低功耗入口中接入真实硬件寄存器操作。
@@ -36,3 +39,4 @@
 - 定时器/队列/任务的耦合优先在 host model 上验证。
 - 真实 TI 工具链和板级 smoke 仍是后续落地项。
 - 汇编骨架只证明保存/恢复顺序已经形成可审计模板，不替代真实 DSP 板级 smoke；真实验收仍必须提交 `dsp_board_smoke.md` 和匹配 raw log。
+- C2000 工程骨架只证明启动/链接/ISR glue 文件清单和接线顺序已经可审计，不替代真实 DSP 板级 smoke；真实验收必须使用目标 TI 工具链编译、烧录并提交 raw log。

@@ -124,6 +124,9 @@ def main():
         ROOT / "examples" / "dsp" / "README.md",
         ROOT / "examples" / "dsp" / "main.c",
         ROOT / "examples" / "dsp" / "mrt_port_dsp_model.c",
+        ROOT / "examples" / "dsp" / "startup_c28x.c",
+        ROOT / "examples" / "dsp" / "mrt_port_dsp_c2000_smoke.c",
+        ROOT / "examples" / "dsp" / "linker_c28x.cmd",
     ]
 
     failures = 0

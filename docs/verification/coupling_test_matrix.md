@@ -52,6 +52,7 @@
 | C-035 | STM32 端口 + MPU 布局 | 任意内存范围需要转换为 MPU 可表达区域 | 规整结果为覆盖原始范围的 power-of-two 区域，且基址按区域大小向下对齐 | 端口 mock | 已验证：`test_port_stm32_mpu` 覆盖非法参数、最小 32 字节区域、已对齐 power-of-two 区域保持不变，以及 `0x20001234 + 6000` 字节范围规整为 `0x20000000 + 16384` 字节且 shift 为 14 |
 | C-036 | 流缓冲 + 写者等待 + 动态删除 | 满流缓冲上高优先级写者带 timeout 写入，随后删除对象 | 写者进入 `waiting_writers`，删除返回 `MRT_RESULT_OBJECT_BUSY`；读出释放至少 1 字节后唤醒写者并清空等待字节记录 | host 耦合测试 | 已验证：`test_buffer_dynamic_allocation` 覆盖动态流缓冲满载后 `MRT_StreamBufferSend(..., timeout>0)` 进入 `MRT_TASK_WAIT_REASON_STREAM_SEND`，`object_wait_bytes=1`，删除 busy；后台任务读出 1 字节后 waiting writer 被唤醒并允许后续动态删除释放 heap |
 | C-037 | 消息缓冲 + 写者等待 + 动态删除 | 满消息缓冲上高优先级写者带 timeout 写入完整消息，随后删除对象 | 写者进入 `waiting_writers`，删除返回 `MRT_RESULT_OBJECT_BUSY`；读出完整消息后按完整记录长度唤醒写者 | host 耦合测试 | 已验证：`test_buffer_dynamic_allocation` 覆盖动态消息缓冲满载后 `MRT_MessageBufferSend(..., timeout>0)` 进入 `MRT_TASK_WAIT_REASON_MESSAGE_SEND`，`object_wait_bytes=4+payload`，删除 busy；后台任务读出完整消息后 waiting writer 被唤醒并允许后续动态删除释放 heap |
+| C-039 | DSP C2000 smoke 工程 + 启动/链接/ISR glue | 从 host DSP model 迁移到真实 C2000 板级工程 | 启动向量、CPU Timer0 tick、软件中断上下文切换、ADC/DMA FromISR 队列、RTOS heap/任务栈/DMA/trace 分区均有可审计骨架，且明确不替代真实板级 smoke | 静态检查/smoke 路径检查 | 已验证：`test_dsp_c2000_project_scaffold.py` 检查 `startup_c28x.c`、`mrt_port_dsp_c2000_smoke.c`、`linker_c28x.cmd` 的入口符号、tick/FromISR/软件中断接线和 RTOS 分区标记；`check_embedded_smoke_projects.py` 把这些文件纳入 required path 检查；真实 TI 工具链编译和 DSP 板级运行仍待补证 |
 
 ## 最新增量证据：STM32 上下文切换入口
 
@@ -83,4 +84,11 @@
 - `C-031`：新增 `src/portable/dsp_c28x/mrt_port_dsp_c28x_context.asm`，记录 DSP 首任务启动、软件中断 yield、软件中断切换入口、XAR4-XAR7、ST0/ST1、ACC、P、XT 保存和反向恢复顺序。
 - `C-031`：新增 `tests/static/test_dsp_context_scaffold.py`，检查汇编骨架入口符号、C 钩子交接、保存/恢复标记和 `examples/dsp/README.md` 中的真实板级边界说明。
 - `C-031`：当前证据证明 DSP 上下文汇编已经有可审计模板，不证明具体 TI/ADI DSP 工具链编译通过，也不证明真实板级上下文切换已经运行。
+
+## 最新增量证据：DSP C2000 工程骨架
+
+- `C-039`：新增 `examples/dsp/startup_c28x.c`，记录 C2000 timer、软件中断和 ADC/DMA ISR 向量占位与安装顺序。
+- `C-039`：新增 `examples/dsp/mrt_port_dsp_c2000_smoke.c`，记录 `MRT_Port*` 公共端口、`MRT_KernelTick()`、`MRT_QueueSendFromISR()`、`MRT_PortYieldFromISR()`、C28x 汇编钩子和任务栈顶切换契约。
+- `C-039`：新增 `examples/dsp/linker_c28x.cmd`，记录 `.mrtos_heap`、`.mrtos_tasks`、`.mrtos_dma`、`.mrtos_trace` 分区名称和真实 map 文件检查点。
+- `C-039`：新增 `tests/static/test_dsp_c2000_project_scaffold.py` 并纳入 release runner；当前证据证明 C2000 工程文件清单和接线顺序可审计，不证明 TI 工具链编译或真实 DSP 板级 smoke 已通过。
 

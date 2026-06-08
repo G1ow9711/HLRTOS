@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 20 repo-side complete: DSP C28x context assembly scaffold now provides a static-audited save/restore template; overall goal still awaits real STM32/DSP board logs
+Phase 21 repo-side complete: DSP C2000 board smoke startup/linker/ISR glue scaffold is static-audited and in the 14-step release chain; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -244,3 +244,13 @@ Phase 20 repo-side complete: DSP C28x context assembly scaffold now provides a s
 - [x] Re-run focused/static/full release verification after documentation sync
 - [ ] Replace scaffold proof with real DSP board runtime evidence after actual hardware smoke
 - **Status:** complete for repo-side DSP scaffold; real DSP board evidence remains pending
+
+## Phase 21: DSP C2000 Board Smoke Project Scaffold
+- [x] Add failing static coverage for C2000 startup, board glue, linker command, README boundary, and release-runner integration
+- [x] Add `examples/dsp/startup_c28x.c`, `examples/dsp/mrt_port_dsp_c2000_smoke.c`, and `examples/dsp/linker_c28x.cmd`
+- [x] Add `dsp-c2000-project-scaffold` to the default release verification runner
+- [x] Add C2000 scaffold files to embedded smoke required-path checks
+- [x] Update manual, requirement matrix, coupling matrix, test-suite plan, completion audit, final report, findings, and progress
+- [x] Re-run focused/static/full release verification after documentation sync
+- [ ] Replace scaffold proof with real DSP board runtime evidence after actual hardware smoke
+- **Status:** complete for repo-side C2000 scaffold; real DSP board evidence remains pending
