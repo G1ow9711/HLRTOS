@@ -4,11 +4,12 @@
 
 ## 通用流程
 
-1. 从模板复制目标文件：`stm32_board_smoke.template.md` 复制为 `stm32_board_smoke.md`，`dsp_board_smoke.template.md` 复制为 `dsp_board_smoke.md`。
-2. 保留原始日志：UART、trace、调试器输出或仿真器控制台日志建议另存为 `stm32_uart_raw.log`、`dsp_uart_raw.log` 或等价文件名。
-3. 运行负载：至少 30 分钟，期间必须覆盖任务切换、ISR 唤醒、软件定时器、tickless、heap 查询和断言 hook。
-4. 填写摘要：把原始日志中的关键结果归纳到 `Key: Value` 字段，不要把模板中的 `PENDING`、`FAIL`、`TODO` 留在最终证据文件中。
-5. 执行校验：运行 `python tools\verify\check_hardware_smoke_evidence.py`。只有该命令通过，真实板级 smoke 才能作为最终验收证据。
+1. 保留原始日志：UART、trace、调试器输出或仿真器控制台日志建议另存为 `stm32_uart_raw.log`、`dsp_uart_raw.log` 或等价文件名。
+2. 运行负载：至少 30 分钟，期间必须覆盖任务切换、ISR 唤醒、软件定时器、tickless、heap 查询和断言 hook。
+3. 填写摘要：把原始日志中的关键结果归纳到 `Key: Value` 字段，不要把模板中的 `PENDING`、`FAIL`、`TODO` 留在最终证据文件中。
+4. 自动生成：若原始日志已经包含完整字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md` 或 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`。
+5. 手动填写：若不使用生成器，再从 `stm32_board_smoke.template.md` 复制为 `stm32_board_smoke.md`，或从 `dsp_board_smoke.template.md` 复制为 `dsp_board_smoke.md`，并填入真实板级结果。
+6. 执行校验：运行 `python tools\verify\check_hardware_smoke_evidence.py`。只有该命令通过，真实板级 smoke 才能作为最终验收证据。
 
 ## STM32 采集步骤
 
@@ -42,4 +43,3 @@
 - `Runtime-Minutes`、`Assert-Failures`、`Heap-Min-Free-Bytes`、`Clock-Hz`、`Tick-Hz`、`NVIC-Priority-Bits` 必须只写十进制整数，不带单位。
 - `Trace-Or-UART-Log` 应写可追溯摘要，例如日志文件名、关键 tick 计数、队列峰值、定时器回调次数和 heap 最小值。
 - 不要提交仍含 `PENDING`、`FAIL` 或 `TODO` 的最终证据文件。
-

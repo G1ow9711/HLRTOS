@@ -67,6 +67,11 @@ def build_steps(require_hardware: bool = False) -> list[Step]:
             description="检查真实板级烟雾证据校验器本身",
         ),
         Step(
+            name="hardware-evidence-generator",
+            command=[sys.executable, str(ROOT / "tests" / "static" / "test_hardware_smoke_evidence_generator.py")],
+            description="检查原始 UART/trace 日志到最终证据文件的生成器",
+        ),
+        Step(
             name="release-verification-runner",
             command=[sys.executable, str(ROOT / "tests" / "static" / "test_release_verification_runner.py")],
             description="检查统一 release 验证入口本身",

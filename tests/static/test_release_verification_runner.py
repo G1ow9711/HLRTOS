@@ -34,6 +34,7 @@ def test_default_plan_skips_real_board_gate() -> None:
         "original-symbols",
         "embedded-smoke",
         "hardware-evidence-checker",
+        "hardware-evidence-generator",
         "release-verification-runner",
     ]
 

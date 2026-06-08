@@ -12,13 +12,16 @@
 
 ```powershell
 python tools\verify\run_release_verification.py
+python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md
+python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md
 python tools\verify\check_hardware_smoke_evidence.py
 ```
 
 ## 采集指南
 
 - 先阅读 `collection_checklist.md`，按 STM32 或 DSP 对应章节采集原始 UART/trace 日志。
-- 再把模板复制成最终文件名并填写真实结果。
+- 若原始日志已经包含 `Key: Value` 字段，可先运行 `generate_hardware_smoke_evidence.py` 生成最终证据文件。
+- 若不使用生成器，再把模板复制成最终文件名并填写真实结果。
 - 最后运行校验命令。校验失败时，应回到原始日志补证，不要把模板字段改成 `PASS` 规避检查。
 
 ## 填写要求

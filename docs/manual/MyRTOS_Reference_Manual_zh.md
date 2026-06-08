@@ -1706,6 +1706,18 @@ int main(void)
 12. 示例 smoke test：创建两个任务，一个 500 ms 翻转 LED，一个通过队列接收 UART RX ISR 发来的字节；创建一个周期软件定时器翻转第二个 GPIO；在 SysTick 中调用 `MRT_KernelTick()`；在 UART ISR 中调用 `MRT_QueueSendFromISR()` 并把 `should_yield` 传给 `MRT_PortYieldFromISR()`。
 13. 排错：若首任务不运行，检查 SVC/PendSV 向量和 PSP 初始化；若 HardFault，检查 PC 是否为 Thumb 地址、栈 8 字节对齐、任务栈是否溢出；若 ISR API 无效，检查 `MRT_PortIsInsideISR()` 和 NVIC 优先级；若 tick 不准，检查 reload、时钟源和 `SystemCoreClock` 更新；若启用 MPU 后异常，检查规整区域是否覆盖了不该共享权限的相邻对象。
 
+### 5.3.1 从厂商裸机工程迁入 MyRTOS 的实际顺序
+
+1. 先保留一份能独立烧录的厂商裸机工程，不在原工程上直接改内核。先记录芯片型号、封装、晶振、FLASH/RAM、FPU、MPU 和 NVIC 位宽。
+2. 先只接入 MyRTOS 头文件、`src/kernel/*.c` 和目标端口 C 文件，不马上改应用逻辑。第一轮目标只要通过编译，并能在 `main()` 中调用 `MRT_KernelInitialize()`、`MRT_HeapInitialize()`、任务创建和 `MRT_KernelStart()`。
+3. 先把启动文件改到“只保留一个向量表”的状态。厂商 `startup` 里若已定义 `SysTick_Handler`、`PendSV_Handler`、`SVC_Handler`，必须合并到同一套入口，并确认 Reset 后先完成 `.data`/`.bss`，再进入 `main()`。
+4. 先验证最小运行链路：`Reset_Handler -> main -> 首任务 -> 任务延时 -> SysTick -> 回到调度`。这一阶段先不要启用 DMA、串口、USB、复杂中断和 MPU。
+5. 再接入 `SysTick_Handler`。先只做 `MRT_KernelTick()`，确认节拍递增正确，再接任务唤醒和 `should_yield` 路径。若 `MRT_PortStm32CmCalculateSysTickReload()` 返回失败，先修时钟树和 tick 频率，不要先改内核代码。
+6. 再接入 `PendSV_Handler` 和 `SVC_Handler`。`PendSV` 只做延迟切换，`SVC` 只做首任务启动；不要把上下文保存恢复、任务创建和启动入口混在一个文件里。
+7. 再接入第一个外设 ISR，例如 UART RX。先用队列或任务通知完成“ISR -> 任务”的闭环，再逐步扩展到 ADC/DMA、软件定时器和事件组。每加一个 ISR，都要单独确认 `MRT_PortYieldFromISR()` 只在 `should_yield=true` 时触发。
+8. 再启用低功耗、tickless 和 MPU。顺序必须是“先 tick 正常 -> 再 ISR 唤醒正常 -> 再 tickless -> 最后 MPU”，不要反过来。
+9. 最后才收口成板级证据：编译命令、ELF/map 路径、首任务启动、tick 计数、ISR 唤醒、临界区嵌套、低功耗恢复和 30 分钟 smoke 结果。
+
 ### 5.4 首次联调
 
 1. 先只验证编译和链接，确认 `include/`、`src/kernel/`、端口源码和启动文件都进入最终镜像。
@@ -1783,12 +1795,13 @@ STM32 移植验收清单：
 
 ### 5.6 真实板级证据归档
 
-1. 先从 `docs/verification/hardware_smoke/stm32_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/stm32_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
-2. 采集前先看 `docs/verification/hardware_smoke/collection_checklist.md`，按清单保留原始 UART/trace 日志，再填写最终证据文件。
-3. 证据至少要记录：芯片型号、板卡型号、编译器版本、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、上下文切换来源、SysTick、PendSV/SVC、ISR 队列、软件定时器、tickless、运行时长、断言次数、heap 最小剩余量和 UART/trace 摘要。
-4. 真实验收时，必须能从日志里看出 `Reset -> main -> 首任务 -> SysTick -> ISR 唤醒 -> 延迟切换 -> 退出` 这条链路闭环，而不是只有“能编译”。
-5. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/stm32_board_smoke.md` 是否满足最终格式。
-6. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，STM32 板级 smoke 才算最终可交付。
+1. 采集前先看 `docs/verification/hardware_smoke/collection_checklist.md`，按清单保留原始 UART/trace 日志，建议命名为 `docs/verification/hardware_smoke/stm32_uart_raw.log`。
+2. 若原始日志已经包含 `Key: Value` 格式字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target STM32 --input docs\verification\hardware_smoke\stm32_uart_raw.log --output docs\verification\hardware_smoke\stm32_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
+3. 若不使用生成器，先从 `docs/verification/hardware_smoke/stm32_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/stm32_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
+4. 证据至少要记录：芯片型号、板卡型号、编译器版本、系统时钟、tick 频率、NVIC 优先级位宽、临界区策略、上下文切换来源、SysTick、PendSV/SVC、ISR 队列、软件定时器、tickless、运行时长、断言次数、heap 最小剩余量和 UART/trace 摘要。
+5. 真实验收时，必须能从日志里看出 `Reset -> main -> 首任务 -> SysTick -> ISR 唤醒 -> 延迟切换 -> 退出` 这条链路闭环，而不是只有“能编译”。
+6. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/stm32_board_smoke.md` 是否满足最终格式。
+7. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，STM32 板级 smoke 才算最终可交付。
 
 ## 6. DSP 移植步骤
 
@@ -1824,6 +1837,17 @@ STM32 移植验收清单：
 9. 链接脚本：为任务栈、heap、DMA 缓冲、采样帧和中断栈分区。DSP 项目常有快 RAM、共享 RAM、外部 RAM，任务栈应放在访问延迟可预测的区域。
 10. 示例 smoke test：创建一个采样处理任务和一个通信任务；timer ISR 每 1 ms 推进 tick；ADC ISR 把采样块指针写入固定块内存池或队列；软件中断执行上下文切换；低优先级任务用事件组等待处理完成。
 11. 排错：若任务入口参数错误，检查 ABI 参数槽；若切换后状态寄存器异常，检查 ST0/ST1 保存恢复；若 ISR 嵌套后不切换，检查进入/退出计数是否回到 0；若随机崩溃，检查栈对齐、双字访问和链接脚本栈区大小。
+
+### 6.3.1 从厂商裸机工程迁入 MyRTOS 的实际顺序
+
+1. 先把 ABI、编译器版本、栈元素宽度、interrupt/trap 入口和 timer 源记到工程说明里，不在未确认 ABI 时写汇编上下文切换。
+2. 先只接入 MyRTOS 头文件、kernel 源、DSP helper 和 host model 文件，第一轮只验证编译/链接和 `MRT_PortDspC28xInitializeStack()` 栈帧。
+3. 再整理启动文件和链接脚本：保留唯一向量表，拆出任务栈、heap、DMA buffer、采样 buffer 和中断栈分区，先让 `main()` 能完成初始化并进入 `MRT_KernelStart()`。
+4. 再接入 CPU timer ISR，只做清标志、`MRT_KernelTick()` 和延迟切换请求，不在 timer ISR 内执行算法、打印或长回调。
+5. 再接入软件中断或尾链切换路径，确认 `MRT_PortDspC28xRequestContextSwitch()` 和 `MRT_PortDspC28xExitInterrupt()` 的先后关系正确，且只有最外层 ISR 退出时才切换。
+6. 再接入第一个数据 ISR，例如 ADC/DMA。先用队列、事件组或固定块内存池把数据送到任务，再确认任务能在预期 tick 内被唤醒。
+7. 再扩展到嵌套中断、tickless 和低功耗。每一步都先确认嵌套计数不下溢、软件中断不丢、恢复后 tick 连续。
+8. 最后再接入真实板级 smoke 记录：记录 ABI、栈方向、编译器、timer 精度、上下文切换来源、ISR 深度、队列峰值和 heap 最小剩余量。
 
 ### 6.4 首次联调
 
@@ -1905,12 +1929,13 @@ DSP 移植验收清单：
 
 ### 6.6 真实板级证据归档
 
-1. 先从 `docs/verification/hardware_smoke/dsp_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/dsp_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
-2. 采集前先看 `docs/verification/hardware_smoke/collection_checklist.md`，按清单保留原始 UART/trace 日志，再填写最终证据文件。
-3. 证据至少要记录：DSP 型号、板卡型号、编译器版本、ABI 模式、栈方向、上下文切换来源、timer tick 精度、软件中断切换、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量、运行时长和 UART/trace 摘要。
-4. 实机联调时，必须能从日志里看出 `timer ISR -> MRT_KernelTick() -> 软件中断请求 -> 最外层 ISR 退出 -> 切换发生` 这条链路闭合。
-5. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/dsp_board_smoke.md` 是否满足最终格式。
-6. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，DSP 板级 smoke 才算最终可交付。
+1. 采集前先看 `docs/verification/hardware_smoke/collection_checklist.md`，按清单保留原始 UART/trace 日志，建议命名为 `docs/verification/hardware_smoke/dsp_uart_raw.log`。
+2. 若原始日志已经包含 `Key: Value` 格式字段，运行 `python tools\verify\generate_hardware_smoke_evidence.py --target DSP --input docs\verification\hardware_smoke\dsp_uart_raw.log --output docs\verification\hardware_smoke\dsp_board_smoke.md`，由生成器裁掉启动噪声并输出最终证据文件。
+3. 若不使用生成器，先从 `docs/verification/hardware_smoke/dsp_board_smoke.template.md` 复制出 `docs/verification/hardware_smoke/dsp_board_smoke.md`，再把 `PENDING`、`FAIL` 和 `TODO` 全部替换为真实板级结果。
+4. 证据至少要记录：DSP 型号、板卡型号、编译器版本、ABI 模式、栈方向、上下文切换来源、timer tick 精度、软件中断切换、ISR 嵌套深度峰值、队列峰值、heap 最小剩余量、运行时长和 UART/trace 摘要。
+5. 实机联调时，必须能从日志里看出 `timer ISR -> MRT_KernelTick() -> 软件中断请求 -> 最外层 ISR 退出 -> 切换发生` 这条链路闭合。
+6. 完成后运行 `python tools\verify\check_hardware_smoke_evidence.py`，它会检查 `docs/verification/hardware_smoke/dsp_board_smoke.md` 是否满足最终格式。
+7. 只有在 `Evidence-Status: PASS`、`Runtime-Minutes >= 30`、`Assert-Failures = 0` 且 `Heap-Min-Free-Bytes > 0` 时，DSP 板级 smoke 才算最终可交付。
 
 ## 7. 附录
 

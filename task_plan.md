@@ -4,7 +4,7 @@
 设计并实现一个原创的类 FreeRTOS 嵌入式 RTOS：适配 STM32 与 DSP，代码含详细中文注释，配套原创中文使用手册，并建立功能与耦合测试。
 
 ## Current Phase
-Phase 13 complete: Unified release verification runner; overall goal still awaits real STM32/DSP board logs
+Phase 14 complete: Manual porting detail refresh and hardware evidence generator integration; overall goal still awaits real STM32/DSP board logs
 
 ## Phases
 
@@ -173,3 +173,11 @@ Phase 13 complete: Unified release verification runner; overall goal still await
 - Update `findings.md` after research or discoveries.
 - Update `progress.md` after meaningful work.
 - Design approval required before implementation because brainstorming workflow hard-gates code/scaffold work.
+
+## Phase 14: Manual Porting Detail Refresh and Evidence Generator Integration
+- [x] Expand STM32 Cortex-M migration steps with vendor-project bring-up order, handler wiring, and first-board validation sequence
+- [x] Expand DSP migration steps with ABI, startup, timer ISR, software-interrupt, and nested-ISR bring-up order
+- [x] Add raw-log-to-evidence generator usage to the manual and hardware smoke docs
+- [x] Add generator test to the unified release verification runner
+- [x] Re-run manual coverage, generator test, release verification, and hardware-required release verification
+- **Status:** complete for repo-side docs/tooling; real STM32/DSP evidence remains pending

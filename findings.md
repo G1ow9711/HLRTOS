@@ -269,3 +269,15 @@
 - `python tools\verify\run_release_verification.py --list` shows the default repo-side chain only; hardware gate is appended only with `--require-hardware`.
 - Current hardware evidence gate intentionally fails with missing `stm32_board_smoke.md` and `dsp_board_smoke.md`; this is the remaining real-hardware proof gap, not a software test failure.
 - Latest repo-side verification: host tests 69 passed; manual coverage 135; API prototype alignment 135; Chinese comments, originality, embedded smoke, and hardware checker unit test pass; `git diff --check` exits 0 with expected CRLF warnings only.
+
+## Manual Porting Detail Refresh Findings
+- User explicitly asked that the final manual include detailed porting steps.
+- Existing manual sections 5 and 6 already cover STM32 Cortex-M and DSP porting, smoke projects, acceptance, and hardware evidence archival.
+- Detail gap to close: add a stricter migration playbook for moving from a vendor bare-metal project into MyRTOS, including file copy order, startup/vector merge, linker placement, interrupt/tick wiring, first-board validation order, and real-board evidence fields.
+
+## Hardware Evidence Generator Findings
+- `tests/static/test_hardware_smoke_evidence_generator.py` now passes and proves the raw-log normalizer strips noise and preserves required STM32/DSP evidence fields.
+- `tools/verify/run_release_verification.py` now includes the generator test as a default release step, so hardware evidence tooling is covered by the unified gate.
+- `python tools\\verify\\run_release_verification.py` passed with 9 step(s).
+- `python tools\\verify\\run_release_verification.py --require-hardware` still fails only because `stm32_board_smoke.md` and `dsp_board_smoke.md` are not present yet; no new software regression showed up.
+- Verification docs now mention the generator in the final report, completion audit, test suite plan, and requirement traceability matrix, replacing stale `[release] 8 step(s) passed` evidence with the current 9-step default release result.

@@ -670,3 +670,27 @@
 | Full host verification | `python tools\run_host_tests.py` | All host targets pass | `[summary] 69 test target(s) passed` | Pass |
 | Static/smoke verification | `python tools\verify\check_chinese_comments.py`; `python tools\verify\check_original_symbols.py`; `python tools\verify\check_embedded_smoke_projects.py`; `git diff --check` | Static and smoke checks pass; no real whitespace errors | Chinese comments covered; originality clean; STM32 cross build + DSP model smoke passed; `git diff --check` exit 0 with expected CRLF warnings | Pass |
 | Parallel verification timeout | Parallel run including host tests | All checks finish | Host runner timed out at 184 s while static/smoke checks passed; reran host tests alone with longer timeout and passed | Logged |
+
+## Manual Porting Detail Refresh
+- User asked for even more detailed porting steps in the manual.
+- Manual already has STM32/DSP sections; next edit will add vendor-project migration order, file-by-file integration sequence, first-board bring-up order, and board evidence checklist wording.
+- Error logged: first attempt to append this progress entry used stale context and failed; resolved by appending after the latest table tail.
+
+## Hardware Evidence Generator Integration
+- Added `tests/static/test_hardware_smoke_evidence_generator.py` and `tools/verify/generate_hardware_smoke_evidence.py`.
+- Added generator commands to `docs/manual/MyRTOS_Reference_Manual_zh.md`, `docs/verification/hardware_smoke/README.md`, and `docs/verification/hardware_smoke/collection_checklist.md`.
+- Added `hardware-evidence-generator` to `tools/verify/run_release_verification.py` and the corresponding release-runner expectation test.
+- Updated `docs/verification/final_verification_report.md`, `docs/verification/completion_audit.md`, `docs/verification/test_suite_plan.md`, and `docs/verification/requirements_traceability_matrix.md` so release evidence and hardware evidence flow mention the generator and the current 9-step default release gate.
+- Verification passed:
+  - `python tests\static\test_hardware_smoke_evidence_generator.py`
+  - `python tests\static\test_release_verification_runner.py`
+  - `python tools\verify\check_api_manual_coverage.py`
+  - `python tools\verify\run_release_verification.py` -> `[release] 9 step(s) passed`
+- `python tools\verify\run_release_verification.py --require-hardware` still fails only on missing real `stm32_board_smoke.md` and `dsp_board_smoke.md`.
+- Follow-up verification after report sync:
+  - `python tests\static\test_hardware_smoke_evidence_generator.py` -> pass
+  - `python tests\static\test_release_verification_runner.py` -> pass
+  - `python tools\verify\check_api_manual_coverage.py` -> `[manual-coverage] 135 API section(s) covered`
+  - `git diff --check` -> exit 0 with expected CRLF warnings only
+  - first `python tools\verify\run_release_verification.py` attempt timed out at 244 seconds with no failure output; reran with longer timeout and got `[release] 9 step(s) passed`
+  - `python tools\verify\check_hardware_smoke_evidence.py` -> expected failure on missing `stm32_board_smoke.md` and `dsp_board_smoke.md`
